@@ -1,0 +1,13 @@
+*.tar
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.pth
+/data/*
+/__pycache__/*
+/utils/__pycache__/*
+/classification/__pycache__/*
+/classification/models/__pycache__/*
+/classification/models/GCN/__pycache__/*

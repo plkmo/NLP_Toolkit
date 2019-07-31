@@ -124,10 +124,14 @@ def load_results(model_no=0):
     return losses_per_epoch, accuracy_per_epoch
 
 def evaluate(output, labels_e):
-    _, labels = output.max(1); labels = labels.numpy()
-    return sum([(e-1) for e in labels_e] == labels)/len(labels)
+    if len(labels_e) == 0:
+        return 0
+    else:
+        _, labels = output.max(1); labels = labels.numpy()
+        return sum([(e-1) for e in labels_e] == labels)/len(labels)
 
 def infer(f, test_idxs, net):
+    logger.info("Evaluating on inference data...")
     net.eval()
     with torch.no_grad():
         pred_labels = net(f)
@@ -135,6 +139,7 @@ def infer(f, test_idxs, net):
         pred_labels = list(pred_labels[test_idxs].max(1)[1].cpu().numpy())
     else:
         pred_labels = list(pred_labels[test_idxs].max(1)[1].numpy())
+    test_idxs = [i - test_idxs[0] for i in test_idxs]
     df_results = pd.DataFrame(data=[test_idxs, pred_labels], columns=["index", "predicted_label"])
     df_results.to_csv("./data/results.csv", columns=df_results.columns, index_label="index")
     return df_results

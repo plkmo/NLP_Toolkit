@@ -42,6 +42,7 @@ def nCr(n,r):
 def filter_tokens(tokens, stopwords):
     tokens1 = []
     for token in tokens:
+        token = token.lower()
         if (token not in stopwords) and (token not in [".",",",";","&","'s", ":", "?", "!","(",")",\
             "'","'m","'no","***","--","...","[","]"]):
             tokens1.append(token)
@@ -93,8 +94,22 @@ def generate_text_graph(train_data, infer_data, window=10):
     vocab = np.array(vocab)
     df_tfidf = pd.DataFrame(df_tfidf, columns=vocab)
     
+    ### Build graph
+    logger.info("Building graph (No. of document, word nodes: %d, %d)..." %(len(df_tfidf.index), len(vocab)))
+    G = nx.Graph()
+    logger.info("Adding document nodes to graph...")
+    G.add_nodes_from(df_tfidf.index) ## document nodes
+    logger.info("Adding word nodes to graph...")
+    G.add_nodes_from(vocab) ## word nodes
+    ### build edges between document-word pairs
+    logger.info("Building document-word edges...")
+    document_word = [(doc,w,{"weight":df_tfidf.loc[doc,w]}) for doc in tqdm(df_tfidf.index, total = len(df_tfidf.index))\
+                     for w in df_tfidf.columns]
+    G.add_edges_from(document_word)
+    del df_tfidf, document_word
+    
     ### PMI between words
-    names = vocab
+    names = vocab; del vocab
     occurrences = OrderedDict((name, OrderedDict((name, 0) for name in names)) for name in names)
     # Find the co-occurrences:
     no_windows = 0; logger.info("Calculating co-occurences...")
@@ -123,18 +138,10 @@ def generate_text_graph(train_data, infer_data, window=10):
     for col in p_ij.columns:
         p_ij[col] = p_ij[col].apply(lambda x: math.log(x))
         
-    ### Build graph
-    logger.info("Building graph (No. of document, word nodes: %d, %d)..." %(len(df_tfidf.index), len(vocab)))
-    G = nx.Graph()
-    G.add_nodes_from(df_tfidf.index) ## document nodes
-    G.add_nodes_from(vocab) ## word nodes
-    ### build edges between document-word pairs
-    document_word = [(doc,w,{"weight":df_tfidf.loc[doc,w]}) for doc in df_tfidf.index for w in df_tfidf.columns]
     
     logger.info("Building word-word edges...")
     word_word = word_word_edges(p_ij)
     save_as_pickle("word_word_edges.pkl", word_word)
-    G.add_edges_from(document_word)
     G.add_edges_from(word_word)
     save_as_pickle("text_graph.pkl", {"graph": G, "infer_idx_start": infer_idx_start})
     logger.info("Done and saved!")

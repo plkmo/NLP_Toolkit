@@ -115,13 +115,15 @@ def load_results(model_no=0):
     """ Loads saved results if exists """
     losses_path = "./data/test_losses_per_epoch_%d.pkl" % model_no
     accuracy_path = "./data/test_accuracy_per_epoch_%d.pkl" % model_no
-    if os.path.isfile(losses_path) and os.path.isfile(accuracy_path):
+    train_accuracy_path = "./data/train_accuracy_per_epoch_%d.pkl" % model_no
+    if os.path.isfile(losses_path) and os.path.isfile(accuracy_path) and os.path.isfile(train_accuracy_path):
         losses_per_epoch = load_pickle("test_losses_per_epoch_%d.pkl" % model_no)
         accuracy_per_epoch = load_pickle("test_accuracy_per_epoch_%d.pkl" % model_no)
+        train_accuracy_per_epoch = load_pickle("train_accuracy_per_epoch_%d.pkl" % model_no)
         logger.info("Loaded results buffer")
     else:
-        losses_per_epoch, accuracy_per_epoch = [], []
-    return losses_per_epoch, accuracy_per_epoch
+        losses_per_epoch, train_accuracy_per_epoch, accuracy_per_epoch = [], [], []
+    return losses_per_epoch, train_accuracy_per_epoch, accuracy_per_epoch
 
 def evaluate(output, labels_e):
     if len(labels_e) == 0:
@@ -139,7 +141,10 @@ def infer(f, test_idxs, net):
         pred_labels = list(pred_labels[test_idxs].max(1)[1].cpu().numpy())
     else:
         pred_labels = list(pred_labels[test_idxs].max(1)[1].numpy())
+    pred_labels = [i + 1 for i in pred_labels]
     test_idxs = [i - test_idxs[0] for i in test_idxs]
-    df_results = pd.DataFrame(data=[test_idxs, pred_labels], columns=["index", "predicted_label"])
-    df_results.to_csv("./data/results.csv", columns=df_results.columns, index_label="index")
+    df_results = pd.DataFrame(columns=["index", "predicted_label"])
+    df_results.loc[:, "index"] = test_idxs
+    df_results.loc[:, "predicted_label"] = pred_labels
+    df_results.to_csv("./data/results.csv", columns=df_results.columns, index=False)
     return df_results

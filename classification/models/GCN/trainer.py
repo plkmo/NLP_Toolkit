@@ -9,7 +9,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from .train_funcs import load_datasets, load_state, load_results, evaluate
+from .train_funcs import load_datasets, load_state, load_results, evaluate, infer
 from .GCN import gcn
 from .preprocessing_funcs import load_pickle, save_as_pickle
 import matplotlib.pyplot as plt
@@ -27,12 +27,11 @@ def train(args):
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[1000,2000,3000,4000,5000,6000], gamma=0.77)
     
-    start_epoch, best_pred = load_state(net, optimizer, scheduler, model_no=args.model_no, load_best=True)
-    losses_per_epoch, evaluation_untrained = load_results(model_no=args.model_no)
+    start_epoch, best_pred = load_state(net, optimizer, scheduler, model_no=args.model_no, load_best=False)
+    losses_per_epoch, evaluation_trained, evaluation_untrained = load_results(model_no=args.model_no)
     
     logger.info("Starting training process...")
     net.train()
-    evaluation_trained = []
     for e in range(start_epoch, args.num_epochs):
         optimizer.zero_grad()
         output = net(f)
@@ -49,6 +48,7 @@ def train(args):
             evaluation_trained.append((e, trained_accuracy)); evaluation_untrained.append((e, untrained_accuracy))
             print("[Epoch %d]: Evaluation accuracy of trained nodes: %.7f" % (e, trained_accuracy))
             print("[Epoch %d]: Evaluation accuracy of test nodes: %.7f" % (e, untrained_accuracy))
+            print("[Epoch %d]: Loss: %.7f" % (e, losses_per_epoch[-1]))
             print("Labels of trained nodes: \n", output[selected].max(1)[1])
             net.train()
             if trained_accuracy > best_pred:
@@ -94,23 +94,26 @@ def train(args):
     ax.set_ylabel("Accuracy on trained nodes", fontsize=15)
     ax.set_title("Accuracy (trained nodes) vs Epoch", fontsize=20)
     plt.savefig(os.path.join("./data/", "trained_accuracy_vs_epoch.png"))
+
+    if len(labels_not_selected) > 0:    
+        fig = plt.figure(figsize=(13,13))
+        ax = fig.add_subplot(111)
+        ax.scatter(evaluation_untrained[:,0], evaluation_untrained[:,1])
+        ax.set_xlabel("Epoch", fontsize=15)
+        ax.set_ylabel("Accuracy on untrained nodes", fontsize=15)
+        ax.set_title("Accuracy (untrained nodes) vs Epoch", fontsize=20)
+        plt.savefig(os.path.join("./data/", "untrained_accuracy_vs_epoch.png"))
+        
+        fig = plt.figure(figsize=(13,13))
+        ax = fig.add_subplot(111)
+        ax.scatter(evaluation_trained[:,0], evaluation_trained[:,1], c="red", marker="v", \
+                   label="Trained Nodes")
+        ax.scatter(evaluation_untrained[:,0], evaluation_untrained[:,1], c="blue", marker="o",\
+                   label="Untrained Nodes")
+        ax.set_xlabel("Epoch", fontsize=15)
+        ax.set_ylabel("Accuracy", fontsize=15)
+        ax.set_title("Accuracy vs Epoch", fontsize=20)
+        ax.legend(fontsize=20)
+        plt.savefig(os.path.join("./data/", "combined_plot_accuracy_vs_epoch.png"))
     
-    fig = plt.figure(figsize=(13,13))
-    ax = fig.add_subplot(111)
-    ax.scatter(evaluation_untrained[:,0], evaluation_untrained[:,1])
-    ax.set_xlabel("Epoch", fontsize=15)
-    ax.set_ylabel("Accuracy on untrained nodes", fontsize=15)
-    ax.set_title("Accuracy (untrained nodes) vs Epoch", fontsize=20)
-    plt.savefig(os.path.join("./data/", "untrained_accuracy_vs_epoch.png"))
-    
-    fig = plt.figure(figsize=(13,13))
-    ax = fig.add_subplot(111)
-    ax.scatter(evaluation_trained[:,0], evaluation_trained[:,1], c="red", marker="v", \
-               label="Trained Nodes")
-    ax.scatter(evaluation_untrained[:,0], evaluation_untrained[:,1], c="blue", marker="o",\
-               label="Untrained Nodes")
-    ax.set_xlabel("Epoch", fontsize=15)
-    ax.set_ylabel("Accuracy", fontsize=15)
-    ax.set_title("Accuracy vs Epoch", fontsize=20)
-    ax.legend(fontsize=20)
-    plt.savefig(os.path.join("./data/", "combined_plot_accuracy_vs_epoch.png"))
+    infer(f, test_idxs, net)

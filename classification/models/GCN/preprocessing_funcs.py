@@ -43,7 +43,7 @@ def filter_tokens(tokens, stopwords):
     tokens1 = []
     for token in tokens:
         token = token.lower()
-        if (token not in stopwords) and (token not in [".",",",";","&","'s", ":", "?", "!","(",")",\
+        if (token not in stopwords) and (token not in [".",",",";","&","'s", ":", "?", "!","(",")", "@",\
             "'","'m","'no","***","--","...","[","]"]):
             tokens1.append(token)
     return tokens1
@@ -70,7 +70,7 @@ def word_word_edges(p_ij):
             word_word.append((w1,w2,{"weight":p_ij.loc[w1,w2]}))
     return word_word
 
-def generate_text_graph(train_data, infer_data, window=10):
+def generate_text_graph(train_data, infer_data, max_vocab_len, window=10):
     """ generates graph based on text corpus (columns = (text, label)); window = sliding window size to calculate point-wise mutual information between words """
     logger.info("Preparing data...")
     df = pd.read_csv(train_data)
@@ -86,7 +86,7 @@ def generate_text_graph(train_data, infer_data, window=10):
     
     ### Tfidf
     logger.info("Calculating Tf-idf...")
-    vectorizer = TfidfVectorizer(input="content", max_features=None, tokenizer=dummy_fun, preprocessor=dummy_fun)
+    vectorizer = TfidfVectorizer(input="content", max_features=max_vocab_len, tokenizer=dummy_fun, preprocessor=dummy_fun)
     vectorizer.fit(df["text"])
     df_tfidf = vectorizer.transform(df["text"])
     df_tfidf = df_tfidf.toarray()
@@ -118,9 +118,10 @@ def generate_text_graph(train_data, infer_data, window=10):
             no_windows += 1
             d = l[i:(i+window)]; dum = []
             for x in range(len(d)):
-                for item in d[:x] + d[(x+1):]:
-                    if item not in dum:
-                        occurrences[d[x]][item] += 1; dum.append(item)
+                if d[x] in occurrences.keys():
+                    for item in d[:x] + d[(x+1):]:
+                        if (item not in dum) and (item in occurrences.keys()):
+                            occurrences[d[x]][item] += 1; dum.append(item)
             
     logger.info("Calculating PMI...")
     df_occurences = pd.DataFrame(occurrences, columns=occurrences.keys())

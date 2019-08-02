@@ -7,14 +7,8 @@ Created on Thu Aug  1 17:44:38 2019
 import os
 import pandas as pd
 import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.nn.utils import clip_grad_norm_
 from torch.utils.data import Dataset, DataLoader
-from .BERT import BertForSequenceClassification
-from .preprocessing_funcs import preprocess
-import matplotlib.pyplot as plt
-from argparse import ArgumentParser
+from .preprocessing_funcs import preprocess, load_pickle
 import logging
 from tqdm import tqdm
 

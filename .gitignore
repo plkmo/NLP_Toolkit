@@ -11,3 +11,4 @@
 /classification/__pycache__/*
 /classification/models/__pycache__/*
 /classification/models/GCN/__pycache__/*
+/classification/models/BERT/__pycache__/*

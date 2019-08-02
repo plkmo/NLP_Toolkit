@@ -22,10 +22,10 @@ logger = logging.getLogger(__file__)
 def train_and_fit(args):
     cuda = torch.cuda.is_available()
     
-    f, X, A_hat, selected, labels_selected, labels_not_selected, test_idxs = load_datasets(args)
+    f, X, A_hat, selected, labels_selected, labels_not_selected, test_idxs = load_datasets(args, train_test_split=args.train_test_split)
     targets = torch.tensor(labels_selected).long() -1
     
-    net = gcn(X.shape[1], A_hat, args)
+    net = gcn(X.shape[1], A_hat, cuda, args)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[1000,2000,3000,4000,5000,6000], gamma=0.77)
@@ -35,6 +35,7 @@ def train_and_fit(args):
     
     if cuda:
         net.cuda()
+        optimizer = optim.Adam(net.parameters(), lr=args.lr)
         f = f.cuda()
         targets = targets.cuda()
         
@@ -72,6 +73,7 @@ def train_and_fit(args):
         if (e % 250) == 0:
             save_as_pickle("test_losses_per_epoch_%d.pkl" % args.model_no, losses_per_epoch)
             save_as_pickle("test_accuracy_per_epoch_%d.pkl" % args.model_no, evaluation_untrained)
+            save_as_pickle("train_accuracy_per_epoch_%d.pkl" % args.model_no, evaluation_trained)
             torch.save({
                     'epoch': e + 1,\
                     'state_dict': net.state_dict(),\

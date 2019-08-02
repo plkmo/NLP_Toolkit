@@ -9,9 +9,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class gcn(nn.Module):
-    def __init__(self, X_size, A_hat, args, bias=True): # X_size = num features
+    def __init__(self, X_size, A_hat, cuda, args, bias=True): # X_size = num features
         super(gcn, self).__init__()
         self.A_hat = torch.tensor(A_hat, requires_grad=False).float()
+        if cuda:
+            self.A_hat = self.A_hat.cuda()
         self.weight = nn.parameter.Parameter(torch.FloatTensor(X_size, args.hidden_size_1))
         var = 2./(self.weight.size(1)+self.weight.size(0))
         self.weight.data.normal_(0,var)

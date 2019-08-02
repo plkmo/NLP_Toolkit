@@ -6,7 +6,7 @@ Created on Wed Jul 31 14:04:38 2019
 """
 
 from classification.models.GCN.preprocessing_funcs import save_as_pickle
-from classification.models.GCN.trainer import train
+from classification.models.GCN.trainer import train_and_fit
 import logging
 from argparse import ArgumentParser
 
@@ -28,4 +28,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     save_as_pickle("args.pkl", args)
     
-    train(args)
+    train_and_fit(args)

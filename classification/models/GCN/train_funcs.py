@@ -129,7 +129,7 @@ def evaluate(output, labels_e):
     if len(labels_e) == 0:
         return 0
     else:
-        _, labels = output.max(1); labels = labels.numpy()
+        _, labels = output.max(1); labels = labels.cpu().numpy() if labels.is_cuda else labels.numpy()
         return sum([(e-1) for e in labels_e] == labels)/len(labels)
 
 def infer(f, test_idxs, net):

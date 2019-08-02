@@ -19,8 +19,11 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger(__file__)
 
-def train(args):
+def train_and_fit(args):
+    cuda = torch.cuda.is_available()
+    
     f, X, A_hat, selected, labels_selected, labels_not_selected, test_idxs = load_datasets(args)
+    targets = torch.tensor(labels_selected).long() -1
     
     net = gcn(X.shape[1], A_hat, args)
     criterion = nn.CrossEntropyLoss()
@@ -30,12 +33,17 @@ def train(args):
     start_epoch, best_pred = load_state(net, optimizer, scheduler, model_no=args.model_no, load_best=False)
     losses_per_epoch, evaluation_trained, evaluation_untrained = load_results(model_no=args.model_no)
     
+    if cuda:
+        net.cuda()
+        f = f.cuda()
+        targets = targets.cuda()
+        
     logger.info("Starting training process...")
     net.train()
     for e in range(start_epoch, args.num_epochs):
         optimizer.zero_grad()
         output = net(f)
-        loss = criterion(output[selected], torch.tensor(labels_selected).long() -1)
+        loss = criterion(output[selected], targets)
         losses_per_epoch.append(loss.item())
         loss.backward()
         optimizer.step()

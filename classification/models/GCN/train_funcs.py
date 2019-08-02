@@ -77,9 +77,9 @@ def load_datasets(args, train_test_split=False):
     
     f_selected = f[selected]; f_selected = torch.from_numpy(f_selected).float()
     f_not_selected = f[test_idxs]; f_not_selected = torch.from_numpy(f_not_selected).float()
-    labels_selected = [l for idx, l in enumerate(df_data["label"]) if idx in selected]
+    labels_selected = list(df_data.loc[selected]['label'])
     if train_test_split:    
-        labels_not_selected = [l for idx, l in enumerate(df_data["label"]) if idx not in selected]
+        labels_not_selected = list(df_data.loc[test_idxs]['label'])
     else:
         labels_not_selected = []
         

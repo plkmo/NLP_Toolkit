@@ -24,7 +24,7 @@ def train_and_fit(args):
     
     f, X, A_hat, selected, labels_selected, labels_not_selected, test_idxs = load_datasets(args, train_test_split=args.train_test_split)
     targets = torch.tensor(labels_selected).long() -1
-    
+    #print(labels_selected, labels_not_selected)
     net = gcn(X.shape[1], A_hat, cuda, args)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
@@ -49,11 +49,12 @@ def train_and_fit(args):
         loss.backward()
         optimizer.step()
         if e % 50 == 0:
+            #print(output[selected]); print(targets)
             ### Evaluate other untrained nodes and check accuracy of labelling
             net.eval()
             with torch.no_grad():
                 pred_labels = net(f)
-                trained_accuracy = evaluate(output[selected], labels_selected); untrained_accuracy = evaluate(pred_labels[test_idxs], labels_not_selected)
+                trained_accuracy = evaluate(pred_labels[selected], labels_selected); untrained_accuracy = evaluate(pred_labels[test_idxs], labels_not_selected)
             evaluation_trained.append((e, trained_accuracy)); evaluation_untrained.append((e, untrained_accuracy))
             print("[Epoch %d]: Evaluation accuracy of trained nodes: %.7f" % (e, trained_accuracy))
             print("[Epoch %d]: Evaluation accuracy of test nodes: %.7f" % (e, untrained_accuracy))

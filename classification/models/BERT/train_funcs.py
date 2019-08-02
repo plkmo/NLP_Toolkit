@@ -49,7 +49,7 @@ class sentiments(Dataset):
         self.mask = s
         
     def __len__(self):
-        return len(self.y)
+        return len(self.X)
     
     def __getitem__(self, idx):
         return self.X[idx], self.type[idx], self.mask[idx], self.y[idx]
@@ -105,3 +105,25 @@ def model_eval(net, test_loader, cuda=None):
     print("Accuracy of the network on the %d test data points: %d %%" % (total,\
                                                                     100*correct/total))
     return 100*correct/total
+
+def infer(infer_loader, net):
+    logger.info("Evaluating on inference data...")
+    cuda = next(net.parameters()).is_cuda
+    net.eval()
+    preds = []
+    with torch.no_grad():
+        for i, data in enumerate(infer_loader, 0):
+            inputs, token_type, mask, labels = data
+            if cuda:
+                inputs, token_type, mask, labels = inputs.cuda(), token_type.cuda(), mask.cuda(), labels.cuda()
+            inputs = inputs.long(); labels = labels.long()
+            outputs = net(inputs, token_type_ids=token_type, attention_mask=mask)
+            _, predicted = torch.max(outputs.data, 1)
+            predicted = list(predicted.cpu().numpy()) if cuda else list(predicted.numpy())
+            preds.extend(predicted)
+            
+    df_results = pd.DataFrame(columns=["index", "predicted_label"])
+    df_results.loc[:, "index"] = [i for i in range(len(preds))]
+    df_results.loc[:, "predicted_label"] = preds
+    df_results.to_csv("./data/results.csv", columns=df_results.columns, index=False)
+    return df_results

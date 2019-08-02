@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from .preprocessing_funcs import save_as_pickle, load_pickle
-from .train_funcs import load_dataloaders, load_state, load_results, model_eval
+from .train_funcs import load_dataloaders, load_state, load_results, model_eval, infer
 from .BERT import BertForSequenceClassification
 import matplotlib.pyplot as plt
 import logging
@@ -107,3 +107,5 @@ def train_and_fit(args):
     ax2.set_ylabel("Test Accuracy", fontsize=22)
     ax2.set_title("Test Accuracy vs Epoch", fontsize=32)
     plt.savefig(os.path.join("./data/" ,"accuracy_vs_epoch.png"))
+    
+    infer(test_loader, net)

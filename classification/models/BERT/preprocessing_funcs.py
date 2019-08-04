@@ -46,7 +46,7 @@ def preprocess(args):
     df_test = pd.read_csv(args.infer_data)
     
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-    tokens_length = 300 # max tokens length
+    tokens_length = args.tokens_length # max tokens length
     
     logger.info("Tokenizing data...")
     ### tokenize data for BERT
@@ -65,8 +65,8 @@ def preprocess(args):
     logger.info("Padding sequences...")
     df_train.loc[:, "text"] = df_train["text"].apply(lambda x: filler(x))
     df_test.loc[:, "text"] = df_test["text"].apply(lambda x: filler(x))
-    df_train[:, "fills"] = df_train["text"].apply(lambda x: x.count(0))
-    df_test[:, "fills"] = df_test["text"].apply(lambda x: x.count(0))
+    df_train.loc[:, "fills"] = df_train["text"].apply(lambda x: x.count(0))
+    df_test.loc[:, "fills"] = df_test["text"].apply(lambda x: x.count(0))
     
     logger.info("Saving..")
     df_train.to_pickle(os.path.join("./data/", "train_processed.pkl"))

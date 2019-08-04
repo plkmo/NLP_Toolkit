@@ -8,6 +8,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.nn.utils import clip_grad_norm_
 from .preprocessing_funcs import save_as_pickle, load_pickle
 from .train_funcs import load_dataloaders, load_state, load_results, model_eval, infer
 from .BERT import BertForSequenceClassification
@@ -26,15 +27,15 @@ def train_and_fit(args):
     net = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=args.num_classes)
     if cuda:
         net.cuda()
-  
+        
     ### freeze all layers except for last encoder layer and classifier layer
     logger.info("FREEZING MOST HIDDEN LAYERS...")
     for name, param in net.named_parameters():
         if ("classifier" not in name) and ("bert.pooler" not in name) and ("bert.encoder.layer.11" not in name):
             param.requires_grad = False
-            
+       
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam([{"params":net.bert.parameters(),"lr": 0.0001},\
+    optimizer = optim.Adam([{"params":net.bert.parameters(),"lr": 0.0003},\
                              {"params":net.classifier.parameters(), "lr": args.lr}])
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20,40,80,120,150,180,200], gamma=0.8)
     
@@ -54,7 +55,7 @@ def train_and_fit(args):
             loss = criterion(outputs, labels)
             loss = loss/args.gradient_acc_steps
             loss.backward()
-            #clip_grad_norm_(net.parameters(), args.max_norm)
+            clip_grad_norm_(net.parameters(), args.max_norm)
             if (epoch % args.gradient_acc_steps) == 0:
                 optimizer.step()
                 optimizer.zero_grad()
@@ -66,7 +67,10 @@ def train_and_fit(args):
                       (epoch + 1, (i + 1)*args.batch_size, train_len, losses_per_batch[-1]))
                 total_loss = 0.0
         losses_per_epoch.append(sum(losses_per_batch)/len(losses_per_batch))
-        accuracy_per_epoch.append(model_eval(net, test_loader, cuda=cuda))
+        if args.train_test_split == 1:
+            accuracy_per_epoch.append(model_eval(net, test_loader, cuda=cuda))
+        else:
+            accuracy_per_epoch.append(model_eval(net, train_loader, cuda=cuda))
         print("Losses at Epoch %d: %.7f" % (epoch, losses_per_epoch[-1]))
         print("Accuracy at Epoch %d: %.7f" % (epoch, accuracy_per_epoch[-1]))
         if accuracy_per_epoch[-1] > best_pred:

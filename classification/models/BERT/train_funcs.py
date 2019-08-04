@@ -16,7 +16,7 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger(__file__)
 
-def load_dataloaders(args, testset=False):
+def load_dataloaders(args):
     train_path = "./data/train_processed.pkl"
     test_path = "./data/infer_processed.pkl"
     if os.path.isfile(train_path) and os.path.isfile(test_path):
@@ -29,20 +29,24 @@ def load_dataloaders(args, testset=False):
         df_train = pd.read_pickle(train_path)
         df_test = pd.read_pickle(test_path)
         
-    train_set = sentiments(df_train, tokens_length=300)
+    train_set = sentiments(df_train, tokens_length=args.tokens_length)
     train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=False)
-    if testset == True:
-        test_set = sentiments(df_test, tokens_length=300)
-        test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=0, pin_memory=False)
+    if args.train_test_split == 1:
+        test_set = sentiments(df_test, tokens_length=args.tokens_length, labels=True)
+    else:
+        test_set = sentiments(df_test, tokens_length=args.tokens_length, labels=False)
+    test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=0, pin_memory=False)
     del df_train, df_test
     return train_loader, test_loader, len(train_set)
 
 class sentiments(Dataset):
-    def __init__(self, df, tokens_length=300):
+    def __init__(self, df, tokens_length=300, labels=True):
         self.X = torch.tensor(df["text"],requires_grad=False)
-        self.y = torch.tensor(df["label"],requires_grad=False)
-        self.type = torch.zeros([len(df["label"]), tokens_length], requires_grad=False).long()
-        s = torch.ones([len(df["label"]), tokens_length],requires_grad=False).long()
+        self.labels = labels
+        if self.labels == True:
+            self.y = torch.tensor(df["label"],requires_grad=False)
+        self.type = torch.zeros([len(df["text"]), tokens_length], requires_grad=False).long()
+        s = torch.ones([len(df["text"]), tokens_length],requires_grad=False).long()
         for i in range(len(s)):
             if df["fills"].loc[i] != 0:
                 s[i, -df["fills"].loc[i]:] = 0
@@ -52,8 +56,11 @@ class sentiments(Dataset):
         return len(self.X)
     
     def __getitem__(self, idx):
-        return self.X[idx], self.type[idx], self.mask[idx], self.y[idx]
-    
+        if self.labels == True:
+            return self.X[idx], self.type[idx], self.mask[idx], self.y[idx]
+        else:
+            return self.X[idx], self.type[idx], self.mask[idx], None
+
 def load_state(net, optimizer, scheduler, args, load_best=False):
     """ Loads saved model and optimizer states if exists """
     base_path = "./data/"

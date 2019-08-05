@@ -17,7 +17,7 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
 logger = logging.getLogger(__file__)
 
 
-def load_datasets(args, train_test_split=False):
+def load_datasets(args, train_test_split=0):
     """Loads dataset and graph if exists, else create and process them from raw data
     Returns --->
     f: torch tensor input of GCN (Identity matrix)
@@ -53,7 +53,7 @@ def load_datasets(args, train_test_split=False):
     A_hat = degrees@A@degrees
     f = X # (n X n) X (n X n) x (n X n) X (n X n) input of net
     
-    if train_test_split:
+    if train_test_split == 1:
         logger.info("Splitting labels for training and inferring...")
         ### stratified test samples
         test_idxs = []
@@ -78,7 +78,7 @@ def load_datasets(args, train_test_split=False):
     f_selected = f[selected]; f_selected = torch.from_numpy(f_selected).float()
     f_not_selected = f[test_idxs]; f_not_selected = torch.from_numpy(f_not_selected).float()
     labels_selected = list(df_data.loc[selected]['label'])
-    if train_test_split:    
+    if train_test_split == 1:    
         labels_not_selected = list(df_data.loc[test_idxs]['label'])
     else:
         labels_not_selected = []

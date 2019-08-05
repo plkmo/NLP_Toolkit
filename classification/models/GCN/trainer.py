@@ -23,7 +23,7 @@ def train_and_fit(args):
     cuda = torch.cuda.is_available()
     
     f, X, A_hat, selected, labels_selected, labels_not_selected, test_idxs = load_datasets(args, train_test_split=args.train_test_split)
-    targets = torch.tensor(labels_selected).long() -1
+    targets = torch.tensor(labels_selected).long()
     #print(labels_selected, labels_not_selected)
     net = gcn(X.shape[1], A_hat, cuda, args)
     criterion = nn.CrossEntropyLoss()

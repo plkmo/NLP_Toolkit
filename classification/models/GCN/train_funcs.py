@@ -130,7 +130,7 @@ def evaluate(output, labels_e):
         return 0
     else:
         _, labels = output.max(1); labels = labels.cpu().numpy() if labels.is_cuda else labels.numpy()
-        return sum([(e-1) for e in labels_e] == labels)/len(labels)
+        return sum([(e) for e in labels_e] == labels)/len(labels)
 
 def infer(f, test_idxs, net):
     logger.info("Evaluating on inference data...")
@@ -141,7 +141,7 @@ def infer(f, test_idxs, net):
         pred_labels = list(pred_labels[test_idxs].max(1)[1].cpu().numpy())
     else:
         pred_labels = list(pred_labels[test_idxs].max(1)[1].numpy())
-    pred_labels = [i + 1 for i in pred_labels]
+    pred_labels = [i for i in pred_labels]
     test_idxs = [i - test_idxs[0] for i in test_idxs]
     df_results = pd.DataFrame(columns=["index", "predicted_label"])
     df_results.loc[:, "index"] = test_idxs

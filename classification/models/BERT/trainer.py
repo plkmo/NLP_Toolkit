@@ -71,8 +71,8 @@ def train_and_fit(args):
             accuracy_per_epoch.append(model_eval(net, test_loader, cuda=cuda))
         else:
             accuracy_per_epoch.append(model_eval(net, train_loader, cuda=cuda))
-        print("Losses at Epoch %d: %.7f" % (epoch, losses_per_epoch[-1]))
-        print("Accuracy at Epoch %d: %.7f" % (epoch, accuracy_per_epoch[-1]))
+        print("Losses at Epoch %d: %.7f" % (epoch + 1, losses_per_epoch[-1]))
+        print("Accuracy at Epoch %d: %.7f" % (epoch + 1, accuracy_per_epoch[-1]))
         if accuracy_per_epoch[-1] > best_pred:
             best_pred = accuracy_per_epoch[-1]
             torch.save({

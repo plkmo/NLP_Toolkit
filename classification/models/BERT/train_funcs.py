@@ -29,7 +29,7 @@ def load_dataloaders(args):
         df_train = pd.read_pickle(train_path)
         df_test = pd.read_pickle(test_path)
         
-    train_set = sentiments(df_train, tokens_length=args.tokens_length)
+    train_set = sentiments(df_train, tokens_length=args.tokens_length, labels=True)
     train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=False)
     if args.train_test_split == 1:
         test_set = sentiments(df_test, tokens_length=args.tokens_length, labels=True)
@@ -59,7 +59,7 @@ class sentiments(Dataset):
         if self.labels == True:
             return self.X[idx], self.type[idx], self.mask[idx], self.y[idx]
         else:
-            return self.X[idx], self.type[idx], self.mask[idx], None
+            return self.X[idx], self.type[idx], self.mask[idx], 0
 
 def load_state(net, optimizer, scheduler, args, load_best=False):
     """ Loads saved model and optimizer states if exists """
@@ -119,11 +119,11 @@ def infer(infer_loader, net):
     net.eval()
     preds = []
     with torch.no_grad():
-        for i, data in enumerate(infer_loader, 0):
-            inputs, token_type, mask, labels = data
+        for i, data in tqdm(enumerate(infer_loader, 0), total = len(infer_loader)):
+            inputs, token_type, mask, _ = data
             if cuda:
-                inputs, token_type, mask, labels = inputs.cuda(), token_type.cuda(), mask.cuda(), labels.cuda()
-            inputs = inputs.long(); labels = labels.long()
+                inputs, token_type, mask = inputs.cuda(), token_type.cuda(), mask.cuda()
+            inputs = inputs.long()
             outputs = net(inputs, token_type_ids=token_type, attention_mask=mask)
             _, predicted = torch.max(outputs.data, 1)
             predicted = list(predicted.cpu().numpy()) if cuda else list(predicted.numpy())

@@ -9,12 +9,12 @@ Library containing state-of-the-art models for Natural Language Processing tasks
 ## Classification
 The goal of classification is to segregate documents into appropriate classes based on their text content. Currently, the classification toolkit uses text-based Graph Convolution Networks (GCN) and Bidirectional Encoder Representations from Transformers (BERT).
 
-# Format of datasets files
+### Format of datasets files
 The training data (default: train.csv) should be formatted into two columns “text” and “label” respectively, with rows being the documents index. “text” contains the raw text and “label” contains the corresponding label (integers 0, 1, 2… depending on the number of classes)
 
 The infer data (default: infer.csv) should be formatted into at least one column “text” being the raw text and rows being the documents index. Optional column “label” can be added and --train_test_split argument set to 1 to use infer.csv as the test set for model verification.
 
-# Running the model
+### Running the model
 Run classify.py with arguments below.
 
 ```bash
@@ -38,3 +38,11 @@ classify.py [-h]
 The script outputs a results.csv file containing the indexes of the documents in infer.csv and their corresponding predicted labels.
 
 ## Automatic Speech Recognition
+Automatic Speech Recognition (ASR) aims to convert audio signals into text. This library contains the following models for ASR: Speech-Transformer, Listen-Attend-Spell (LAS).
+### Format of dataset files
+The folder containing the dataset should have the following structure: folder/speaker/chapter
+Within the chapter subdirectory, the audio files (in .flac format) are named speaker-chapter-file_id (file_id In running order)
+The transcript .txt file for the files within the chapter should be located in the chapter subdirectory. In the transcript file, each row should consist of the speaker-chapter-file_id (space) transcript.
+
+### Running the model
+Run speech.py with arguments below

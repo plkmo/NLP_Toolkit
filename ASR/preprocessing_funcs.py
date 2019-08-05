@@ -58,6 +58,44 @@ def stack_downsampler(feature, args, stack=3):
         pass
     return feature
 
+def extract_feature(filepath, args):
+    samples, sample_rate = sf.read(filepath)
+    if args.use_lg_mels == 1:
+        S = librosa.feature.melspectrogram(samples.astype(float), sr=sample_rate, n_mels=args.n_mels,\
+                                           n_fft=int(sample_rate*(args.n_fft/1000)), \
+                                           hop_length=int(sample_rate*(args.hop_length/1000)),\
+                                           power=1.0)
+        original_len = S.shape[-1]; #print(S.shape)
+        if (args.max_frame_len - original_len) >= 0:
+            S = np.append(S, (1e-9)*np.ones((args.n_mels, args.max_frame_len-original_len)), axis=1)
+            S = librosa.amplitude_to_db(S) # convert to log mel energies
+            delta1_S = librosa.feature.delta(S, order=1)
+            delta2_S = librosa.feature.delta(S, order=2)
+            #S[:,:original_len] = scaler.fit_transform(S[:,:original_len].T).T
+            #delta1_S[:,:original_len] = scaler.fit_transform(delta1_S[:,:original_len].T).T
+            #delta2_S[:,:original_len] = scaler.fit_transform(delta2_S[:,:original_len].T).T
+            features = np.stack((S, delta1_S, delta2_S), axis=0); #break; break;break
+            #features = librosa.power_to_db(S, ref=np.max)
+            #features = scaler.fit_transform(S.T).T
+        else:
+            features = None
+    else:
+        mfcc = librosa.feature.mfcc(y=samples.astype(float), sr=sample_rate, n_mfcc=args.n_mfcc,\
+                                                        n_fft=int(sample_rate*(args.n_fft/1000)), \
+                                                        hop_length=int(sample_rate*(args.hop_length/1000)))
+        original_len = mfcc.shape[-1]
+        if (args.max_frame_len - original_len) >= 0:
+            mfcc = np.append(mfcc, np.zeros((args.n_mfcc, args.max_frame_len-original_len)), axis=1)
+            delta1_mfcc = librosa.feature.delta(mfcc, order=1)
+            delta2_mfcc = librosa.feature.delta(mfcc, order=2)
+            #mfcc[:,:original_len] = scaler.fit_transform(mfcc[:,:original_len].T).T
+            #delta1_mfcc[:,:original_len] = scaler.fit_transform(delta1_mfcc[:,:original_len].T).T
+            #delta2_mfcc[:,:original_len] = scaler.fit_transform(delta2_mfcc[:,:original_len].T).T
+            features = np.stack((mfcc, delta1_mfcc, delta2_mfcc), axis=0)
+        else:
+            features = None
+    return features, original_len
+
 def get_mfcc_data(args):
     ''' Extracts MFCC 0th, 1st, 2nd order coefficients, tokenizes text transcript, build vocab, convert text tokens to ids
     and saves results in pickle file 
@@ -90,43 +128,11 @@ def get_mfcc_data(args):
 
                 elif '.flac' in file:
                     s_path = "./data/%s/%s/%s/%s" % (folder, speaker, chapter, file)
-                    samples, sample_rate = sf.read(s_path)
-                    if args.use_lg_mels == 1:
-                        S = librosa.feature.melspectrogram(samples.astype(float), sr=sample_rate, n_mels=args.n_mels,\
-                                                           n_fft=int(sample_rate*(args.n_fft/1000)), \
-                                                           hop_length=int(sample_rate*(args.hop_length/1000)),\
-                                                           power=1.0)
-                        original_len = S.shape[-1]; #print(S.shape)
-                        if (args.max_frame_len - original_len) >= 0:
-                            S = np.append(S, (1e-9)*np.ones((args.n_mels, args.max_frame_len-original_len)), axis=1)
-                            S = librosa.amplitude_to_db(S) # convert to log mel energies
-                            delta1_S = librosa.feature.delta(S, order=1)
-                            delta2_S = librosa.feature.delta(S, order=2)
-                            #S[:,:original_len] = scaler.fit_transform(S[:,:original_len].T).T
-                            #delta1_S[:,:original_len] = scaler.fit_transform(delta1_S[:,:original_len].T).T
-                            #delta2_S[:,:original_len] = scaler.fit_transform(delta2_S[:,:original_len].T).T
-                            features = np.stack((S, delta1_S, delta2_S), axis=0); #break; break;break
-                            #features = librosa.power_to_db(S, ref=np.max)
-                            #features = scaler.fit_transform(S.T).T
-                        else:
-                            continue
-                    else:
-                        mfcc = librosa.feature.mfcc(y=samples.astype(float), sr=sample_rate, n_mfcc=args.n_mfcc,\
-                                                                        n_fft=int(sample_rate*(args.n_fft/1000)), \
-                                                                        hop_length=int(sample_rate*(args.hop_length/1000)))
-                        original_len = mfcc.shape[-1]
-                        if (args.max_frame_len - original_len) >= 0:
-                            mfcc = np.append(mfcc, np.zeros((args.n_mfcc, args.max_frame_len-original_len)), axis=1)
-                            delta1_mfcc = librosa.feature.delta(mfcc, order=1)
-                            delta2_mfcc = librosa.feature.delta(mfcc, order=2)
-                            #mfcc[:,:original_len] = scaler.fit_transform(mfcc[:,:original_len].T).T
-                            #delta1_mfcc[:,:original_len] = scaler.fit_transform(delta1_mfcc[:,:original_len].T).T
-                            #delta2_mfcc[:,:original_len] = scaler.fit_transform(delta2_mfcc[:,:original_len].T).T
-                            features = np.stack((mfcc, delta1_mfcc, delta2_mfcc), axis=0)
-                        else:
-                            continue
+                    features, original_len = extract_feature(s_path, args)
+                    if features is None:
+                        continue
                     id_ = re.search("[\d+-]+", file)[0]
-                    if id_ is not None:
+                    if (id_ is not None):
                         data[id_] = features, original_len
             
             df_dum["features"] = df_dum.apply(lambda x: dict_data(data, x['id'], features=True), axis=1)
@@ -171,7 +177,7 @@ def get_mfcc_data(args):
     logging.info("Saved!")
     
 class padded_dataset(Dataset):
-    def __init__(self, df, args):
+    def __init__(self, df, args, labels=True):
         def x_padder(x, max_len):
             if x.shape[-1] < max_len:
                 if args.use_lg_mels == 1:
@@ -186,19 +192,26 @@ class padded_dataset(Dataset):
                 x = np.append(x, np.ones((max_len-len(x)), dtype=int)) # 1 is the idx for <pad> token
             return x
         
+        self.labels = labels
         self.x_max_len = int(max(df['features_len']))
-        self.y_max_len = max(df['text'].apply(lambda x: len(x)))
-        #self.X = df["features"].apply(lambda x: x_padder(x, self.x_max_len))
         self.X = df["features"]
-        self.y = df["text"].apply(lambda x: y_padder(x, self.y_max_len))
         self.X_len = df["features_len"]
+        if labels == True:
+            self.y_max_len = max(df['text'].apply(lambda x: len(x)))
+            self.y = df["text"].apply(lambda x: y_padder(x, self.y_max_len))
+        #self.X = df["features"].apply(lambda x: x_padder(x, self.x_max_len))
+        else:
+            self.y = y_padder(np.zeros(1, dtype=int), args.max_seq_len)
         
     def __len__(self):
-        return len(self.y)
+        return len(self.X)
     
     def __getitem__(self, idx):
-        # output X shape = 3 X n_features X length
-        return self.X.iloc[idx], self.y.iloc[idx], self.X_len.iloc[idx]
+        if self.labels == True:
+            # output X shape = 3 X n_features X length
+            return self.X.iloc[idx], self.y.iloc[idx], self.X_len.iloc[idx]
+        else:
+            return self.X.iloc[idx], self.y, self.X_len.iloc[idx] # return <sos> if labels=False
     
 def load_dataloaders(args):
     ''' loads mfcc data, convert words into ids and returns corresponding data_loaders '''

@@ -102,6 +102,7 @@ def Attention(q, k, v, dh, mask=None, g_mask=None, dropout=None):
     scores = torch.softmax(scores, dim=-1)
     if dropout is not None:
         scores = dropout(scores)
+    #print(scores.shape, v.shape)
     output = torch.matmul(scores, v)
     return output
 
@@ -302,10 +303,14 @@ class SpeechTransformer(nn.Module):
         else:
             for i in range(self.max_decoder_len):
                 trg_mask = create_trg_mask(trg, src.is_cuda)
+                g_mask2 = create_window_mask(trg.shape[1], window_len=11).float()
+                if src.is_cuda:
+                    g_mask2 = g_mask2.cuda()
                 d_out = self.decoder(trg, e_out, src_mask, trg_mask, g_mask2)
                 x = self.fc1(d_out)
-                o_labels = torch.softmax(x, dim=1).max(1)[1]
-                trg = torch.cat((trg, o_labels[0,-1]), dim=1)
+                o_labels = torch.softmax(x, dim=2).max(2)[1]
+                #print(trg, o_labels)
+                trg = torch.cat((trg, o_labels[:,-1:]), dim=1)
                 if o_labels[0, -1].item() == 2: # break if <eos> token encountered
                     break
             return trg

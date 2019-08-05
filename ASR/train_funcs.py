@@ -60,7 +60,7 @@ def load_model_and_optimizer(args, vocab, max_features_length, max_seq_length, c
             g_mask1 = create_window_mask(int(args.max_frame_len/4), window_len=137).float()
         else:
             g_mask1 = create_window_mask(int(args.max_frame_len/4) + 1, window_len=137).float()
-        g_mask2 = create_window_mask(max_seq_length - 1, window_len=11).float()
+        g_mask2 = create_window_mask(net.max_decoder_len - 1, window_len=11).float()
         #g_mask = None
         if cuda:
             g_mask1 = g_mask1.cuda(); g_mask2 = g_mask2.cuda()

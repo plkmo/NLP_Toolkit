@@ -16,3 +16,6 @@
 /ASR/models/__pycache__/*
 /ASR/models/LAS/__pycache__/*
 /ASR/models/Transformer/__pycache__/*
+/summarization/__pycache__/*
+/summarization/models/__pycache__/*
+/summarization/utils/__pycache__/*

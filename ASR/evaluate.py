@@ -59,6 +59,7 @@ def infer(file_path, speaker=None):
         return feature
     
     if os.path.isfile("./data/speaker_stats.pkl") and (speaker != None):
+        logger.info("Normalizing from speaker stats...")
         speaker_stats = load_pickle("speaker_stats.pkl")
         df["features"] = df.apply(lambda x: speaker_norm(x["features"], speaker_stats[speaker]), axis=1)
     else:
@@ -69,6 +70,7 @@ def infer(file_path, speaker=None):
                               num_workers=0, pin_memory=False)
     
     net.eval()
+    outputs2 = None
     with torch.no_grad():
         for i, data in enumerate(infer_loader):
             if args.model_no == 0:
@@ -87,7 +89,7 @@ def infer(file_path, speaker=None):
                 labels = data[1][:,1:].contiguous().view(-1)
                 if cuda:
                     src_input = src_input.cuda().float(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
-                outputs = net(src_input, trg_input[:,0].unsqueeze(0), infer=True)
+                (outputs, outputs2) = net(src_input, trg_input[:,0].unsqueeze(0), infer=True)
             
             if cuda:
                 outputs = outputs.cpu().numpy(); labels = labels.cpu().numpy()
@@ -96,8 +98,12 @@ def infer(file_path, speaker=None):
             
             translated = vocab.convert_idx2w(outputs[0])
             ground_truth = vocab.convert_idx2w(labels)
+            if outputs2 is not None:
+                translated2 = vocab.convert_idx2w(outputs2)
             print("Translated: ")
             print("".join(w for w in translated if w not in ["<eos>", "<pad>"]))
+            if outputs2 is not None:
+                print("".join(w for w in translated2 if w not in ["<eos>", "<pad>"]))
             print("Ground truth: ")
             print("".join(w for w in ground_truth if w not in ["<eos>", "<pad>"]))
             break

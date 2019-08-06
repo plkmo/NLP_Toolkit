@@ -35,9 +35,9 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=0.003, help="learning rate")
     parser.add_argument("--gradient_acc_steps", type=int, default=4, help="Number of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
-    parser.add_argument("--model_no", type=int, default=1, help="Model ID: 0 = Transformer, 1 = LAS")
+    parser.add_argument("--model_no", type=int, default=0, help="Model ID: 0 = Transformer, 1 = LAS")
     args = parser.parse_args()
     save_as_pickle("args.pkl", args)
     
     train_and_fit(args)
-    #infer(file_path="./data/train-clean-5/19/198/19-198-0008.flac")
+    #infer(file_path="./data/train-clean-5/19/198/19-198-0008.flac", speaker='19')

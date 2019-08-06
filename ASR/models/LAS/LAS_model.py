@@ -121,6 +121,7 @@ class Speller(nn.Module):
             pred_y = torch.stack(pred_y, dim=1); #print("pred_y", pred_y.shape)
         
         else:
+            y_tokens = []
             for step in range(self.max_label_len):
                 context, attention_score = self.attention(hidden_states[-1].unsqueeze(1), listener_feature); #print("Context", context.shape)
                 rnn_input = torch.cat([y[:,step,:], context.squeeze(1)], dim=1); #print("rnn_input", rnn_input.shape)
@@ -135,10 +136,12 @@ class Speller(nn.Module):
                 pred_y.append(logits);
                 pred_token = torch.softmax(logits, dim=1).max(1)[1]; #print(pred_token)
                 y = torch.cat([y, self.embed(pred_token).unsqueeze(1)], dim=1)
+                y_tokens.append(pred_token.item())
                 if pred_token.item() == 2:
                     break
             pred_y = torch.stack(pred_y, dim=1); print("pred_y", pred_y.shape)
             pred_y = torch.softmax(pred_y, dim=2).max(2)[1]
+            pred_y = (pred_y, y_tokens)
         
         return pred_y
     

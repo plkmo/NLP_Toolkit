@@ -5,8 +5,9 @@ Library containing state-of-the-art models for Natural Language Processing tasks
 1. Classification
 2. Automatic Speech Recognition
 3. Text Summarization
+4. Machine Translation
 
-## Classification
+## 1) Classification
 The goal of classification is to segregate documents into appropriate classes based on their text content. Currently, the classification toolkit uses text-based Graph Convolution Networks (GCN) and Bidirectional Encoder Representations from Transformers (BERT).
 
 ### Format of datasets files
@@ -37,8 +38,9 @@ classify.py [-h]
 ```
 The script outputs a results.csv file containing the indexes of the documents in infer.csv and their corresponding predicted labels.
 
-## Automatic Speech Recognition
+## 2) Automatic Speech Recognition
 Automatic Speech Recognition (ASR) aims to convert audio signals into text. This library contains the following models for ASR: Speech-Transformer, Listen-Attend-Spell (LAS).
+
 ### Format of dataset files
 The folder containing the dataset should have the following structure: folder/speaker/chapter
 Within the chapter subdirectory, the audio files (in .flac format) are named speaker-chapter-file_id (file_id In running order)
@@ -46,3 +48,13 @@ The transcript .txt file for the files within the chapter should be located in t
 
 ### Running the model
 Run speech.py with arguments below
+
+## 3) Summarization
+Text summarization aims to distill a paragraph chunk into a few sentences that capture the essential information. This library contains the following models for text summarization: Convolutional Transformer, Seq2Seq (LAS architecture)
+
+### Format of dataset files
+
+## 4) Machine Translation
+The goal of machine translation is to translate text from one form of language to another. This library contains the Transformer model to accomplish this.
+
+### Format of dataset files

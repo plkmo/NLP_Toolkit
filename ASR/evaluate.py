@@ -4,6 +4,7 @@ Created on Fri Jul 19 13:51:35 2019
 
 @author: WT
 """
+import os
 import pandas as pd
 import numpy as np
 import torch
@@ -19,7 +20,7 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
 logger = logging.getLogger('__file__')
 
 
-def infer(file_path):
+def infer(file_path, speaker=None):
     args = load_pickle("args.pkl")
     args.batch_size = 1
     
@@ -57,7 +58,11 @@ def infer(file_path):
             feature[idx, :, :] = (feature[idx, :, :] - mu)/std
         return feature
     
-    df["features"] = df.apply(lambda x: speaker_norm(x["features"], (channel_mu, channel_std)), axis=1)
+    if os.path.isfile("./data/speaker_stats.pkl") and (speaker != None):
+        speaker_stats = load_pickle("speaker_stats.pkl")
+        df["features"] = df.apply(lambda x: speaker_norm(x["features"], speaker_stats[speaker]), axis=1)
+    else:
+        df["features"] = df.apply(lambda x: speaker_norm(x["features"], (channel_mu, channel_std)), axis=1)
     
     inferset = padded_dataset(df, args, labels=False)
     infer_loader = DataLoader(inferset, batch_size=args.batch_size, shuffle=False, \

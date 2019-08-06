@@ -161,6 +161,7 @@ def get_mfcc_data(args):
             channel_mu.append(f_list.mean())
             channel_std.append(f_list.std())
         speaker_stats[speaker] = (channel_mu, channel_std)
+    save_as_pickle("speaker_stats.pkl", speaker_stats)
     
     logger.info("Normalizing...")
     def speaker_norm(feature, stats):

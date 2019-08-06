@@ -132,12 +132,12 @@ class Speller(nn.Module):
                         hidden_states[layer], c_states[layer] = self.rnn[layer](hidden_states[layer-1], (hidden_states[layer], c_states[layer]))
                 
                 logits = self.character_distribution(torch.cat([hidden_states[-1], context.squeeze(1)], dim=1)); #print("logits", logits.shape)
-                pred_y.append(logits)
+                pred_y.append(logits);
                 pred_token = torch.softmax(logits, dim=1).max(1)[1]; #print(pred_token)
                 y = torch.cat([y, self.embed(pred_token).unsqueeze(1)], dim=1)
                 if pred_token.item() == 2:
                     break
-            pred_y = torch.stack(pred_y, dim=1); #print("pred_y", pred_y.shape)
+            pred_y = torch.stack(pred_y, dim=1); print("pred_y", pred_y.shape)
             pred_y = torch.softmax(pred_y, dim=2).max(2)[1]
         
         return pred_y

@@ -19,3 +19,5 @@
 /summarization/__pycache__/*
 /summarization/models/__pycache__/*
 /summarization/utils/__pycache__/*
+/translation/__pycache__/*
+/translation/Transformer/__pycache__/*

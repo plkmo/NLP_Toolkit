@@ -6,12 +6,11 @@ Created on Tue Aug  6 14:26:00 2019
 """
 import os
 import torch
-import torch.nn as nn
-import torch.optim as optim
 from torch.nn.utils import clip_grad_norm_
-from .models.Transformer import Transformer, create_masks
-from .train_funcs import load_dataloaders, load_state, load_results, evaluate_results
-from .utils import CosineWithRestarts, save_as_pickle
+from .models.Transformer.Transformer import create_masks
+from .train_funcs import load_model_and_optimizer, load_results, evaluate_results, decode_outputs
+from .preprocessing_funcs import load_dataloaders
+from .utils import save_as_pickle
 import matplotlib.pyplot as plt
 import logging
 
@@ -26,10 +25,17 @@ def train_and_fit(args):
     trg_vocab = len(FR.vocab)
     
     cuda = torch.cuda.is_available()
-    net = Transformer(src_vocab=src_vocab, trg_vocab=trg_vocab, d_model=args.d_model, num=args.num, n_heads=args.n_heads)
+    net, criterion, optimizer, scheduler, start_epoch, acc = load_model_and_optimizer(args, src_vocab, \
+                                                                                      trg_vocab, cuda)
+    '''
+    net = Transformer(src_vocab=src_vocab, trg_vocab=trg_vocab, d_model=args.d_model, ff_dim=args.ff_dim,\
+                      num=args.num, n_heads=args.n_heads, max_encoder_len=args.max_encoder_len,\
+                      max_decoder_len=args.max_decoder_len)
+    
     for p in net.parameters():
         if p.dim() > 1:
             nn.init.xavier_uniform_(p)
+            
     criterion = nn.CrossEntropyLoss(reduction="mean", ignore_index=1)
     optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
     #scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10,20,30,40,50,100,200], gamma=0.7)
@@ -37,10 +43,12 @@ def train_and_fit(args):
     if cuda:
         net.cuda()
     start_epoch, acc = load_state(net, optimizer, scheduler, args.model_no, load_best=False)
+    '''
+    
     losses_per_epoch, accuracy_per_epoch = load_results(model_no=args.model_no)
     
     logger.info("Starting training process...")
-    batch_update = 300
+    batch_update = int(train_length/(args.batch_size*10))
     
     for e in range(start_epoch, args.num_epochs):
         net.train()
@@ -72,8 +80,13 @@ def train_and_fit(args):
         accuracy_per_epoch.append(evaluate_results(net, train_iter, cuda))
         print("Losses at Epoch %d: %.7f" % (e, losses_per_epoch[-1]))
         print("Accuracy at Epoch %d: %.7f" % (e, accuracy_per_epoch[-1]))
+        decode_outputs(outputs, labels, FR)
         if accuracy_per_epoch[-1] > acc:
             acc = accuracy_per_epoch[-1]
+            net.save_state(epoch=(e+1), optimizer=optimizer, scheduler=scheduler, best_acc=acc,\
+                           path=os.path.join("./data/" ,\
+                    "test_model_best_%d.pth.tar" % args.model_no))
+            '''
             torch.save({
                     'epoch': e + 1,\
                     'state_dict': net.state_dict(),\
@@ -82,9 +95,14 @@ def train_and_fit(args):
                     'scheduler' : scheduler.state_dict(),\
                 }, os.path.join("./data/" ,\
                     "test_model_best_%d.pth.tar" % args.model_no))
+            '''
         if (e % 1) == 0:
             save_as_pickle("test_losses_per_epoch_%d.pkl" % args.model_no, losses_per_epoch)
             save_as_pickle("test_accuracy_per_epoch_%d.pkl" % args.model_no, accuracy_per_epoch)
+            net.save_state(epoch=(e+1), optimizer=optimizer, scheduler=scheduler, best_acc=acc,\
+                           path=os.path.join("./data/" ,\
+                    "test_checkpoint_%d.pth.tar" % args.model_no))
+            '''
             torch.save({
                     'epoch': e + 1,\
                     'state_dict': net.state_dict(),\
@@ -93,6 +111,7 @@ def train_and_fit(args):
                     'scheduler' : scheduler.state_dict(),\
                 }, os.path.join("./data/",\
                     "test_checkpoint_%d.pth.tar" % args.model_no))
+            '''
     
     logger.info("Finished training")
     fig = plt.figure(figsize=(13,13))

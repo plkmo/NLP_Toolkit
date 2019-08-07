@@ -8,11 +8,10 @@ import os
 import logging
 from tqdm import tqdm
 import torch
-import torchtext
-from torchtext.data import BucketIterator
-from .utils import save_as_pickle, load_pickle
-from .models import create_masks
-from .preprocessing_funcs import tokenize_data
+import torch.nn as nn
+import torch.optim as optim
+from .utils import load_pickle, CosineWithRestarts
+from .models.Transformer.Transformer import Transformer, create_masks
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
@@ -21,30 +20,40 @@ logger = logging.getLogger('__file__')
 def dum_tokenizer(sent):
     return sent.split()
 
-def load_dataloaders(args):
-    logger.info("Preparing dataloaders...")
-    FR = torchtext.data.Field(tokenize=dum_tokenizer, lower=True, init_token="<sos>", eos_token="<eos>",\
-                              batch_first=True)
-    EN = torchtext.data.Field(tokenize=dum_tokenizer, lower=True, batch_first=True)
+def load_model_and_optimizer(args, src_vocab, trg_vocab, cuda):
+    '''Loads the model based on provided arguments and parameters'''
+    logger.info("Initializing model...")
+    net = Transformer(src_vocab=src_vocab, trg_vocab=trg_vocab, d_model=args.d_model, ff_dim=args.ff_dim,\
+                      num=args.num, n_heads=args.n_heads, max_encoder_len=args.max_encoder_len,\
+                      max_decoder_len=args.max_decoder_len)
+        
+    for p in net.parameters():
+        if p.dim() > 1:
+            nn.init.xavier_uniform_(p)
+            
+    criterion = nn.CrossEntropyLoss(reduction="mean", ignore_index=1)
+    optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
+    #scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10,20,30,40,50,100,200], gamma=0.7)
+    scheduler = CosineWithRestarts(optimizer, T_max=330)
     
-    train_path = os.path.join("./data/", "df.csv")
-    if not os.path.isfile(train_path):
-        tokenize_data()
-    train = torchtext.data.TabularDataset(train_path, format="csv", \
-                                             fields=[("EN", EN), ("FR", FR)])
-    FR.build_vocab(train)
-    EN.build_vocab(train)
-    train_iter = BucketIterator(train, batch_size=args.batch_size, repeat=False, sort_key=lambda x: (len(x["EN"]), len(x["FR"])),\
-                                shuffle=True, train=True)
-    train_length = len(train)
-    return train_iter, FR, EN, train_length
+    model = Transformer
+    model, loaded_optimizer, loaded_scheduler, start_epoch, acc = load_state(model, args, load_best=False, load_scheduler=False)
 
-def load_state(net, optimizer, scheduler, model_no=0, load_best=False):
+    if start_epoch != 0:
+        net = model; optimizer = loaded_optimizer; scheduler = loaded_scheduler
+    if cuda:
+        net.cuda()
+    logger.info("Done setting up model, optimizer and scheduler.")
+   
+    return net, criterion, optimizer, scheduler, start_epoch, acc
+
+def load_state(net, args, load_best=False, load_scheduler=False):
     """ Loads saved model and optimizer states if exists """
     base_path = "./data/"
-    checkpoint_path = os.path.join(base_path,"test_checkpoint_%d.pth.tar" % model_no)
-    best_path = os.path.join(base_path,"test_model_best_%d.pth.tar" % model_no)
+    checkpoint_path = os.path.join(base_path,"test_checkpoint_%d.pth.tar" % args.model_no)
+    best_path = os.path.join(base_path,"test_model_best_%d.pth.tar" % args.model_no)
     start_epoch, best_pred, checkpoint = 0, 0, None
+    optimizer, scheduler = None, None
     if (load_best == True) and os.path.isfile(best_path):
         checkpoint = torch.load(best_path)
         logger.info("Loaded best model.")
@@ -54,11 +63,17 @@ def load_state(net, optimizer, scheduler, model_no=0, load_best=False):
     if checkpoint != None:
         start_epoch = checkpoint['epoch']
         best_pred = checkpoint['best_acc']
-        net.load_state_dict(checkpoint['state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer'])
-        scheduler.load_state_dict(checkpoint['scheduler'])
+        if load_best:
+            net = net.load_model(best_path)
+        else:
+            net = net.load_model(checkpoint_path)
+        optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
+        scheduler = CosineWithRestarts(optimizer, T_max=350)
+        if load_scheduler:
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            scheduler.load_state_dict(checkpoint['scheduler'])
         logger.info("Loaded model and optimizer.")    
-    return start_epoch, best_pred
+    return net, optimizer, scheduler, start_epoch, best_pred
 
 def load_results(model_no=0):
     """ Loads saved results if exists """
@@ -97,4 +112,13 @@ def evaluate_results(net, data_loader, cuda):
             outputs = outputs.view(-1, outputs.size(-1))
             acc += evaluate(outputs, labels)
     return acc/(i + 1)
+
+def decode_outputs(outputs, labels, trg_vocab_obj):
+    l = list(labels[:50].cpu().numpy())
+    if outputs.is_cuda:
+        o = list(torch.softmax(outputs, dim=1).max(1)[1][:50].cpu().numpy())
+    else:
+        o = list(torch.softmax(outputs, dim=1).max(1)[1][:50].numpy())
+    print("Sample Output: ", " ".join(trg_vocab_obj.vocab.itos[i] for i in o))
+    print("Sample Label: ", " ".join(trg_vocab_obj.vocab.itos[i] for i in l))
     

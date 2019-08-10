@@ -25,7 +25,7 @@ if __name__=="__main__":
     parser.add_argument("--n_heads", type=int, default=8, help="Number of attention heads")
     parser.add_argument("--max_encoder_len", type=int, default=80, help="Max src length")
     parser.add_argument("--max_decoder_len", type=int, default=80, help="Max trg length")
-    parser.add_argument("--lr", type=float, default=0.0003, help="learning rate")
+    parser.add_argument("--lr", type=float, default=0.00007, help="learning rate")
     parser.add_argument("--gradient_acc_steps", type=int, default=1, help="Number of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
     parser.add_argument("--model_no", type=int, default=0, help="Model ID")

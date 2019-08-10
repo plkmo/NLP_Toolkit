@@ -12,6 +12,7 @@
 /classification/models/__pycache__/*
 /classification/models/GCN/__pycache__/*
 /classification/models/BERT/__pycache__/*
+/classification/models/XLNet/__pycache__/*
 /ASR/__pycache__/*
 /ASR/models/__pycache__/*
 /ASR/models/LAS/__pycache__/*

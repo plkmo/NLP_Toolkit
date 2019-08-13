@@ -7,7 +7,7 @@ Created on Tue Aug  6 14:26:00 2019
 import os
 import torch
 from torch.nn.utils import clip_grad_norm_
-from .models.Transformer.Transformer import create_masks
+#from .models.Transformer.Transformer import create_masks
 from .train_funcs import load_model_and_optimizer, load_results, evaluate_results, decode_outputs
 from .preprocessing_funcs import load_dataloaders
 from .utils import save_as_pickle
@@ -18,15 +18,21 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger('__file__')
 
-def train_and_fit(args):
-
+def train_and_fit(args, pytransformer=False):
+    
+    if pytransformer:
+        from .models.Transformer.py_Transformer import create_masks
+    else:
+        from .models.Transformer.Transformer import create_masks
+        
     train_iter, FR, EN, train_length = load_dataloaders(args)
     src_vocab = len(EN.vocab)
     trg_vocab = len(FR.vocab)
     
     cuda = torch.cuda.is_available()
     net, criterion, optimizer, scheduler, start_epoch, acc = load_model_and_optimizer(args, src_vocab, \
-                                                                                      trg_vocab, cuda)
+                                                                                      trg_vocab, cuda,\
+                                                                                      pytransformer)
     '''
     net = Transformer(src_vocab=src_vocab, trg_vocab=trg_vocab, d_model=args.d_model, ff_dim=args.ff_dim,\
                       num=args.num, n_heads=args.n_heads, max_encoder_len=args.max_encoder_len,\
@@ -77,7 +83,7 @@ def train_and_fit(args):
                       (e, (i + 1)*args.batch_size, train_length, losses_per_batch[-1]))
                 total_loss = 0.0
         losses_per_epoch.append(sum(losses_per_batch)/len(losses_per_batch))
-        accuracy_per_epoch.append(evaluate_results(net, train_iter, cuda))
+        accuracy_per_epoch.append(evaluate_results(net, train_iter, create_masks, cuda))
         print("Losses at Epoch %d: %.7f" % (e, losses_per_epoch[-1]))
         print("Accuracy at Epoch %d: %.7f" % (e, accuracy_per_epoch[-1]))
         decode_outputs(outputs, labels, FR)

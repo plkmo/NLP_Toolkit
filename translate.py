@@ -34,5 +34,5 @@ if __name__=="__main__":
     
     save_as_pickle("args.pkl", args)
     
-    train_and_fit(args)
+    train_and_fit(args, pytransformer=False)
     #infer(args, True)

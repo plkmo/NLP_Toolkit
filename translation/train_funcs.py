@@ -11,7 +11,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from .utils import load_pickle, CosineWithRestarts
-from .models.Transformer.Transformer import Transformer, create_masks
+#from .models.Transformer.Transformer import Transformer, create_masks
+#from .models.Transformer.py_Transformer import pyTransformer as Transformer, create_masks
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
@@ -20,9 +21,15 @@ logger = logging.getLogger('__file__')
 def dum_tokenizer(sent):
     return sent.split()
 
-def load_model_and_optimizer(args, src_vocab, trg_vocab, cuda):
+def load_model_and_optimizer(args, src_vocab, trg_vocab, cuda, pytransformer=False):
     '''Loads the model based on provided arguments and parameters'''
     logger.info("Initializing model...")
+    
+    if pytransformer:
+        from .models.Transformer.py_Transformer import pyTransformer as Transformer
+    else:
+        from .models.Transformer.Transformer import Transformer
+        
     net = Transformer(src_vocab=src_vocab, trg_vocab=trg_vocab, d_model=args.d_model, ff_dim=args.ff_dim,\
                       num=args.num, n_heads=args.n_heads, max_encoder_len=args.max_encoder_len,\
                       max_decoder_len=args.max_decoder_len)
@@ -96,7 +103,7 @@ def evaluate(output, labels):
     else:
         return (labels[idxs] == o_labels[idxs]).sum().item()
 
-def evaluate_results(net, data_loader, cuda):
+def evaluate_results(net, data_loader, create_masks, cuda):
     acc = 0
     print("Evaluating...")
     with torch.no_grad():

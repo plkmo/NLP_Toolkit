@@ -6,32 +6,22 @@ Created on Tue Aug 13 13:01:15 2019
 """
 
 import torch
-from torch.autograd import Variable
-import numpy as np
 import torch.nn as nn
 
 ### create masks for src & trg sequences
 def create_masks(src, trg):
-    src_mask = (src != 1).unsqueeze(-2)
-    src_mask = src_mask.masked_fill(src_mask == 0, float('-inf'))
+    src_mask = (src == 1).unsqueeze(-2).bool()
     if trg is not None:
-        trg_mask = (trg != 1).unsqueeze(-2)
-        np_mask = np.triu(np.ones((1, trg.size(1),trg.size(1))),k=1).astype(float)
-        np_mask = Variable(torch.from_numpy(np_mask) == 0)
-        trg_mask = trg_mask & np_mask
-        trg_mask = trg_mask.masked_fill(trg_mask == 0, float('-inf'))
+        trg_mask = (trg == 1).unsqueeze(-2).bool()
     else:
         trg_mask = None
+    src_mask = src_mask[:,0,:]
+    trg_mask = trg_mask[:,0,:]
     return src_mask, trg_mask
 
 def create_trg_mask(trg, cuda):
-    trg_mask = (trg != 1).unsqueeze(-2)
-    np_mask = np.triu(np.ones((1, trg.size(1),trg.size(1))),k=1).astype(float)
-    np_mask = Variable(torch.from_numpy(np_mask) == 0)
-    if cuda:
-        np_mask = np_mask.cuda()
-    trg_mask = trg_mask & np_mask
-    trg_mask = trg_mask.masked_fill(trg_mask == 0, float('-inf'))
+    trg_mask = (trg == 1).unsqueeze(-2).bool()
+    trg_mask = trg_mask[:,0,:]
     return trg_mask
 
 class pyTransformer(nn.Module):
@@ -53,9 +43,17 @@ class pyTransformer(nn.Module):
         self.fc1 = nn.Linear(d_model, trg_vocab)
     
     def forward(self, src, trg, src_mask, trg_mask=None, infer=False, trg_vocab_obj=None):
+        #print(src[0,:], trg[0,:])
         src = self.embed1(src)
         trg = self.embed2(trg)
-        out = self.transformer(src, trg, src_mask, trg_mask)
+        src = src.permute(1,0,2)
+        trg = trg.permute(1,0,2)
+        out = self.transformer(src, trg, src_key_padding_mask=src_mask, \
+                               tgt_key_padding_mask=trg_mask)
+        out = out.permute(1,0,2)
+        out = self.fc1(out)
+        #print(out.shape)
+        #print(out[0,:,:])
         return out
     
     @classmethod # src_vocab, trg_vocab, d_model, num, n_heads

@@ -67,7 +67,8 @@ def train_and_fit(args, pytransformer=False):
                 data.EN = data.EN.cuda(); trg_input = trg_input.cuda(); labels = labels.cuda()
                 src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda()
             outputs = net(data.EN, trg_input, src_mask, trg_mask)
-            outputs = outputs.view(-1, outputs.size(-1))
+            outputs = outputs.contiguous().view(-1, outputs.size(-1))
+            
             loss = criterion(outputs, labels)
             loss = loss/args.gradient_acc_steps
             loss.backward(); #break;break

@@ -8,7 +8,10 @@ Library containing state-of-the-art models for Natural Language Processing tasks
 4. Machine Translation
 
 ## 1) Classification
-The goal of classification is to segregate documents into appropriate classes based on their text content. Currently, the classification toolkit uses text-based Graph Convolution Networks (GCN) and Bidirectional Encoder Representations from Transformers (BERT).
+The goal of classification is to segregate documents into appropriate classes based on their text content. Currently, the classification toolkit uses the following models:
+1. Text-based Graph Convolution Networks (GCN)
+2. Bidirectional Encoder Representations from Transformers (BERT)
+3. XLNet
 
 ### Format of datasets files
 The training data (default: train.csv) should be formatted into two columns “text” and “label” respectively, with rows being the documents index. “text” contains the raw text and “label” contains the corresponding label (integers 0, 1, 2… depending on the number of classes)
@@ -39,7 +42,9 @@ classify.py [-h]
 The script outputs a results.csv file containing the indexes of the documents in infer.csv and their corresponding predicted labels.
 
 ## 2) Automatic Speech Recognition
-Automatic Speech Recognition (ASR) aims to convert audio signals into text. This library contains the following models for ASR: Speech-Transformer, Listen-Attend-Spell (LAS).
+Automatic Speech Recognition (ASR) aims to convert audio signals into text. This library contains the following models for ASR: 
+1. Speech-Transformer
+2. Listen-Attend-Spell (LAS)
 
 ### Format of dataset files
 The folder containing the dataset should have the following structure: folder/speaker/chapter
@@ -74,7 +79,9 @@ speech.py [-h]
 
 
 ## 3) Summarization
-Text summarization aims to distill a paragraph chunk into a few sentences that capture the essential information. This library contains the following models for text summarization: Convolutional Transformer, Seq2Seq (LAS architecture)
+Text summarization aims to distill a paragraph chunk into a few sentences that capture the essential information. This library contains the following models for text summarization: 
+1. Convolutional Transformer 
+2. Seq2Seq (LAS architecture)
 
 ### Format of dataset files
 One .csv file for each text/summary pair. Within the text/summary .csv file, text is followed by summary, with summary points annotated by @highlights (summary) 
@@ -104,7 +111,8 @@ summarize.py [-h]
 ```
 
 ## 4) Machine Translation
-The goal of machine translation is to translate text from one form of language to another. This library contains the Transformer model to accomplish this.
+The goal of machine translation is to translate text from one form of language to another. This library contains the following models to accomplish this:
+1. Transformer
 
 ### Format of dataset files
 A source .txt file with each line containing the text/sentence to be translated, and a target .txt file with each line containing the corresponding translated text/sentence

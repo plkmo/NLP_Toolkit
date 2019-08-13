@@ -21,7 +21,8 @@ Run classify.py with arguments below.
 ```bash
 classify.py [-h] 
 	[--train_data TRAIN_DATA (default: "./data/train.csv")] 
-	[--infer_data INFER_DATA (default: "./data/infer.csv")]            	[--max_vocab_len MAX_VOCAB_LEN (default: 7000)]  
+	[--infer_data INFER_DATA (default: "./data/infer.csv")]            	
+	[--max_vocab_len MAX_VOCAB_LEN (default: 7000)]  
 	[--hidden_size_1 HIDDEN_SIZE_1 (default: 330)]
 	[--hidden_size_2 HIDDEN_SIZE_2 (default: 130)]
 	[--tokens_length TOKENS_LENGTH (default: 200)] 

@@ -112,9 +112,10 @@ def get_CNN_data(args, load_extracted=True):
                                                   axis=1)
         df.loc[:, "highlights"] = df.apply(lambda x: next(encoder.transform(list(" ".join(t for t in x["highlights"])))),\
                                               axis=1)
+        '''
         df.loc[:, "highlights"] = df.apply(lambda x: pad_sos_eos(x["highlights"], encoder.word_vocab["__sos"], encoder.word_vocab["__eos"]),\
                                               axis=1)
-        '''
+        
         save_as_pickle("df_encoded_CNN.pkl", df)
         encoder.save("./data/vocab.pkl")
     return df

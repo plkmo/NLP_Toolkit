@@ -35,6 +35,6 @@ if __name__=="__main__":
     save_as_pickle("args.pkl", args)
     
     '''PyTorch's transformer module runs much slower'''
-    #train_and_fit(args, pytransformer=False)
+    train_and_fit(args, pytransformer=False)
     
-    infer(args, True)
+    #infer(args, True)

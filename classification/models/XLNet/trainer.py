@@ -41,7 +41,7 @@ def train_and_fit(args):
     optimizer = optim.Adam([{"params":net.transformer.parameters(),"lr": args.lr/10},\
                              {"params":net.sequence_summary.parameters(), "lr": args.lr},\
                              {"params":net.logits_proj.parameters(), "lr": args.lr}])
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20,40,80,120,150,180,200], gamma=0.8)
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2,4,6,8,12,15,20,25], gamma=0.8)
     
     start_epoch, best_pred = load_state(net, optimizer, scheduler, args, load_best=False)    
     losses_per_epoch, accuracy_per_epoch = load_results(args)
@@ -86,7 +86,7 @@ def train_and_fit(args):
                     'optimizer' : optimizer.state_dict(),\
                     'scheduler' : scheduler.state_dict(),\
                 }, os.path.join("./data/" , "test_model_best_%d.pth.tar" % args.model_no))
-        if (epoch % 2) == 0:
+        if (epoch % 1) == 0:
             save_as_pickle("test_losses_per_epoch_%d.pkl" % args.model_no, losses_per_epoch)
             save_as_pickle("test_accuracy_per_epoch_%d.pkl" % args.model_no, accuracy_per_epoch)
             torch.save({

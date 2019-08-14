@@ -44,10 +44,10 @@ def create_masks(src, trg, f_len, args):
         src_mask[i, :, int(src_ratio*final_len):] = 0
     #src_mask = (src != 0).float().mean(dim=2).long().unsqueeze(1)
     if trg is not None:
-        trg_mask = (trg != 1).unsqueeze(-2)
+        trg_mask = (trg != 1).unsqueeze(-2); print(trg_mask)
         np_mask = np.triu(np.ones((1, trg.size(1),trg.size(1))),k=1).astype('uint8')
-        np_mask = Variable(torch.from_numpy(np_mask) == 0)
-        trg_mask = trg_mask & np_mask
+        np_mask = Variable(torch.from_numpy(np_mask) == 0); print(np_mask)
+        trg_mask = trg_mask & np_mask; print(trg_mask)
     else:
         trg_mask = None
     return src_mask, trg_mask
@@ -303,6 +303,8 @@ class SpeechTransformer(nn.Module):
         else:
             for i in range(self.max_decoder_len):
                 trg_mask = create_trg_mask(trg, src.is_cuda)
+                #print(trg_mask.shape)
+                #print(trg_mask)
                 g_mask2 = create_window_mask(trg.shape[1], window_len=11).float()
                 if src.is_cuda:
                     g_mask2 = g_mask2.cuda()

@@ -9,10 +9,11 @@ import pandas as pd
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from .preprocessing_funcs import extract_feature, padded_dataset
+from .preprocessing_funcs import extract_feature, padded_dataset, load_dataloaders
 from .models.Transformer.transformer_model import create_masks
 from .train_funcs import load_model_and_optimizer
 from .utils import load_pickle
+import time
 import logging
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
@@ -20,7 +21,7 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
 logger = logging.getLogger('__file__')
 
 
-def infer(file_path, speaker=None):
+def infer(file_path=None, speaker=None):
     args = load_pickle("args.pkl")
     args.batch_size = 1
     
@@ -37,37 +38,41 @@ def infer(file_path, speaker=None):
     elif args.model_no == 1:
         args.max_seq_len = 100
     
-    logger.info("Loading data...")
-    features, original_len = extract_feature(file_path, args)
-    df = pd.DataFrame(data=[(features, original_len)], columns=['features', 'features_len'])
-    
-    logger.info("Normalizing...")
-    channel_mu = []; channel_std = []
-    for channel in range(3):
-        f_list = []
-        for row, l in zip(df["features"], df["features_len"]):
-            row = row[:,:,:int(l)]
-            f_list.extend(list(row[channel].reshape(-1)))
-        f_list = np.array(f_list)
-        channel_mu.append(f_list.mean())
-        channel_std.append(f_list.std())
+    if file_path is not None:
+        logger.info("Loading data from file...")
+        features, original_len = extract_feature(file_path, args)
+        df = pd.DataFrame(data=[(features, original_len)], columns=['features', 'features_len'])
         
-    def speaker_norm(feature, stats):
-        channel_mu, channel_std = stats
-        for idx, (mu, std) in enumerate(zip(channel_mu, channel_std)):
-            feature[idx, :, :] = (feature[idx, :, :] - mu)/std
-        return feature
-    
-    if os.path.isfile("./data/speaker_stats.pkl") and (speaker != None):
-        logger.info("Normalizing from speaker stats...")
-        speaker_stats = load_pickle("speaker_stats.pkl")
-        df["features"] = df.apply(lambda x: speaker_norm(x["features"], speaker_stats[speaker]), axis=1)
+        logger.info("Normalizing...")
+        channel_mu = []; channel_std = []
+        for channel in range(3):
+            f_list = []
+            for row, l in zip(df["features"], df["features_len"]):
+                row = row[:,:,:int(l)]
+                f_list.extend(list(row[channel].reshape(-1)))
+            f_list = np.array(f_list)
+            channel_mu.append(f_list.mean())
+            channel_std.append(f_list.std())
+            
+        def speaker_norm(feature, stats):
+            channel_mu, channel_std = stats
+            for idx, (mu, std) in enumerate(zip(channel_mu, channel_std)):
+                feature[idx, :, :] = (feature[idx, :, :] - mu)/std
+            return feature
+        
+        if os.path.isfile("./data/speaker_stats.pkl") and (speaker != None):
+            logger.info("Normalizing from speaker stats...")
+            speaker_stats = load_pickle("speaker_stats.pkl")
+            df["features"] = df.apply(lambda x: speaker_norm(x["features"], speaker_stats[speaker]), axis=1)
+        else:
+            df["features"] = df.apply(lambda x: speaker_norm(x["features"], (channel_mu, channel_std)), axis=1)
+        inferset = padded_dataset(df, args, labels=False)
+        infer_loader = DataLoader(inferset, batch_size=args.batch_size, shuffle=False, \
+                                  num_workers=0, pin_memory=False)
     else:
-        df["features"] = df.apply(lambda x: speaker_norm(x["features"], (channel_mu, channel_std)), axis=1)
-    
-    inferset = padded_dataset(df, args, labels=False)
-    infer_loader = DataLoader(inferset, batch_size=args.batch_size, shuffle=False, \
-                              num_workers=0, pin_memory=False)
+        logger.info("Loading data from training dataset...")
+        train_loader, train_length, max_features_length, max_seq_length = load_dataloaders(args)
+        infer_loader = train_loader
     
     net.eval()
     outputs2 = None
@@ -77,11 +82,13 @@ def infer(file_path, speaker=None):
                 src_input, trg_input, f_len = data[0], data[1][:, :-1], data[2]
                 labels = data[1][:,1:].contiguous().view(-1)
                 src_mask, trg_mask = create_masks(src_input, trg_input, f_len, args)
+                #print(trg_mask.shape)
+                #print(trg_mask)
                 if cuda:
                     src_input = src_input.cuda().float(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
                     src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda()
-                print("Masks")
-                print(src_input.shape, trg_input[:,0].unsqueeze(0).shape, src_mask.shape, trg_mask.shape, g_mask1.shape, g_mask2.shape)
+                #print("Masks")
+                #print(src_input.shape, trg_input[:,0].unsqueeze(0).shape, src_mask.shape, trg_mask.shape, g_mask1.shape, g_mask2.shape)
                 outputs = net(src_input, trg_input[:,0].unsqueeze(0), src_mask, trg_mask, g_mask1, g_mask2, infer=True)
                 
             elif args.model_no == 1:
@@ -100,10 +107,10 @@ def infer(file_path, speaker=None):
             ground_truth = vocab.convert_idx2w(labels)
             if outputs2 is not None:
                 translated2 = vocab.convert_idx2w(outputs2)
-            print("Translated: ")
+            print("\nTranslated: ")
             print("".join(w for w in translated if w not in ["<eos>", "<pad>"]))
             if outputs2 is not None:
                 print("".join(w for w in translated2 if w not in ["<eos>", "<pad>"]))
             print("Ground truth: ")
             print("".join(w for w in ground_truth if w not in ["<eos>", "<pad>"]))
-            break
+            time.sleep(7)

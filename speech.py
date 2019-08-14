@@ -40,4 +40,5 @@ if __name__ == "__main__":
     save_as_pickle("args.pkl", args)
     
     #train_and_fit(args)
-    infer(file_path="./data/train-clean-5/19/198/19-198-0008.flac", speaker='19')
+    #infer(file_path="./data/train-clean-5/19/198/19-198-0008.flac", speaker='19')
+    infer()

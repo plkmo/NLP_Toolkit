@@ -7,7 +7,7 @@ Created on Sat Aug 10 08:01:27 2019
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss, MSELoss
 from pytorch_transformers.modeling_utils import (SequenceSummary, add_start_docstrings)
-from pytorch_transformer.modeling_xlnet import XLNetPreTrainedModel, XLNetModel
+from pytorch_transformers.modeling_xlnet import XLNetPreTrainedModel, XLNetModel
 
 XLNET_START_DOCSTRING = r"""    The XLNet model was proposed in
     `XLNet: Generalized Autoregressive Pretraining for Language Understanding`_

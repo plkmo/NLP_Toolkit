@@ -11,7 +11,7 @@ import torch.optim as optim
 from torch.nn.utils import clip_grad_norm_
 from .preprocessing_funcs import save_as_pickle, load_pickle
 from .train_funcs import load_dataloaders, load_state, load_results, model_eval, infer
-from .BERT import BertForSequenceClassification
+#from .BERT import BertForSequenceClassification
 from .XLNet import XLNetForSequenceClassification
 #from pytorch_transformers import XLNetForSequenceClassification
 import matplotlib.pyplot as plt
@@ -26,20 +26,21 @@ def train_and_fit(args):
     
     train_loader, test_loader, train_len = load_dataloaders(args)
     
-    net = XLNetForSequenceClassification.from_pretrained('xlnet-base-cased')
-    net = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=args.num_classes)
+    net = XLNetForSequenceClassification.from_pretrained('xlnet-base-cased', num_labels=args.num_classes)
+    #net = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=args.num_classes)
     if cuda:
         net.cuda()
         
     ### freeze all layers except for last encoder layer and classifier layer
     logger.info("FREEZING MOST HIDDEN LAYERS...")
     for name, param in net.named_parameters():
-        if ("classifier" not in name) and ("bert.pooler" not in name) and ("bert.encoder.layer.11" not in name):
+        if ("sequence_summary" not in name) and ("logits_proj" not in name) and ("transformer.layer.11" not in name):
             param.requires_grad = False
        
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam([{"params":net.bert.parameters(),"lr": 0.0003},\
-                             {"params":net.classifier.parameters(), "lr": args.lr}])
+    optimizer = optim.Adam([{"params":net.transformer.parameters(),"lr": args.lr/10},\
+                             {"params":net.sequence_summary.parameters(), "lr": args.lr},\
+                             {"params":net.logits_proj.parameters(), "lr": args.lr}])
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20,40,80,120,150,180,200], gamma=0.8)
     
     start_epoch, best_pred = load_state(net, optimizer, scheduler, args, load_best=False)    
@@ -54,7 +55,7 @@ def train_and_fit(args):
             if cuda:
                 inputs, token_type, mask, labels = inputs.cuda(), token_type.cuda(), mask.cuda(), labels.cuda()
             inputs = inputs.long(); labels = labels.long()
-            outputs = net(inputs, token_type_ids=token_type, attention_mask=mask)
+            outputs, _ = net(inputs, token_type_ids=token_type, attention_mask=mask); #print(len(outputs))
             loss = criterion(outputs, labels)
             loss = loss/args.gradient_acc_steps
             loss.backward()

@@ -105,7 +105,7 @@ def model_eval(net, test_loader, cuda=None):
             if cuda:
                 images, token_type, mask, labels = images.cuda(), token_type.cuda(), mask.cuda(), labels.cuda()
             images = images.long(); labels = labels.long()
-            outputs = net(images, token_type_ids=token_type, attention_mask=mask)
+            outputs, _ = net(images, token_type_ids=token_type, attention_mask=mask)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
@@ -124,7 +124,7 @@ def infer(infer_loader, net):
             if cuda:
                 inputs, token_type, mask = inputs.cuda(), token_type.cuda(), mask.cuda()
             inputs = inputs.long()
-            outputs = net(inputs, token_type_ids=token_type, attention_mask=mask)
+            outputs, _ = net(inputs, token_type_ids=token_type, attention_mask=mask)
             _, predicted = torch.max(outputs.data, 1)
             predicted = list(predicted.cpu().numpy()) if cuda else list(predicted.numpy())
             preds.extend(predicted)

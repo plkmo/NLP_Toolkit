@@ -8,6 +8,7 @@ Created on Wed Jul 31 14:04:38 2019
 from utils.misc import save_as_pickle
 from classification.models.GCN.trainer import train_and_fit as GCN
 from classification.models.BERT.trainer import train_and_fit as BERT
+from classification.models.XLNet.trainer import train_and_fit as XLNet
 import logging
 from argparse import ArgumentParser
 
@@ -41,7 +42,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
     parser.add_argument("--num_epochs", type=int, default=1700, help="No of epochs")
     parser.add_argument("--lr", type=float, default=0.0031, help="learning rate")
-    parser.add_argument("--model_no", type=int, default=0, help="Model ID: (0: Graph Convolution Network (GCN), 1: BERT, 2: XLNet)")
+    parser.add_argument("--model_no", type=int, default=2, help="Model ID: (0: Graph Convolution Network (GCN), 1: BERT, 2: XLNet)")
     args = parser.parse_args()
     save_as_pickle("args.pkl", args)
     
@@ -50,4 +51,4 @@ if __name__ == "__main__":
     elif args.model_no == 1:
         BERT(args)
     elif args.model_no == 2:
-        pass
+        XLNet(args)

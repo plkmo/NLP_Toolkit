@@ -139,7 +139,7 @@ class Speller(nn.Module):
                 y_tokens.append(pred_token.item())
                 if pred_token.item() == 2:
                     break
-            pred_y = torch.stack(pred_y, dim=1); print("pred_y", pred_y.shape)
+            pred_y = torch.stack(pred_y, dim=1); #print("pred_y", pred_y.shape)
             pred_y = torch.softmax(pred_y, dim=2).max(2)[1]
             pred_y = (pred_y, y_tokens)
         

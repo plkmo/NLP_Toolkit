@@ -40,7 +40,7 @@ def load_model_and_optimizer(args, vocab, max_features_length, max_seq_length, c
             
     criterion = nn.CrossEntropyLoss(ignore_index=1) # ignore padding tokens
     optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
-    scheduler = CosineWithRestarts(optimizer, T_max=350)
+    scheduler = CosineWithRestarts(optimizer, T_max=450)
     
     model = SpeechTransformer if (args.model_no == 0) else LAS
     model, loaded_optimizer, loaded_scheduler, start_epoch, acc = load_state(model, args, load_best=False, load_scheduler=False)
@@ -60,10 +60,12 @@ def load_model_and_optimizer(args, vocab, max_features_length, max_seq_length, c
             g_mask1 = create_window_mask(int(args.max_frame_len/4), window_len=137).float()
         else:
             g_mask1 = create_window_mask(int(args.max_frame_len/4) + 1, window_len=137).float()
-        g_mask2 = create_window_mask(net.max_decoder_len - 1, window_len=11).float()
+        
+        #g_mask2 = create_window_mask(net.max_decoder_len - 1, window_len=11).float();
+        g_mask2 = None
         #g_mask = None
         if cuda:
-            g_mask1 = g_mask1.cuda(); g_mask2 = g_mask2.cuda()
+            g_mask1 = g_mask1.cuda(); #g_mask2 = g_mask2.cuda()
     elif args.model_no == 1:
         g_mask1, g_mask2 = None, None
     
@@ -90,7 +92,7 @@ def load_state(net, args, load_best=False, load_scheduler=False):
         else:
             net = net.load_model(checkpoint_path)
         optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
-        scheduler = CosineWithRestarts(optimizer, T_max=350)
+        scheduler = CosineWithRestarts(optimizer, T_max=450)
         if load_scheduler:
             optimizer.load_state_dict(checkpoint['optimizer'])
             scheduler.load_state_dict(checkpoint['scheduler'])

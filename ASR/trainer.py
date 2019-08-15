@@ -23,6 +23,8 @@ def train_and_fit(args):
     
     logger.info("Loading data...")
     train_loader, train_length, max_features_length, max_seq_length = load_dataloaders(args)
+    print("Max features length: %d" % max_features_length)
+    print("Max sequence length: %d" % max_seq_length)
     vocab = load_pickle("vocab.pkl")
     
     logger.info("Loading model and optimizers...")

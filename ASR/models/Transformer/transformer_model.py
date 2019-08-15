@@ -42,12 +42,15 @@ def create_masks(src, trg, f_len, args):
     for i in range(len(src[:,0,0,0])):
         src_ratio = f_len[i].item()/init_len
         src_mask[i, :, int(src_ratio*final_len):] = 0
+    src_mask = src_mask.bool()
     #src_mask = (src != 0).float().mean(dim=2).long().unsqueeze(1)
     if trg is not None:
-        trg_mask = (trg != 1).unsqueeze(-2); print(trg_mask)
+        trg_mask = (trg != 1).unsqueeze(-2); #print(trg_mask)
         np_mask = np.triu(np.ones((1, trg.size(1),trg.size(1))),k=1).astype('uint8')
-        np_mask = Variable(torch.from_numpy(np_mask) == 0); print(np_mask)
-        trg_mask = trg_mask & np_mask; print(trg_mask)
+        np_mask = Variable(torch.from_numpy(np_mask) == 0); #print(np_mask)
+        if trg_mask.is_cuda:
+            np_mask = np_mask.cuda()
+        trg_mask = trg_mask & np_mask; #print(trg_mask)
     else:
         trg_mask = None
     return src_mask, trg_mask
@@ -189,7 +192,7 @@ class DecoderLayer(nn.Module):
         self.dropout1 = nn.Dropout(droprate)
         self.dropout2 = nn.Dropout(droprate)
         self.dropout3 = nn.Dropout(droprate)
-        self.attn1 = MHAttention(d_model=d_model, n_heads=n_heads, gaussian_mask=True)
+        self.attn1 = MHAttention(d_model=d_model, n_heads=n_heads, gaussian_mask=False)
         self.attn2 = MHAttention(d_model=d_model, n_heads=n_heads, gaussian_mask=False)
         self.fc1 = FeedForward(d_model=d_model, hidden_size=ff_dim)
         
@@ -309,10 +312,10 @@ class SpeechTransformer(nn.Module):
                 if src.is_cuda:
                     g_mask2 = g_mask2.cuda()
                 d_out = self.decoder(trg, e_out, src_mask, trg_mask, g_mask2)
-                x = self.fc1(d_out)
-                o_labels = torch.softmax(x, dim=2).max(2)[1]
+                x = self.fc1(d_out); #print("x: ", x.shape)
+                o_labels = torch.softmax(x, dim=2).max(2)[1]; #print("o_labels: ", o_labels)
                 #print(trg, o_labels)
-                trg = torch.cat((trg, o_labels[:,-1:]), dim=1)
+                trg = torch.cat((trg, o_labels[:,-1:]), dim=1); #print("trg: ", trg)
                 if o_labels[0, -1].item() == 2: # break if <eos> token encountered
                     break
             return trg

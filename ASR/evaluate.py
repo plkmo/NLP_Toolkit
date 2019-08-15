@@ -4,6 +4,11 @@ Created on Fri Jul 19 13:51:35 2019
 
 @author: WT
 """
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Jul 19 13:51:35 2019
+@author: WT
+"""
 import os
 import pandas as pd
 import numpy as np
@@ -74,9 +79,9 @@ def infer(file_path=None, speaker=None):
         train_loader, train_length, max_features_length, max_seq_length = load_dataloaders(args)
         infer_loader = train_loader
     
-    net.eval()
     outputs2 = None
     with torch.no_grad():
+        net.eval()
         for i, data in enumerate(infer_loader):
             if args.model_no == 0:
                 src_input, trg_input, f_len = data[0], data[1][:, :-1], data[2]
@@ -110,6 +115,7 @@ def infer(file_path=None, speaker=None):
             print("\nTranslated: ")
             print("".join(w for w in translated if w not in ["<eos>", "<pad>"]))
             if outputs2 is not None:
+                print("Translated 2: ")
                 print("".join(w for w in translated2 if w not in ["<eos>", "<pad>"]))
             print("Ground truth: ")
             print("".join(w for w in ground_truth if w not in ["<eos>", "<pad>"]))

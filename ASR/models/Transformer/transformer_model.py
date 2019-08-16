@@ -312,13 +312,14 @@ class SpeechTransformer(nn.Module):
                 #if src.is_cuda:
                 #    g_mask2 = g_mask2.cuda()
                 d_out = self.decoder(trg, e_out, src_mask, trg_mask, g_mask2=None)
-                x = self.fc1(d_out); print("x: ", x.shape)
-                o_labels = torch.softmax(x, dim=2).max(2)[1]; print("o_labels: ", o_labels.shape)
+                x = self.fc1(d_out); #print("x: ", x.shape)
+                o_labels = torch.softmax(x, dim=2).max(2)[1]; #print("o_labels: ", o_labels.shape)
                 #print(trg, o_labels)
                 trg = torch.cat((trg, o_labels[:,-1:]), dim=1); #print("trg: ", trg)
                 if o_labels[0, -1].item() == 2: # break if <eos> token encountered
                     break
             return trg
+            #return x
     
     @classmethod
     def load_model(cls, path):

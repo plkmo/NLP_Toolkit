@@ -76,7 +76,17 @@ def infer(file_path=None, speaker=None):
                                   num_workers=0, pin_memory=False)
     else:
         logger.info("Loading data from training dataset...")
+        logger.info("Loading data...")
         train_loader, train_length, max_features_length, max_seq_length = load_dataloaders(args)
+        print("Max features length: %d" % max_features_length)
+        print("Max sequence length: %d" % max_seq_length)
+        vocab = load_pickle("vocab.pkl")
+        
+        logger.info("Loading model and optimizers...")
+        cuda = torch.cuda.is_available()
+        net, criterion, optimizer, scheduler, start_epoch, acc, g_mask1, g_mask2 = load_model_and_optimizer(args, vocab, \
+                                                                                                            max_features_length, \
+                                                                                                            max_seq_length, cuda)
         infer_loader = train_loader
     
     outputs2 = None
@@ -103,6 +113,7 @@ def infer(file_path=None, speaker=None):
                     src_input = src_input.cuda().float(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
                 (outputs, outputs2) = net(src_input, trg_input[:,0].unsqueeze(0), infer=True)
             
+            #break;
             if cuda:
                 outputs = outputs.cpu().numpy(); labels = labels.cpu().numpy()
             else:
@@ -120,3 +131,4 @@ def infer(file_path=None, speaker=None):
             print("Ground truth: ")
             print("".join(w for w in ground_truth if w not in ["<eos>", "<pad>"]))
             time.sleep(7)
+    return outputs

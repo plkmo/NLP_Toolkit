@@ -41,4 +41,4 @@ if __name__ == "__main__":
     
     #train_and_fit(args)
     #infer(file_path="./data/train-clean-5/19/198/19-198-0008.flac", speaker='19')
-    infer()
+    outputs = infer()

@@ -308,12 +308,12 @@ class SpeechTransformer(nn.Module):
                 trg_mask = create_trg_mask(trg, src.is_cuda)
                 #print(trg_mask.shape)
                 #print(trg_mask)
-                g_mask2 = create_window_mask(trg.shape[1], window_len=11).float()
-                if src.is_cuda:
-                    g_mask2 = g_mask2.cuda()
-                d_out = self.decoder(trg, e_out, src_mask, trg_mask, g_mask2)
-                x = self.fc1(d_out); #print("x: ", x.shape)
-                o_labels = torch.softmax(x, dim=2).max(2)[1]; #print("o_labels: ", o_labels)
+                #g_mask2 = create_window_mask(trg.shape[1], window_len=11).float()
+                #if src.is_cuda:
+                #    g_mask2 = g_mask2.cuda()
+                d_out = self.decoder(trg, e_out, src_mask, trg_mask, g_mask2=None)
+                x = self.fc1(d_out); print("x: ", x.shape)
+                o_labels = torch.softmax(x, dim=2).max(2)[1]; print("o_labels: ", o_labels.shape)
                 #print(trg, o_labels)
                 trg = torch.cat((trg, o_labels[:,-1:]), dim=1); #print("trg: ", trg)
                 if o_labels[0, -1].item() == 2: # break if <eos> token encountered

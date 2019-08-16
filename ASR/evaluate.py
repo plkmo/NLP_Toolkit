@@ -35,8 +35,8 @@ def infer(file_path=None, speaker=None):
     print("vocab size:", len(vocab.w2idx))
     cuda = torch.cuda.is_available()
     net, _, _, _, start_epoch, acc, g_mask1, g_mask2 = load_model_and_optimizer(args, vocab, \
-                                                                                200, \
-                                                                                200, cuda)
+                                                                                1000, \
+                                                                                84, cuda)
     #print(g_mask1.shape, g_mask2.shape)
     if args.model_no == 0:
         args.max_seq_len = net.max_decoder_len

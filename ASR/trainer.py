@@ -10,7 +10,6 @@ import torch
 from torch.nn.utils import clip_grad_norm_
 from .preprocessing_funcs import load_dataloaders
 from .train_funcs import load_model_and_optimizer, evaluate_results, load_results, decode_outputs
-from .models.Transformer.transformer_model import create_masks
 from .utils import load_pickle, save_as_pickle, lrate
 import matplotlib.pyplot as plt
 import logging
@@ -19,7 +18,12 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger('__file__')
 
-def train_and_fit(args):
+def train_and_fit(args, pyTransformer=False):
+    
+    if pyTransformer:
+        from .models.Transformer.py_Transformer import create_masks
+    else:
+        from .models.Transformer.transformer_model import create_masks
     
     logger.info("Loading data...")
     train_loader, train_length, max_features_length, max_seq_length = load_dataloaders(args)
@@ -31,7 +35,8 @@ def train_and_fit(args):
     cuda = torch.cuda.is_available()
     net, criterion, optimizer, scheduler, start_epoch, acc, g_mask1, g_mask2 = load_model_and_optimizer(args, vocab, \
                                                                                                         max_features_length, \
-                                                                                                        max_seq_length, cuda)
+                                                                                                        max_seq_length, cuda,\
+                                                                                                        pyTransformer)
     losses_per_epoch, accuracy_per_epoch = load_results(model_no=args.model_no)    
     batch_update_steps = 2
     logger.info("Starting training process...")
@@ -61,7 +66,8 @@ def train_and_fit(args):
             loss = criterion(outputs, labels);
             loss = loss/args.gradient_acc_steps
             loss.backward()
-            #clip_grad_norm_(net.parameters(), args.max_norm)
+            if pyTransformer:
+                clip_grad_norm_(net.parameters(), args.max_norm)
             if (e % args.gradient_acc_steps) == 0:
                 optimizer.step()
                 optimizer.zero_grad()
@@ -73,7 +79,7 @@ def train_and_fit(args):
                       (e, (i + 1)*args.batch_size, train_length, losses_per_batch[-1]))
                 total_loss = 0.0
         losses_per_epoch.append(sum(losses_per_batch)/len(losses_per_batch))
-        accuracy_per_epoch.append(evaluate_results(net, train_loader, cuda, g_mask1, g_mask2, args))
+        accuracy_per_epoch.append(evaluate_results(net, train_loader, cuda, g_mask1, g_mask2, create_masks, args))
         print("Losses at Epoch %d: %.7f" % (e, losses_per_epoch[-1]))
         print("Accuracy at Epoch %d: %.7f" % (e, accuracy_per_epoch[-1]))
         decode_outputs(outputs, labels, vocab)

@@ -8,7 +8,6 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from .models.Transformer.transformer_model import SpeechTransformer, create_masks, create_gaussian_mask, create_window_mask
 from .models.LAS.LAS_model import LAS
 from .utils import load_pickle, save_as_pickle, CosineWithRestarts, lrate
 from tqdm import tqdm
@@ -18,7 +17,14 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger(__file__)
 
-def load_model_and_optimizer(args, vocab, max_features_length, max_seq_length, cuda):
+def load_model_and_optimizer(args, vocab, max_features_length, max_seq_length, cuda, pyTransformer=False):
+    
+    if pyTransformer:
+        from .models.Transformer.py_Transformer import pyTransformer as SpeechTransformer, \
+                                                        create_window_mask
+    else:
+        from .models.Transformer.transformer_model import SpeechTransformer, create_window_mask
+    
     '''Loads the model (Speech Transformer or LAS) based on provided arguments and parameters'''
     if args.use_lg_mels == 0:
         src_vocab = 3*args.n_mfcc
@@ -57,9 +63,11 @@ def load_model_and_optimizer(args, vocab, max_features_length, max_seq_length, c
         g_mask2 = create_gaussian_mask(440).float()
         '''
         if args.max_frame_len % 4 == 0:
-            g_mask1 = create_window_mask(int(args.max_frame_len/4), window_len=137).float()
+            #g_mask1 = create_window_mask(int(args.max_frame_len/4), window_len=137).float()
+            g_mask1 = create_window_mask(int(args.max_frame_len/4), window_len=137)
         else:
-            g_mask1 = create_window_mask(int(args.max_frame_len/4) + 1, window_len=137).float()
+            #g_mask1 = create_window_mask(int(args.max_frame_len/4) + 1, window_len=137).float()
+            g_mask1 = create_window_mask(int(args.max_frame_len/4) + 1, window_len=137)
         
         #g_mask2 = create_window_mask(net.max_decoder_len - 1, window_len=11).float();
         g_mask2 = None
@@ -120,7 +128,7 @@ def evaluate(output, labels):
     else:
         return (labels[idxs] == o_labels[idxs]).sum().item()
 
-def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args):
+def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, create_masks, args):
     acc = 0
     print("Evaluating...")
     with torch.no_grad():

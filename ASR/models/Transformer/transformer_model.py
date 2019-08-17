@@ -12,7 +12,7 @@ import numpy as np
 import math
 import copy
 
-
+'''
 def create_window_mask(size, window_len=10):
     m = np.zeros((size, size))
     for j in range(len(m)):
@@ -20,6 +20,17 @@ def create_window_mask(size, window_len=10):
             if abs(j-k) > window_len:
                 m[j, k] = -1e9
     m = Variable(torch.from_numpy(m))
+    return m
+'''
+
+def create_window_mask(size, window_len=10):
+    m = np.ones((size, size))
+    for j in range(len(m)):
+        for k in range(len(m)):
+            if abs(j-k) > window_len:
+                m[j, k] = 0
+    m = Variable(torch.from_numpy(m))
+    m = m.bool(); #print(m)
     return m
 
 def create_gaussian_mask(size):
@@ -92,7 +103,8 @@ class Pos_Encoder(nn.Module):
         # input = batch_size X seq_len X d_model
         x = x + Variable(self.pe[:, :x.size(1)], requires_grad=False)
         return x
-    
+
+'''
 def Attention(q, k, v, dh, mask=None, g_mask=None, dropout=None):
     scores = torch.matmul(q, k.transpose(-2,-1))/math.sqrt(dh)
     if mask is not None:
@@ -101,7 +113,25 @@ def Attention(q, k, v, dh, mask=None, g_mask=None, dropout=None):
     
     if g_mask is not None:
         scores = scores + g_mask
+    #print(scores.shape)
+    scores = torch.softmax(scores, dim=-1)
+    if dropout is not None:
+        scores = dropout(scores)
+    #print(scores.shape, v.shape)
+    output = torch.matmul(scores, v)
+    return output
+'''
+
+def Attention(q, k, v, dh, mask=None, g_mask=None, dropout=None):
+    scores = torch.matmul(q, k.transpose(-2,-1))/math.sqrt(dh)
+    if mask is not None:
+        mask = mask.unsqueeze(1); #print("Mask", mask.shape); print("scores", scores.shape)
+        if g_mask is not None:
+            scores = scores.masked_fill(((mask & g_mask) == 0), -1e9)
+        else:
+            scores = scores.masked_fill(mask == 0, -1e9)
     
+    #print(scores.shape)
     scores = torch.softmax(scores, dim=-1)
     if dropout is not None:
         scores = dropout(scores)
@@ -274,7 +304,7 @@ class DecoderBlock(nn.Module):
         return x
 
 class SpeechTransformer(nn.Module):
-    def __init__(self, src_vocab, trg_vocab, d_model, ff_dim, num, n_heads, max_encoder_len, max_decoder_len, use_conv=True):
+    def __init__(self, src_vocab, trg_vocab, d_model, ff_dim, num, n_heads, max_encoder_len, max_decoder_len, use_conv=1):
         super(SpeechTransformer, self).__init__()
         self.src_vocab = src_vocab
         self.trg_vocab = trg_vocab
@@ -296,7 +326,7 @@ class SpeechTransformer(nn.Module):
         '''Runs a forward pass if infer=False.
         If infer=True (evaluation mode), generate text sequence given a sequence of features and returns the generated sequence indexes'''
         ### src = batch_size X seq_len X 3*num_mfcc/n_mels
-        src = self.conv(src)
+        src = self.conv(src); #print(src)
         src = src.reshape(src.shape[0], src.shape[-1], -1); #print(src.shape) # batch_size X time_len X out_channels*freq_features
         e_out = self.encoder(src, src_mask, g_mask1); #print("e_out", e_out.shape)
         if not infer:
@@ -304,15 +334,14 @@ class SpeechTransformer(nn.Module):
             x = self.fc1(d_out); #print("x", x.shape)
             return x
         else:
-            for i in range(self.max_decoder_len):
-                trg_mask = create_trg_mask(trg, src.is_cuda)
+            for i in range(2, self.max_decoder_len):
+                trg_mask = create_trg_mask(trg, src.is_cuda); #print(trg_mask.shape)
                 #print(trg_mask.shape)
                 #print(trg_mask)
                 #g_mask2 = create_window_mask(trg.shape[1], window_len=11).float()
                 #if src.is_cuda:
                 #    g_mask2 = g_mask2.cuda()
-                d_out = self.decoder(trg, e_out, src_mask, trg_mask, g_mask2=None)
-                x = self.fc1(d_out); #print("x: ", x.shape)
+                x = self.fc1(self.decoder(trg, e_out, src_mask, trg_mask, g_mask2=None)); #print("x: ", x.shape)
                 o_labels = torch.softmax(x, dim=2).max(2)[1]; #print("o_labels: ", o_labels.shape)
                 #print(trg, o_labels)
                 trg = torch.cat((trg, o_labels[:,-1:]), dim=1); #print("trg: ", trg)

@@ -15,7 +15,6 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from .preprocessing_funcs import extract_feature, padded_dataset, load_dataloaders
-from .models.Transformer.transformer_model import create_masks
 from .train_funcs import load_model_and_optimizer
 from .utils import load_pickle
 import time
@@ -26,7 +25,11 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
 logger = logging.getLogger('__file__')
 
 
-def infer(file_path=None, speaker=None):
+def infer(file_path=None, speaker=None, pyTransformer=False):
+    if pyTransformer:
+        from .models.Transformer.py_Transformer import create_masks
+    else:
+        from .models.Transformer.transformer_model import create_masks
     args = load_pickle("args.pkl")
     args.batch_size = 1
     

@@ -9,9 +9,9 @@ import torch
 from torch.nn.utils import clip_grad_norm_
 from .preprocessing_funcs import load_dataloaders
 from .train_funcs import load_model_and_optimizer, evaluate_results, load_results, decode_outputs
-from .models.Transformer.transformer_model import create_masks
+from .models.InputConv_Transformer import create_masks
 from .utils.bpe_vocab import Encoder
-from .utils import load_pickle, save_as_pickle
+from .utils.misc_utils import load_pickle, save_as_pickle
 import matplotlib.pyplot as plt
 import logging
 

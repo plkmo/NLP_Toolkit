@@ -32,7 +32,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=0.0007, help="learning rate")
     parser.add_argument("--gradient_acc_steps", type=int, default=2, help="Number of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
-    parser.add_argument("--model_no", type=int, default=1, help="Model ID: 0 = Transformer, 1 = LAS")
+    parser.add_argument("--model_no", type=int, default=0, help="Model ID: 0 = Transformer, 1 = LAS")
     args = parser.parse_args()
     save_as_pickle("args.pkl", args)
     

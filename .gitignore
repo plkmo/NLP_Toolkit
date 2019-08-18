@@ -23,3 +23,5 @@
 /translation/__pycache__/*
 /translation/models/__pycache__/*
 /translation/models/Transformer/__pycache__/*
+/generation/__pycache__/*
+/generation/models/__pycache__/*

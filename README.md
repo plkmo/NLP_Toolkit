@@ -6,6 +6,7 @@ Library containing state-of-the-art models for Natural Language Processing tasks
 2. Automatic Speech Recognition
 3. Text Summarization
 4. Machine Translation
+5. Natural Language Generation
 
 ## 1) Classification
 The goal of classification is to segregate documents into appropriate classes based on their text content. Currently, the classification toolkit uses the following models:
@@ -137,4 +138,12 @@ translate.py [-h]
 	[--max_norm MAX_NORM (default: 1)] 
 	[--model_no MODEL_NO (default: 0 (0: Transformer))]
 ```
+
+## 5) Natural Language Generation
+Natural Language generation (NLG) aims to generate text based on past context. For instance, a chatbot can generate text replies based on the context of chat history. We currently have the following models for NLG:
+1. Generative Pre-trained Transformer (GPT/GPT-2)
+
+### Format of dataset files
+
+### Running the model
 

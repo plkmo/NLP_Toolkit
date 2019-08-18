@@ -305,15 +305,20 @@ class SummaryTransformer(nn.Module):
             x = self.fc1(d_out); #print("x", x.shape)
             return x
         else:
+            o = torch.tensor([[]]).long()
+            if src.is_cuda:
+                o = o.cuda()
             for i in range(self.max_decoder_len):
                 trg_mask = create_trg_mask(trg, src.is_cuda)
                 d_out = self.decoder(trg, e_out, src_mask, trg_mask, g_mask2)
                 x = self.fc1(d_out)
-                o_labels = torch.softmax(x, dim=1).max(1)[1]
-                trg = torch.cat((trg, o_labels[0,-1]), dim=1)
+                o_labels = torch.softmax(x, dim=2).max(2)[1]
+                trg = torch.cat((trg, o_labels[:,-1:]), dim=1)
+                o = torch.cat((o, o_labels[:,-1:]), dim=1)
                 if o_labels[0, -1].item() == 2: # break if <eos> token encountered
                     break
             return trg
+            #return o
     
     @classmethod
     def load_model(cls, path):

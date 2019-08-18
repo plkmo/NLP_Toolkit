@@ -6,6 +6,7 @@ Created on Mon Aug  5 21:56:35 2019
 """
 from utils.misc import save_as_pickle
 from summarization.trainer import train_and_fit
+from summarization.evaluate import infer
 from argparse import ArgumentParser
 import logging
 
@@ -29,11 +30,12 @@ if __name__ == "__main__":
     parser.add_argument("--LAS_hidden_size", type=int, default=128, help="LAS listener hidden_size")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
     parser.add_argument("--num_epochs", type=int, default=8000, help="No of epochs")
-    parser.add_argument("--lr", type=float, default=0.0007, help="learning rate")
+    parser.add_argument("--lr", type=float, default=0.0003, help="learning rate")
     parser.add_argument("--gradient_acc_steps", type=int, default=2, help="Number of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
-    parser.add_argument("--model_no", type=int, default=1, help="Model ID: 0 = Transformer, 1 = LAS")
+    parser.add_argument("--model_no", type=int, default=0, help="Model ID: 0 = Transformer, 1 = LAS")
     args = parser.parse_args()
     save_as_pickle("args.pkl", args)
     
     train_and_fit(args)
+    infer(args, from_data=True)

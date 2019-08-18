@@ -7,10 +7,10 @@ Created on Tue Aug 13 09:17:59 2019
 import torch
 from torch.autograd import Variable
 from .preprocessing_funcs import load_dataloaders
-from .models.Transformer.transformer_model import create_masks
+from .models.InputConv_Transformer import create_masks
 from .train_funcs import load_model_and_optimizer
 from .utils.bpe_vocab import Encoder
-from .utils import load_pickle
+from .utils.misc_utils import load_pickle
 import time
 import logging
 
@@ -52,15 +52,16 @@ def infer(args, from_data=False):
                     if cuda:
                         src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
                         src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda()
-                    outputs = net(src_input, trg_input, src_mask, trg_mask)
+                    outputs = net(src_input, trg_input[:,0].unsqueeze(0), src_mask, trg_mask, infer=True)
                     
                 elif args.model_no == 1:
                     src_input, trg_input = data[0], data[1][:, :-1]
                     labels = data[1][:,1:].contiguous().view(-1)
                     if cuda:
                         src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
-                    outputs = net(src_input, trg_input, infer=True)
-                outputs = outputs.view(-1, outputs.size(-1))
+                    outputs = net(src_input, trg_input[:,0].unsqueeze(0), infer=True)
+                #outputs = outputs.view(-1, outputs.size(-1))
+                #print(outputs.shape)
                 
                 if (args.level == "word") or (args.level == "char"):
                     vocab_decoder = vocab.convert_idx2w
@@ -69,15 +70,20 @@ def infer(args, from_data=False):
                 
                 if cuda:
                     l = list(labels.cpu().numpy())
-                    o = list(torch.softmax(outputs, dim=1).max(1)[1].cpu().numpy())
+                    #o = list(torch.softmax(outputs, dim=1).max(1)[1].cpu().numpy())
+                    o = outputs[0].cpu().numpy().tolist()
                 else:
                     l = list(labels.numpy())
-                    o = list(torch.softmax(outputs, dim=1).max(1)[1].numpy())
+                    #o = list(torch.softmax(outputs, dim=1).max(1)[1].numpy())
+                    o = outputs[0].numpy().tolist()
+                    
                 if args.level == "bpe":
                     l = [l]
                     o = [o]
+                #print(o)
                 print("Sample Output: ", " ".join(vocab_decoder(o)))
                 print("Sample Label: ", " ".join(vocab_decoder(l)))
+                print("")
                 time.sleep(7)
     else:
         pass

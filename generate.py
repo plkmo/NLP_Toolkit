@@ -4,7 +4,7 @@ Created on Sun Aug 18 13:09:24 2019
 
 @author: WT
 """
-
+from generation.infer import infer_from_pretrained
 from utils.misc import save_as_pickle
 from argparse import ArgumentParser
 import logging
@@ -15,3 +15,4 @@ logger = logging.getLogger('__file__')
 
 if __name__ == "__main__":
     parser = ArgumentParser()
+    out = infer_from_pretrained(input_sent="Hello, my dog is cute")

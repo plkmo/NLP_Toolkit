@@ -15,4 +15,4 @@ logger = logging.getLogger('__file__')
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    out = infer_from_pretrained(input_sent="Hello, my dog is cute")
+    net, out = infer_from_pretrained(input_sent=None)

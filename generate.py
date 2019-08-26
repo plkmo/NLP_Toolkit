@@ -15,4 +15,4 @@ logger = logging.getLogger('__file__')
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    net, out = infer_from_pretrained(input_sent=None)
+    outputs = infer_from_pretrained(input_sent="Who is Lee Kuan Yew?", tokens_len=100, top_k_beam=5)

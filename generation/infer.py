@@ -8,6 +8,12 @@ import torch
 import numpy as np
 from pytorch_transformers import  GPT2Tokenizer
 from .models.GPT2 import GPT2LMHeadModel
+from tqdm import tqdm
+import logging
+
+logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
+                    datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
+logger = logging.getLogger('__file__')
 
 def top_k(logits, top_k_beam):
     s = torch.softmax(logits, dim=-1)[:,-1,:].topk(top_k_beam, dim=-1)[1]
@@ -20,9 +26,11 @@ def top_k(logits, top_k_beam):
     return idx
 
 def infer_from_pretrained(input_sent="Hello, my dog is cute", tokens_len=100, top_k_beam=None):
+    logger.info("Loading pre-trained...")
     cuda = torch.cuda.is_available()
     tokenizer = GPT2Tokenizer.from_pretrained('gpt2-medium')
     model = GPT2LMHeadModel.from_pretrained('gpt2-medium')
+    logger.info("Loaded!")
     if cuda:
         model.cuda()
         
@@ -36,8 +44,9 @@ def infer_from_pretrained(input_sent="Hello, my dog is cute", tokens_len=100, to
             input_ids = torch.tensor(tokenizer.encode(input_sent)).unsqueeze(0)  # Batch size 1
             if cuda:
                 input_ids = input_ids.cuda()
-                
-            for _ in range(tokens_len):
+            
+            logger.info("Generating...")
+            for _ in tqdm(range(tokens_len)):
                 if past is not None:
                     outputs = model(input_ids, labels=input_ids, past=past)
                 else:
@@ -62,7 +71,8 @@ def infer_from_pretrained(input_sent="Hello, my dog is cute", tokens_len=100, to
             input_ids = input_ids.cuda()
         past = None
         
-        for _ in range(tokens_len):
+        logger.info("Generating...")
+        for _ in tqdm(range(tokens_len)):
             if past is not None:
                 outputs = model(input_ids, labels=input_ids, past=past)
             else:

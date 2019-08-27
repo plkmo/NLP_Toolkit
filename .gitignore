@@ -25,3 +25,5 @@
 /translation/models/Transformer/__pycache__/*
 /generation/__pycache__/*
 /generation/models/__pycache__/*
+/punctuation_restoration/__pycache__/*
+/punctuation_restoration/models/__pycache__/*

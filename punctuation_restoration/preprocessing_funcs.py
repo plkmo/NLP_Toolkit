@@ -7,9 +7,11 @@ Created on Tue Aug 27 22:06:29 2019
 import os
 import pickle
 import pandas as pd
-import spacy
 import re
+import torch
 from torch.utils.data import Dataset, DataLoader
+from .utils.word_char_level_vocab import tokener
+from .utils.bpe_vocab import Encoder
 from tqdm import tqdm
 import logging
 
@@ -28,30 +30,6 @@ def save_as_pickle(filename, data):
     completeName = filename
     with open(completeName, 'wb') as output:
         pickle.dump(data, output)
-
-class tokener(object):
-    def __init__(self, lang):
-        d = {"en":"en_core_web_lg", "fr":"fr_core_news_sm"} # "en_core_web_lg"
-        self.ob = spacy.load(d[lang])
-    
-    def tokenize(self, sent):
-        sent = re.sub(r"[\*\"\n\\…\+\-\/\=\(\)‘•€\[\]\|]", " ", str(sent))
-        #sent = re.sub(r"\!+", "!", sent)
-        #sent = re.sub(r"\,+", ",", sent)
-        #sent = re.sub(r"\?+", "?", sent)
-        sent = re.sub(r"[ ]+", " ", sent)
-        sent = sent.lower()
-        sent = [token.text for token in self.ob.tokenizer(sent) if token.text != " "]
-        #sent = " ".join(sent)
-        return sent
-
-def remove_punct(tokens):
-    punc_list = ["!", "?", ".", ",", ":", ";",]
-    tokens1 = []
-    for token in tokens:
-        if token not in punc_list:
-            tokens1.append(token)
-    return tokens1
 
 def create_trg_seq(tokens):
     '''
@@ -92,9 +70,18 @@ def create_labels2(tokens):
             tokens1.append(token)
     return tokens1
 
-def create_datasets():
+def get_bpe_punc_mappings(vocab, punc_list=["!", "?", ".", ",", ":", ";",]):
+    mappings = {}
+    for punc in punc_list:
+        if punc in vocab.word_vocab.keys():
+            mappings[punc] = vocab.word_vocab[punc]
+        elif punc in vocab.bpe_vocab.keys():
+            mappings[punc] = vocab.bpe_vocab[punc]
+    return mappings
+
+def create_datasets(args):
     logger.info("Reading sentences corpus...")
-    data_path = "C:/Users/tsd/Desktop/Python_Projects/DSL/Repositories/NLP_Toolkit/data/Sentences_tatoeba/sentences.csv"
+    data_path = "./data/sentences.csv"
     df = pd.read_csv(data_path, names=["eng"])
     
     logger.info("Getting English sentences...")
@@ -104,12 +91,26 @@ def create_datasets():
     df.drop(['flag'], axis=1, inplace=True)
     
     logger.info("Generaing train, labels...")
-    tokenizer_en = tokener("en")
-    df["labels"] = df.progress_apply(lambda x: create_labels(x["eng"], tokenizer_en), axis=1)
-    df["labels2"] = df.progress_apply(lambda x: create_labels2(x["labels"]), axis=1)
-    df["train"] = df.progress_apply(lambda x: create_trg_seq(x["labels"]), axis=1)
-    save_as_pickle("C:/Users/tsd/Desktop/Python_Projects/DSL/Repositories/NLP_Toolkit/data/Sentences_tatoeba/eng.pkl",\
-                   df)
+    if args.level == "word":
+        tokenizer_en = tokener("en")
+        df["labels"] = df.progress_apply(lambda x: create_labels(x["eng"], tokenizer_en), axis=1)
+        df["labels2"] = df.progress_apply(lambda x: create_labels2(x["labels"]), axis=1)
+        df["train"] = df.progress_apply(lambda x: create_trg_seq(x["labels"]), axis=1)
+        save_as_pickle("./data/eng.pkl",\
+                       df)
+        
+    elif args.level == "bpe":
+        tokenizer_en = tokener("en")
+        encoder = Encoder(vocab_size=args.bpe_vocab_size, pct_bpe=args.bpe_word_ratio, \
+                          word_tokenizer=tokenizer_en.tokenize)
+        
+        logger.info("Training bpe, this might take a while...")
+        text_list = list(df["eng"])
+        encoder.fit(text_list); del text_list
+        df.loc[:, 'labels'] = df.progress_apply(lambda x: next(encoder.transform([x["eng"]])), axis=1)
+        save_as_pickle("./data/eng.pkl",\
+                       df)
+        encoder.save("./data/vocab.pkl")
     return df
 
 class punc_datasets(Dataset):
@@ -122,16 +123,18 @@ class punc_datasets(Dataset):
         return len(self.X)
     
     def __getitem__(self, idx):
-        return self.X.iloc[idx], self.y1.iloc[idx], self.y2.iloc[idx]
+        X = torch.tensor(self.X.iloc[idx])
+        y1 = torch.tensor(self.y1.iloc[idx])
+        y2 = torch.tensor(self.y2.iloc[idx])
+        return X, y1, y2
 
 def load_dataloaders(args):
-    if not os.path.isfile("C:/Users/tsd/Desktop/Python_Projects/DSL/Repositories/NLP_Toolkit/data/Sentences_tatoeba/eng.pkl"):
-        df = create_datasets()
+    if not os.path.isfile("./data/eng.pkl"):
+        df = create_datasets(args)
     else:
-        df = load_pickle("C:/Users/tsd/Desktop/Python_Projects/DSL/Repositories/NLP_Toolkit/data/Sentences_tatoeba/eng.pkl")
+        df = load_pickle("./data/eng.pkl")
     trainset = punc_datasets(df)
     train_length = len(trainset)
     train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True,\
                               num_workers=0, pin_memory=False)
-    return train_loader, train_length
-        
+    return df, train_loader, train_length

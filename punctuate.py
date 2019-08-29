@@ -36,4 +36,4 @@ if __name__ == "__main__":
     save_as_pickle("args.pkl", args)
     
     #df, train_loader, train_length = load_dataloaders(args)
-    out = train_and_fit(args)
+    df, train_loader, vocab, mappings, idx_mappings = train_and_fit(args)

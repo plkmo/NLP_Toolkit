@@ -190,7 +190,7 @@ class DecoderBlock(nn.Module):
 
 class PuncTransformer(nn.Module):
     def __init__(self, src_vocab, trg_vocab, d_model, ff_dim, num, n_heads,\
-                 max_encoder_len, max_decoder_len):
+                 max_encoder_len, max_decoder_len, mappings):
         super(PuncTransformer, self).__init__()
         self.src_vocab = src_vocab
         self.trg_vocab = trg_vocab
@@ -200,11 +200,15 @@ class PuncTransformer(nn.Module):
         self.n_heads = n_heads
         self.max_encoder_len = max_encoder_len
         self.max_decoder_len = max_decoder_len
+        self.mappings = mappings
         self.encoder = EncoderBlock(vocab_size=src_vocab, d_model=d_model, ff_dim=ff_dim,\
                                     num=num, n_heads=n_heads, max_encoder_len=max_encoder_len)
         self.decoder = DecoderBlock(vocab_size=trg_vocab, d_model=d_model, ff_dim=ff_dim,\
                                     num=num, n_heads=n_heads, max_decoder_len=max_decoder_len)
+        self.decoder2 = DecoderBlock(vocab_size=trg_vocab, d_model=d_model, ff_dim=ff_dim,\
+                                    num=num, n_heads=n_heads, max_decoder_len=max_decoder_len)
         self.fc1 = nn.Linear(d_model, trg_vocab)
+        self.fc2 = nn.Linear(d_model, len(mappings) + 1)
     
     def forward(self, src, trg, src_mask, trg_mask=None, infer=False, trg_vocab_obj=None):
         e_out = self.encoder(src, src_mask); #print("e_out", e_out.shape)
@@ -245,7 +249,7 @@ class PuncTransformer(nn.Module):
                     n_heads=checkpoint["n_heads"], \
                     max_encoder_len=checkpoint["max_encoder_len"], \
                     max_decoder_len=checkpoint["max_decoder_len"], \
-                    )
+                    mappings=checkpoint["mappings"])
         model.load_state_dict(checkpoint['state_dict'])
         return model
     
@@ -263,7 +267,8 @@ class PuncTransformer(nn.Module):
                     'num': self.num,\
                     'n_heads': self.n_heads,\
                     'max_encoder_len': self.max_encoder_len,\
-                    'max_decoder_len': self.max_decoder_len,
+                    'max_decoder_len': self.max_decoder_len,\
+                    'mappings': self.mappings
                 }
         torch.save(state, path)
         

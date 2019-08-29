@@ -24,7 +24,7 @@ def train_and_fit(args):
     
     cuda = torch.cuda.is_available()
     
-    df, train_loader, train_length, max_features_length = load_dataloaders(args)
+    df, train_loader, train_length, max_features_length, max_output_len = load_dataloaders(args)
     
     if args.level == "bpe":
         vocab = Encoder.load("./data/vocab.pkl")
@@ -33,11 +33,13 @@ def train_and_fit(args):
         vocab.word_tokenizer = tokenizer_en.tokenize
         vocab.custom_tokenizer = True
         mappings = load_pickle("mappings.pkl")
+        idx_mappings = load_pickle("idx_mappings.pkl")
         
     logger.info("Max features length = %d %ss" % (max_features_length, args.level))
+    logger.info("Max output length = %d" % (max_output_len))
     logger.info("Vocabulary size: %d" % vocab_size)
     
-    return train_loader, vocab, mappings
+    return df, train_loader, vocab, mappings, idx_mappings
     
     '''
     logger.info("Loading model and optimizers...")

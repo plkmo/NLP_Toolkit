@@ -82,6 +82,20 @@ def get_bpe_punc_mappings(vocab, punc_list=["!", "?", ".", ",", ":", ";",'\'']):
             mappings[punc] = vocab.bpe_vocab[punc]
     return mappings
 
+def get_punc_idx_mappings(mappings):
+    idx_mappings = {v:k for k, v in enumerate(mappings.values())}
+    return idx_mappings
+
+def get_punc_idx_labels(tokens, idx_mappings):
+    tokens1 = []
+    idxs = idx_mappings.keys() # bpe_ids for punctuations
+    for token in tokens:
+        if token not in idxs:
+            tokens1.append(1)
+        else:
+            tokens1.append(token)
+    return tokens1
+
 def remove_punc(tokens, mappings):
     '''
     tokens = bpe_tokenized ids; mappings = bpe_punctuation dictionary
@@ -123,10 +137,13 @@ def create_datasets(args):
         encoder.fit(text_list); del text_list
         df.loc[:, 'labels'] = df.progress_apply(lambda x: next(encoder.transform([x["eng"]])), axis=1)
         mappings = get_bpe_punc_mappings(encoder)
+        idx_mappings = get_punc_idx_mappings(mappings)
+        
         save_as_pickle("./data/eng.pkl",\
                        df)
         encoder.save("./data/vocab.pkl")
         save_as_pickle("./data/mappings.pkl", mappings)
+        save_as_pickle("./data/idx_mappings.pkl", idx_mappings)
         
         df.loc[:, 'train'] = df.progress_apply(lambda x: remove_punc(x['labels'], mappings), axis=1)
     return df
@@ -150,7 +167,9 @@ class punc_datasets(Dataset):
     def __init__(self, df):
         self.X = df['train']
         self.y1 = df['labels']
+        self.y2 = df['labels_p']
         self.max_features_len = int(max(df['train'].apply(lambda x: len(x))))
+        self.max_output_len = int(max(df['labels'].apply(lambda x: len(x))))
         
         def x_padder(x, max_len):
             if len(x) < max_len:
@@ -165,7 +184,8 @@ class punc_datasets(Dataset):
     def __getitem__(self, idx):
         X = torch.tensor(self.X.iloc[idx])
         y1 = torch.tensor(self.y1.iloc[idx])
-        return X, y1
+        y2 = torch.tensor(self.y2.iloc[idx])
+        return X, y1, y2
 
 def get_TED_transcripts(args):
     logger.info("Collating TED transcripts...")
@@ -202,10 +222,14 @@ def create_TED_datasets(args):
         df.loc[:, 'labels'] = df.progress_apply(lambda x: next(encoder.transform([x["sents"]])), axis=1)
         mappings = get_bpe_punc_mappings(encoder)
         df.loc[:, 'train'] = df.progress_apply(lambda x: remove_punc(x['labels'], mappings), axis=1)
+        idx_mappings = get_punc_idx_mappings(mappings)
+        df.loc[:, 'labels_p'] = df.progress_apply(lambda x: get_punc_idx_labels(x['labels'], idx_mappings), axis=1)
+        
         save_as_pickle("./data/eng.pkl",\
                        df)
         encoder.save("./data/vocab.pkl")
         save_as_pickle("./data/mappings.pkl", mappings)
+        save_as_pickle("./data/idx_mappings.pkl", idx_mappings)
     
     return df
         
@@ -218,6 +242,7 @@ def load_dataloaders(args):
     trainset = punc_datasets(df)
     train_length = len(trainset)
     max_features_len = trainset.max_features_len
+    max_output_len = trainset.max_output_len
     train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True,\
                               num_workers=0, collate_fn=Pad_Sequence(), pin_memory=False)
-    return df, train_loader, train_length, max_features_len        
+    return df, train_loader, train_length, max_features_len, max_output_len     

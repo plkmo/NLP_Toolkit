@@ -189,11 +189,12 @@ class DecoderBlock(nn.Module):
         return x
 
 class PuncTransformer(nn.Module):
-    def __init__(self, src_vocab, trg_vocab, d_model, ff_dim, num, n_heads,\
-                 max_encoder_len, max_decoder_len, mappings):
+    def __init__(self, src_vocab, trg_vocab, trg_vocab2, d_model, ff_dim, num, n_heads,\
+                 max_encoder_len, max_decoder_len, mappings, idx_mappings):
         super(PuncTransformer, self).__init__()
         self.src_vocab = src_vocab
         self.trg_vocab = trg_vocab
+        self.trg_vocab2 = trg_vocab2
         self.d_model = d_model
         self.ff_dim = ff_dim
         self.num = num
@@ -201,22 +202,26 @@ class PuncTransformer(nn.Module):
         self.max_encoder_len = max_encoder_len
         self.max_decoder_len = max_decoder_len
         self.mappings = mappings
+        self.idx_mappings = idx_mappings
         self.encoder = EncoderBlock(vocab_size=src_vocab, d_model=d_model, ff_dim=ff_dim,\
                                     num=num, n_heads=n_heads, max_encoder_len=max_encoder_len)
         self.decoder = DecoderBlock(vocab_size=trg_vocab, d_model=d_model, ff_dim=ff_dim,\
                                     num=num, n_heads=n_heads, max_decoder_len=max_decoder_len)
-        self.decoder2 = DecoderBlock(vocab_size=trg_vocab, d_model=d_model, ff_dim=ff_dim,\
+        self.decoder2 = DecoderBlock(vocab_size=trg_vocab2, d_model=d_model, ff_dim=ff_dim,\
                                     num=num, n_heads=n_heads, max_decoder_len=max_decoder_len)
         self.fc1 = nn.Linear(d_model, trg_vocab)
-        self.fc2 = nn.Linear(d_model, len(mappings) + 1)
+        self.fc2 = nn.Linear(d_model, trg_vocab2)
     
-    def forward(self, src, trg, src_mask, trg_mask=None, infer=False, trg_vocab_obj=None):
+    def forward(self, src, trg, trg2, src_mask, trg_mask=None, trg_mask2=None, infer=False, trg_vocab_obj=None):
         e_out = self.encoder(src, src_mask); #print("e_out", e_out.shape)
         
         if infer == False:
             d_out = self.decoder(trg, e_out, src_mask, trg_mask); #print("d_out", d_out.shape)
             x = self.fc1(d_out); #print("x", x.shape)
-            return x
+            
+            d_out2 = self.decoder2(trg2, e_out, src_mask, trg_mask2)
+            x2 = self.fc2(d_out2)
+            return x, x2
         else:
             stepwise_translated_words = []; stepwise_translated_word_idxs = []
             cuda = src.is_cuda
@@ -243,13 +248,15 @@ class PuncTransformer(nn.Module):
         checkpoint = torch.load(path)
         model = cls(src_vocab=checkpoint["src_vocab"], \
                     trg_vocab=checkpoint["trg_vocab"], \
+                    trg_vocab2=checkpoint["trg_vocab2"], \
                     d_model=checkpoint["d_model"], \
                     ff_dim=checkpoint["ff_dim"], \
                     num=checkpoint["num"], \
                     n_heads=checkpoint["n_heads"], \
                     max_encoder_len=checkpoint["max_encoder_len"], \
                     max_decoder_len=checkpoint["max_decoder_len"], \
-                    mappings=checkpoint["mappings"])
+                    mappings=checkpoint["mappings"],\
+                    idx_mappings=checkpoint["idx_mappings"])
         model.load_state_dict(checkpoint['state_dict'])
         return model
     
@@ -262,13 +269,15 @@ class PuncTransformer(nn.Module):
                     'scheduler' : scheduler.state_dict(),\
                     'src_vocab' : self.src_vocab,\
                     'trg_vocab': self.trg_vocab,\
+                    'trg_vocab2': self.trg_vocab2, \
                     'd_model': self.d_model,\
                     'ff_dim': self.ff_dim,\
                     'num': self.num,\
                     'n_heads': self.n_heads,\
                     'max_encoder_len': self.max_encoder_len,\
                     'max_decoder_len': self.max_decoder_len,\
-                    'mappings': self.mappings
+                    'mappings': self.mappings,\
+                    'idx_mappings': self.idx_mappings
                 }
         torch.save(state, path)
         

@@ -17,14 +17,16 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger('__file__')
 
-def load_model_and_optimizer(args, vocab_size, max_features_length, max_seq_length, cuda):
+def load_model_and_optimizer(args, src_vocab_size, trg_vocab_size, trg2_vocab_size, max_features_length,\
+                             max_seq_length, mappings, idx_mappings, cuda):
     '''Loads the model (Transformer or encoder-decoder) based on provided arguments and parameters'''
     
     if args.model_no == 0:
-        logger.info("Loading PuncTransformer...")
-        net = PuncTransformer(src_vocab=vocab_size, trg_vocab=vocab_size, d_model=args.d_model, ff_dim=args.ff_dim,\
+        logger.info("Loading PuncTransformer...")        
+        net = PuncTransformer(src_vocab=src_vocab_size, trg_vocab=trg_vocab_size, trg_vocab2=trg2_vocab_size, \
+                              d_model=args.d_model, ff_dim=args.ff_dim,\
                                 num=args.num, n_heads=args.n_heads, max_encoder_len=max_features_length, \
-                                max_decoder_len=max_seq_length)
+                                max_decoder_len=max_seq_length, mappings=mappings, idx_mappings=idx_mappings)
     '''
     elif args.model_no == 1:
         logger.info("Loading encoder-decoder (LAS) model...")

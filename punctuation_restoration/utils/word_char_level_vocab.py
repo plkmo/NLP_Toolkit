@@ -15,7 +15,7 @@ class tokener(object):
         self.ob = spacy.load(d[lang])
     
     def tokenize(self, sent):
-        sent = re.sub(r"[\*\"\n\\…\+\-\/\=\(\)‘•€\[\]\|]", " ", str(sent))
+        sent = re.sub(r"[\*\"\n\\…\+\-\/\=\(\)‘•€\[\]\|♫]", " ", str(sent))
         #sent = re.sub(r"\!+", "!", sent)
         #sent = re.sub(r"\,+", ",", sent)
         #sent = re.sub(r"\?+", "?", sent)

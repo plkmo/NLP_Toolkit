@@ -87,14 +87,26 @@ def get_punc_idx_mappings(mappings):
     return idx_mappings
 
 def get_punc_idx_labels(tokens, idx_mappings):
-    tokens1 = []
+    tokens1 = []; punc_locs = []
     idxs = idx_mappings.keys() # bpe_ids for punctuations
-    for token in tokens:
+    for idx, token in enumerate(tokens):
         if token not in idxs:
             tokens1.append(1)
         else:
             tokens1.append(token)
-    return tokens1
+            punc_locs.append(idx)
+    if len(punc_locs) > 0:
+        tokens2 = []; x = 1
+        for i in punc_locs:
+            tokens2 += tokens1[x:(i + 1)]
+            x = i + 2
+        c = 0
+        while c < (len(tokens) - len(punc_locs) - 1):
+            tokens2.append(1); c = len(tokens2)
+        tokens2 = [idx_mappings[t] if t in idxs else len(idxs) for t in tokens2]
+    else:
+        tokens2 = [len(idxs) for _ in range(len(tokens))]
+    return tokens2
 
 def remove_punc(tokens, mappings):
     '''
@@ -147,6 +159,9 @@ def create_datasets(args):
         
         df.loc[:, 'train'] = df.progress_apply(lambda x: remove_punc(x['labels'], mappings), axis=1)
     return df
+
+def pad_sos_eos(x, sos, eos):
+    return [sos] + x + [eos] 
 
 class Pad_Sequence():
     """
@@ -220,10 +235,22 @@ def create_TED_datasets(args):
         text_list = list(df["sents"])
         encoder.fit(text_list); del text_list
         df.loc[:, 'labels'] = df.progress_apply(lambda x: next(encoder.transform([x["sents"]])), axis=1)
+        df.loc[:, 'length'] = df.progress_apply(lambda x: len(x['labels']), axis=1)
+        df = df[df['length'] > 3]
+        
+        logger.info("Limiting tokens to max_encoder_length...")
+        df = df[df['length'] <= args.max_encoder_len]
+        
         mappings = get_bpe_punc_mappings(encoder)
         df.loc[:, 'train'] = df.progress_apply(lambda x: remove_punc(x['labels'], mappings), axis=1)
         idx_mappings = get_punc_idx_mappings(mappings)
         df.loc[:, 'labels_p'] = df.progress_apply(lambda x: get_punc_idx_labels(x['labels'], idx_mappings), axis=1)
+        df.loc[:, 'labels_p_length'] = df.progress_apply(lambda x: len(x['labels_p']), axis=1)
+        
+        df.loc[:, 'labels'] = df.progress_apply(lambda x: pad_sos_eos(x["labels"], encoder.word_vocab["__sos"], \
+                                                      encoder.word_vocab["__eos"]), axis=1) # pad sos eos
+        df.loc[:, 'labels_p'] = df.progress_apply(lambda x: pad_sos_eos(x["labels_p"], len(idx_mappings) + 1, \
+                                                      len(idx_mappings) + 2), axis=1)
         
         save_as_pickle("./data/eng.pkl",\
                        df)

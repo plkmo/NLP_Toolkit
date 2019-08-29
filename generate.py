@@ -15,4 +15,4 @@ logger = logging.getLogger('__file__')
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    outputs = infer_from_pretrained(input_sent=None, tokens_len=100, top_k_beam=3)
+    outputs = infer_from_pretrained(input_sent=None, tokens_len=100, top_k_beam=1)

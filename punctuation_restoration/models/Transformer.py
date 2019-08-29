@@ -188,10 +188,10 @@ class DecoderBlock(nn.Module):
         x = self.norm(x)
         return x
 
-class Transformer(nn.Module):
+class PuncTransformer(nn.Module):
     def __init__(self, src_vocab, trg_vocab, d_model, ff_dim, num, n_heads,\
                  max_encoder_len, max_decoder_len):
-        super(Transformer, self).__init__()
+        super(PuncTransformer, self).__init__()
         self.src_vocab = src_vocab
         self.trg_vocab = trg_vocab
         self.d_model = d_model

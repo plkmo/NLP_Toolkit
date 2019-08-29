@@ -8,6 +8,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from .models.Transformer import PuncTransformer
 from .utils.misc import load_pickle, save_as_pickle, CosineWithRestarts
 from tqdm import tqdm
 import logging
@@ -15,6 +16,34 @@ import logging
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger('__file__')
+
+def load_model_and_optimizer(args, vocab_size, max_features_length, max_seq_length, cuda):
+    '''Loads the model (Transformer or encoder-decoder) based on provided arguments and parameters'''
+    
+    if args.model_no == 0:
+        logger.info("Loading PuncTransformer...")
+        net = PuncTransformer(src_vocab=vocab_size, trg_vocab=vocab_size, d_model=args.d_model, ff_dim=args.ff_dim,\
+                                num=args.num, n_heads=args.n_heads, max_encoder_len=max_features_length, \
+                                max_decoder_len=max_seq_length)
+    '''
+    elif args.model_no == 1:
+        logger.info("Loading encoder-decoder (LAS) model...")
+        net = LAS(vocab_size=vocab_size, listener_embed_size=args.LAS_embed_dim, listener_hidden_size=args.LAS_hidden_size, \
+                  output_class_dim=vocab_size, max_label_len=max_seq_length)
+    ''' 
+    for p in net.parameters():
+        if p.dim() > 1:
+            nn.init.xavier_uniform_(p)
+            
+    criterion = nn.CrossEntropyLoss(ignore_index=1) # ignore padding tokens
+    
+    #model = SummaryTransformer if (args.model_no == 0) else LAS
+    net, optimizer, scheduler, start_epoch, acc = load_state(net, args, load_best=False, load_scheduler=False)
+
+    if cuda:
+        net.cuda()
+
+    return net, criterion, optimizer, scheduler, start_epoch, acc
 
 def load_state(net, args, load_best=False, load_scheduler=False):
     """ Loads saved model and optimizer states if exists """

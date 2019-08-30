@@ -24,8 +24,8 @@ def create_masks(src, trg):
         trg_mask = None
     return src_mask, trg_mask
 
-def create_trg_mask(trg, cuda):
-    trg_mask = (trg != 1).unsqueeze(-2)
+def create_trg_mask(trg, cuda, ignore_idx=1):
+    trg_mask = (trg != ignore_idx).unsqueeze(-2)
     np_mask = np.triu(np.ones((1, trg.size(1),trg.size(1))),k=1).astype('uint8')
     np_mask = Variable(torch.from_numpy(np_mask) == 0)
     if cuda:

@@ -9,7 +9,8 @@ import os
 import torch
 from torch.nn.utils import clip_grad_norm_
 from .preprocessing_funcs import load_dataloaders
-from .train_funcs import load_state, load_results
+from .models.Transformer import create_masks, create_trg_mask
+from .train_funcs import load_state, load_results, load_model_and_optimizer, evaluate_results, decode_outputs
 from .utils.word_char_level_vocab import tokener
 from .utils.bpe_vocab import Encoder
 from .utils.misc import save_as_pickle, load_pickle
@@ -38,13 +39,16 @@ def train_and_fit(args):
     logger.info("Max features length = %d %ss" % (max_features_length, args.level))
     logger.info("Max output length = %d" % (max_output_len))
     logger.info("Vocabulary size: %d" % vocab_size)
-    
-    return df, train_loader, vocab, mappings, idx_mappings
-    
-    '''
+        
     logger.info("Loading model and optimizers...")
-    net, criterion, optimizer, scheduler, start_epoch, acc = load_model_and_optimizer(args, vocab_size, max_features_length,\
-                                                                                      max_seq_len, cuda)
+    net, criterion, optimizer, scheduler, start_epoch, acc = load_model_and_optimizer(args=args, src_vocab_size=vocab_size, \
+                                                                                      trg_vocab_size=vocab_size,\
+                                                                                      trg2_vocab_size=len(idx_mappings),\
+                                                                                      max_features_length=args.max_encoder_len,\
+                                                                                      max_seq_length=args.max_decoder_len, \
+                                                                                      mappings=mappings,\
+                                                                                      idx_mappings=idx_mappings,\
+                                                                                      cuda=cuda)
     losses_per_epoch, accuracy_per_epoch = load_results(model_no=args.model_no)
     
     batch_update_steps = 3
@@ -56,13 +60,17 @@ def train_and_fit(args):
         for i, data in enumerate(train_loader):
             
             if args.model_no == 0:
-                src_input, trg_input = data[0], data[1][:, :-1]
+                src_input, trg_input, trg2_input = data[0], data[1][:, :-1], data[2][:, :-1]
                 labels = data[1][:,1:].contiguous().view(-1)
+                labels2 = data[2][:,1:].contiguous().view(-1)
                 src_mask, trg_mask = create_masks(src_input, trg_input)
+                trg2_mask = create_trg_mask(trg2_input, False, ignore_idx=7)
                 if cuda:
                     src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
-                    src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda()
-                outputs = net(src_input, trg_input, src_mask, trg_mask)
+                    src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda(); trg2_mask = trg2_mask.cuda()
+                    trg2_input = trg2_input.cuda().long(); labels2 = labels2.cuda().long()
+                #return src_input, trg_input, trg2_input, src_mask, trg_mask, trg2_mask, labels, labels2
+                outputs, outputs2 = net(src_input, trg_input, trg2_input, src_mask, trg_mask, trg2_mask)
                 
             elif args.model_no == 1:
                 src_input, trg_input = data[0], data[1][:, :-1]
@@ -72,7 +80,8 @@ def train_and_fit(args):
                 outputs = net(src_input, trg_input)
                     
             outputs = outputs.view(-1, outputs.size(-1))
-            loss = criterion(outputs, labels);
+            outputs2 = outputs2.view(-1, outputs2.size(-1))
+            loss = criterion(outputs, outputs2, labels, labels2);
             loss = loss/args.gradient_acc_steps
             loss.backward();
             #clip_grad_norm_(net.parameters(), args.max_norm)
@@ -95,6 +104,7 @@ def train_and_fit(args):
             decode_outputs(outputs, labels, vocab.convert_idx2w, args)
         elif args.level == "bpe":
             decode_outputs(outputs, labels, vocab.inverse_transform, args)
+            decode_outputs(outputs2, labels2, vocab.inverse_transform, args)
         
         if accuracy_per_epoch[-1] > acc:
             acc = accuracy_per_epoch[-1]
@@ -127,4 +137,3 @@ def train_and_fit(args):
     ax.set_title("Accuracy vs Epoch", fontsize=20)
     plt.savefig(os.path.join("./data/",\
                              "test_Accuracy_vs_epoch_%d.png" % args.model_no))
-    '''

@@ -18,7 +18,7 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
 logger = logging.getLogger('__file__')
 
 class TwoHeadedLoss(torch.nn.Module):
-    def __init__(self, ignore_idx=1, ignore_idx_p=7):
+    def __init__(self, ignore_idx=1, ignore_idx_p=4):
         super(TwoHeadedLoss, self).__init__()
         self.ignore_idx = ignore_idx
         self.ignore_idx_p = ignore_idx_p
@@ -30,7 +30,7 @@ class TwoHeadedLoss(torch.nn.Module):
         return total_loss
 
 class TwoHeadedLoss2(torch.nn.Module):
-    def __init__(self, ignore_idx=1, ignore_idx_p=7):
+    def __init__(self, ignore_idx=1, ignore_idx_p=4):
         super(TwoHeadedLoss2, self).__init__()
         self.ignore_idx = ignore_idx
         self.ignore_idx_p = ignore_idx
@@ -64,7 +64,7 @@ def load_model_and_optimizer(args, src_vocab_size, trg_vocab_size, trg2_vocab_si
             nn.init.xavier_uniform_(p)
             
     #criterion = nn.CrossEntropyLoss(ignore_index=1) # ignore padding tokens
-    criterion = TwoHeadedLoss(ignore_idx=1, ignore_idx_p=7)
+    criterion = TwoHeadedLoss(ignore_idx=1, ignore_idx_p=4)
     
     #model = SummaryTransformer if (args.model_no == 0) else LAS
     net, optimizer, scheduler, start_epoch, acc = load_state(net, args, load_best=False, load_scheduler=False)
@@ -138,7 +138,7 @@ def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args):
                 labels = data[1][:,1:].contiguous().view(-1)
                 labels2 = data[2][:,1:].contiguous().view(-1)
                 src_mask, trg_mask = create_masks(src_input, trg_input)
-                trg2_mask = create_trg_mask(trg2_input, False, ignore_idx=7)
+                trg2_mask = create_trg_mask(trg2_input, False, ignore_idx=4)
                 if cuda:
                     src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
                     src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda(); trg2_mask = trg2_mask.cuda()
@@ -155,7 +155,7 @@ def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args):
             outputs = outputs.view(-1, outputs.size(-1))
             outputs2 = outputs2.view(-1, outputs2.size(-1))
             acc += evaluate(outputs, labels, ignore_idx=1)
-            acc2 += evaluate(outputs2, labels2, ignore_idx=7)
+            acc2 += evaluate(outputs2, labels2, ignore_idx=4)
     accuracy = (acc/(i + 1) + acc2/(i + 1))/2
     return accuracy
 

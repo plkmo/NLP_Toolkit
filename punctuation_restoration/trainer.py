@@ -40,6 +40,8 @@ def train_and_fit(args):
     logger.info("Max features length = %d %ss" % (max_features_length, args.level))
     logger.info("Max output length = %d" % (max_output_len))
     logger.info("Vocabulary size: %d" % vocab_size)
+    logger.info("Mappings length: %d" % len(mappings))
+    logger.info("idx_mappings length: %d" % len(idx_mappings))
         
     logger.info("Loading model and optimizers...")
     net, criterion, optimizer, scheduler, start_epoch, acc = load_model_and_optimizer(args=args, src_vocab_size=vocab_size, \
@@ -65,7 +67,7 @@ def train_and_fit(args):
                 labels = data[1][:,1:].contiguous().view(-1)
                 labels2 = data[2][:,1:].contiguous().view(-1)
                 src_mask, trg_mask = create_masks(src_input, trg_input)
-                trg2_mask = create_trg_mask(trg2_input, False, ignore_idx=7)
+                trg2_mask = create_trg_mask(trg2_input, False, ignore_idx=4)
                 if cuda:
                     src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
                     src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda(); trg2_mask = trg2_mask.cuda()

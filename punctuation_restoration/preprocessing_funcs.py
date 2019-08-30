@@ -36,9 +36,9 @@ def save_as_pickle(filename, data):
 
 def create_trg_seq(tokens):
     '''
-    input tokens: tokens tokenized from sentence
+    input tokens: tokens tokenized from sentence ["!", "?", ".", ",", ":", ";",]
     '''
-    punc_list = ["!", "?", ".", ",", ":", ";",]
+    punc_list = ["!", "?", ".", ","]
     tokens1 = []
     for token in tokens:
         if token not in punc_list:
@@ -46,7 +46,7 @@ def create_trg_seq(tokens):
     return tokens1
 
 def create_labels(sent, tokenizer):
-    punc_list = ["!", "?", ".", ",", ":", ";",]
+    punc_list = ["!", "?", ".", ","]
     tokens = tokenizer.tokenize(sent)
     l = len(tokens)
     tokens1 = []
@@ -64,7 +64,7 @@ def create_labels(sent, tokenizer):
     return tokens1
 
 def create_labels2(tokens):
-    punc_list = ["!", "?", ".", ",", ":", ";",]
+    punc_list = ["!", "?", ".", ","]
     tokens1 = []
     for token in tokens:
         if token not in punc_list:
@@ -73,7 +73,7 @@ def create_labels2(tokens):
             tokens1.append(token)
     return tokens1
 
-def get_bpe_punc_mappings(vocab, punc_list=["!", "?", ".", ",", ":", ";",'\'']):
+def get_bpe_punc_mappings(vocab, punc_list=["!", "?", ".", ","]): # ["!", "?", ".", ",", ":", ";",'\'']
     mappings = {}
     for punc in punc_list:
         if punc in vocab.word_vocab.keys():
@@ -188,7 +188,7 @@ class Pad_Sequence():
         y_lengths = torch.LongTensor([len(x) for x in labels])
         
         labels2 = list(map(lambda x: x[2], sorted_batch))
-        labels2_padded = pad_sequence(labels2, batch_first=True, padding_value=7)
+        labels2_padded = pad_sequence(labels2, batch_first=True, padding_value=4)
         y2_lengths = torch.LongTensor([len(x) for x in labels2])
         return seqs_padded, labels_padded, labels2_padded, x_lengths, y_lengths, y2_lengths
 

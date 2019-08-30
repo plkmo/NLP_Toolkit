@@ -23,7 +23,8 @@ logger = logging.getLogger('__file__')
 
 def train_and_fit(args):
     
-    cuda = torch.cuda.is_available()
+    #cuda = torch.cuda.is_available()
+    cuda = False
     
     df, train_loader, train_length, max_features_length, max_output_len = load_dataloaders(args)
     
@@ -43,7 +44,7 @@ def train_and_fit(args):
     logger.info("Loading model and optimizers...")
     net, criterion, optimizer, scheduler, start_epoch, acc = load_model_and_optimizer(args=args, src_vocab_size=vocab_size, \
                                                                                       trg_vocab_size=vocab_size,\
-                                                                                      trg2_vocab_size=len(idx_mappings),\
+                                                                                      trg2_vocab_size=len(idx_mappings) + 1,\
                                                                                       max_features_length=args.max_encoder_len,\
                                                                                       max_seq_length=args.max_decoder_len, \
                                                                                       mappings=mappings,\

@@ -20,7 +20,7 @@ if __name__ == "__main__":
     parser.add_argument("--level", type=str, default="bpe", help="Level of tokenization (word, char or bpe)")
     parser.add_argument("--bpe_word_ratio", type=float, default=0.7, help="Ratio of BPE to word vocab")
     parser.add_argument("--bpe_vocab_size", type=int, default=7000, help="Size of bpe vocab if bpe is used")
-    parser.add_argument("--batch_size", type=int, default=8, help="Batch size")
+    parser.add_argument("--batch_size", type=int, default=16, help="Batch size")
     parser.add_argument("--d_model", type=int, default=512, help="Transformer model dimension")
     parser.add_argument("--ff_dim", type=int, default=2048, help="Transformer feed-forward layer dimension")
     parser.add_argument("--num", type=int, default=6, help="Number of layers")

@@ -87,7 +87,7 @@ def get_punc_idx_mappings(mappings):
     return idx_mappings
 
 def get_punc_idx_labels(tokens, idx_mappings):
-    tokens1 = []; punc_locs = []
+    tokens1 = []; punc_locs = []; no_tokens = 1
     idxs = idx_mappings.keys() # bpe_ids for punctuations
     for idx, token in enumerate(tokens):
         if token not in idxs:
@@ -95,17 +95,27 @@ def get_punc_idx_labels(tokens, idx_mappings):
         else:
             tokens1.append(token)
             punc_locs.append(idx)
-    if len(punc_locs) > 0:
-        tokens2 = []; x = 1
-        for i in punc_locs:
-            tokens2 += tokens1[x:(i + 1)]
-            x = i + 2
-        c = 0
-        while c < (len(tokens) - len(punc_locs) - 1):
-            tokens2.append(1); c = len(tokens2)
-        tokens2 = [idx_mappings[t] if t in idxs else len(idxs) for t in tokens2]
+            no_tokens = 0
+            
+    if idx not in punc_locs:
+        no_tokens = 1
+        punc_locs.append(idx)
+    #if len(punc_locs) > 0:
+    tokens2 = []; x = 1
+    for i in punc_locs:
+        tokens2 += tokens1[x:(i + 1)]
+        x = i + 2
+    tokens2 = [idx_mappings[t] if t in idxs else len(idxs) for t in tokens2]
+    if no_tokens == 1:
+        tokens2.append(len(idxs))
+    '''
+    c = 0
+    while c < (len(tokens) - len(punc_locs) - 1):
+        tokens2.append(1); c = len(tokens2)
+    tokens2 = [idx_mappings[t] if t in idxs else len(idxs) for t in tokens2]
     else:
-        tokens2 = [len(idxs) for _ in range(len(tokens))]
+    tokens2 = [len(idxs) for _ in range(len(tokens))]
+    '''
     return tokens2
 
 def remove_punc(tokens, mappings):
@@ -176,7 +186,11 @@ class Pad_Sequence():
         labels = list(map(lambda x: x[1], sorted_batch))
         labels_padded = pad_sequence(labels, batch_first=True, padding_value=1)
         y_lengths = torch.LongTensor([len(x) for x in labels])
-        return seqs_padded, labels_padded, x_lengths, y_lengths
+        
+        labels2 = list(map(lambda x: x[2], sorted_batch))
+        labels2_padded = pad_sequence(labels2, batch_first=True, padding_value=7)
+        y2_lengths = torch.LongTensor([len(x) for x in labels2])
+        return seqs_padded, labels_padded, labels2_padded, x_lengths, y_lengths, y2_lengths
 
 class punc_datasets(Dataset):
     def __init__(self, df):
@@ -236,21 +250,24 @@ def create_TED_datasets(args):
         encoder.fit(text_list); del text_list
         df.loc[:, 'labels'] = df.progress_apply(lambda x: next(encoder.transform([x["sents"]])), axis=1)
         df.loc[:, 'length'] = df.progress_apply(lambda x: len(x['labels']), axis=1)
-        df = df[df['length'] > 3]
-        
-        logger.info("Limiting tokens to max_encoder_length...")
-        df = df[df['length'] <= args.max_encoder_len]
-        
+        df = df[df['length'] > 3] # filter out too short sentences
+            
         mappings = get_bpe_punc_mappings(encoder)
         df.loc[:, 'train'] = df.progress_apply(lambda x: remove_punc(x['labels'], mappings), axis=1)
         idx_mappings = get_punc_idx_mappings(mappings)
         df.loc[:, 'labels_p'] = df.progress_apply(lambda x: get_punc_idx_labels(x['labels'], idx_mappings), axis=1)
-        df.loc[:, 'labels_p_length'] = df.progress_apply(lambda x: len(x['labels_p']), axis=1)
         
+        logger.info("Padding sos, eos tokens...")
+        idx_mappings['sos'] = len(idx_mappings) + 1
+        idx_mappings['eos'] = len(idx_mappings) + 1
         df.loc[:, 'labels'] = df.progress_apply(lambda x: pad_sos_eos(x["labels"], encoder.word_vocab["__sos"], \
                                                       encoder.word_vocab["__eos"]), axis=1) # pad sos eos
-        df.loc[:, 'labels_p'] = df.progress_apply(lambda x: pad_sos_eos(x["labels_p"], len(idx_mappings) + 1, \
-                                                      len(idx_mappings) + 2), axis=1)
+        df.loc[:, 'labels_p'] = df.progress_apply(lambda x: pad_sos_eos(x["labels_p"], idx_mappings['sos'], \
+                                                      idx_mappings['eos']), axis=1)
+        df.loc[:, 'labels_p_length'] = df.progress_apply(lambda x: len(x['labels_p']), axis=1)
+        
+        logger.info("Limiting tokens to max_encoder_length...")
+        df = df[df['length'] <= (args.max_encoder_len - 2)]
         
         save_as_pickle("./data/eng.pkl",\
                        df)

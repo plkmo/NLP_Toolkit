@@ -96,14 +96,14 @@ def load_state(net, args, load_best=False, load_scheduler=False):
         else:
             net = net.load_model(checkpoint_path)
         optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
-        scheduler = CosineWithRestarts(optimizer, T_max=300)
+        scheduler = CosineWithRestarts(optimizer, T_max=args.T_max)
         if load_scheduler:
             optimizer.load_state_dict(checkpoint['optimizer'])
             scheduler.load_state_dict(checkpoint['scheduler'])
         logger.info("Loaded model and optimizer.")    
     else:
         optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
-        scheduler = CosineWithRestarts(optimizer, T_max=300)
+        scheduler = CosineWithRestarts(optimizer, T_max=args.T_max)
     return net, optimizer, scheduler, start_epoch, best_pred
 
 def load_results(model_no=0):
@@ -161,11 +161,11 @@ def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args):
 
 def decode_outputs(outputs, labels, vocab_decoder, args):
     if labels.is_cuda:
-        l = list(labels[:50].cpu().numpy())
-        o = list(torch.softmax(outputs, dim=1).max(1)[1][:50].cpu().numpy())
+        l = list(labels[:70].cpu().numpy())
+        o = list(torch.softmax(outputs, dim=1).max(1)[1][:70].cpu().numpy())
     else:
-        l = list(labels[:50].numpy())
-        o = list(torch.softmax(outputs, dim=1).max(1)[1][:50].numpy())
+        l = list(labels[:70].numpy())
+        o = list(torch.softmax(outputs, dim=1).max(1)[1][:70].numpy())
     if args.level == "bpe":
         l = [l]
         o = [o]

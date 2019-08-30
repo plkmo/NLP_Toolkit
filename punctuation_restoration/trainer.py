@@ -23,8 +23,8 @@ logger = logging.getLogger('__file__')
 
 def train_and_fit(args):
     
-    #cuda = torch.cuda.is_available()
-    cuda = False
+    cuda = torch.cuda.is_available()
+    #cuda = False
     
     df, train_loader, train_length, max_features_length, max_output_len = load_dataloaders(args)
     
@@ -52,7 +52,7 @@ def train_and_fit(args):
                                                                                       cuda=cuda)
     losses_per_epoch, accuracy_per_epoch = load_results(model_no=args.model_no)
     
-    batch_update_steps = 3
+    batch_update_steps = 30
     logger.info("Starting training process...")
     for e in range(start_epoch, args.num_epochs):
         #l_rate = lrate(e + 1, d_model=32, k=10, warmup_n=25000)

@@ -145,6 +145,12 @@ Natural Language generation (NLG) aims to generate text based on past context. F
 1. Generative Pre-trained Transformer (GPT/GPT-2)
 
 ### Format of dataset files
+1. Generate free text from GPT/GPT-2 pre-trained models
 
 ### Running the model
+Run generate.py
+
+```bash
+generate.py
+```
 

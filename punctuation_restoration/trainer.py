@@ -10,7 +10,7 @@ import torch
 from torch.nn.utils import clip_grad_norm_
 from .preprocessing_funcs import load_dataloaders
 from .models.Transformer import create_masks, create_trg_mask
-from .train_funcs import load_state, load_results, load_model_and_optimizer, evaluate_results, decode_outputs
+from .train_funcs import load_state, load_results, load_model_and_optimizer, evaluate_results, decode_outputs, decode_outputs_p
 from .utils.word_char_level_vocab import tokener
 from .utils.bpe_vocab import Encoder
 from .utils.misc import save_as_pickle, load_pickle
@@ -37,6 +37,9 @@ def train_and_fit(args):
         mappings = load_pickle("mappings.pkl")
         idx_mappings = load_pickle("idx_mappings.pkl")
         
+        inv_idx = {v: k for k, v in idx_mappings.items()} # {0: 250, 1: 34, 2: 5, 3: 4, 4:'word', 5: 'sos', 6: 'eos', 7:'pad'}
+        inv_map = {v:k for k, v in mappings.items()} # {250: '!', 34: '?', 5: '.', 4: ','}
+        
     logger.info("Max features length = %d %ss" % (max_features_length, args.level))
     logger.info("Max output length = %d" % (max_output_len))
     logger.info("Vocabulary size: %d" % vocab_size)
@@ -46,7 +49,7 @@ def train_and_fit(args):
     logger.info("Loading model and optimizers...")
     net, criterion, optimizer, scheduler, start_epoch, acc = load_model_and_optimizer(args=args, src_vocab_size=vocab_size, \
                                                                                       trg_vocab_size=vocab_size,\
-                                                                                      trg2_vocab_size=len(idx_mappings) + 1,\
+                                                                                      trg2_vocab_size=len(idx_mappings),\
                                                                                       max_features_length=args.max_encoder_len,\
                                                                                       max_seq_length=args.max_decoder_len, \
                                                                                       mappings=mappings,\
@@ -67,7 +70,7 @@ def train_and_fit(args):
                 labels = data[1][:,1:].contiguous().view(-1)
                 labels2 = data[2][:,1:].contiguous().view(-1)
                 src_mask, trg_mask = create_masks(src_input, trg_input)
-                trg2_mask = create_trg_mask(trg2_input, False, ignore_idx=4)
+                trg2_mask = create_trg_mask(trg2_input, False, ignore_idx=idx_mappings['pad'])
                 if cuda:
                     src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
                     src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda(); trg2_mask = trg2_mask.cuda()
@@ -107,7 +110,7 @@ def train_and_fit(args):
             decode_outputs(outputs, labels, vocab.convert_idx2w, args)
         elif args.level == "bpe":
             decode_outputs(outputs, labels, vocab.inverse_transform, args)
-            decode_outputs(outputs2, labels2, vocab.inverse_transform, args)
+            decode_outputs_p(outputs2, labels2, inv_idx, inv_map)
         
         if accuracy_per_epoch[-1] > acc:
             acc = accuracy_per_epoch[-1]

@@ -188,7 +188,7 @@ class Pad_Sequence():
         y_lengths = torch.LongTensor([len(x) for x in labels])
         
         labels2 = list(map(lambda x: x[2], sorted_batch))
-        labels2_padded = pad_sequence(labels2, batch_first=True, padding_value=4)
+        labels2_padded = pad_sequence(labels2, batch_first=True, padding_value=7)
         y2_lengths = torch.LongTensor([len(x) for x in labels2])
         return seqs_padded, labels_padded, labels2_padded, x_lengths, y_lengths, y2_lengths
 
@@ -257,9 +257,11 @@ def create_TED_datasets(args):
         idx_mappings = get_punc_idx_mappings(mappings)
         df.loc[:, 'labels_p'] = df.progress_apply(lambda x: get_punc_idx_labels(x['labels'], idx_mappings), axis=1)
         
-        logger.info("Padding sos, eos tokens...")
-        idx_mappings['sos'] = len(idx_mappings) + 1
-        idx_mappings['eos'] = len(idx_mappings) + 1
+        logger.info("Padding sos, eos tokens...") 
+        idx_mappings['word'] = len(idx_mappings) # 4 = word
+        idx_mappings['sos'] = len(idx_mappings) + 1 # 5
+        idx_mappings['eos'] = len(idx_mappings) + 1 # 6
+        idx_mappings['pad'] = len(idx_mappings) + 1 # 7
         df.loc[:, 'labels'] = df.progress_apply(lambda x: pad_sos_eos(x["labels"], encoder.word_vocab["__sos"], \
                                                       encoder.word_vocab["__eos"]), axis=1) # pad sos eos
         df.loc[:, 'labels_p'] = df.progress_apply(lambda x: pad_sos_eos(x["labels_p"], idx_mappings['sos'], \

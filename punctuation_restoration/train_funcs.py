@@ -18,7 +18,7 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
 logger = logging.getLogger('__file__')
 
 class TwoHeadedLoss(torch.nn.Module):
-    def __init__(self, ignore_idx=1, ignore_idx_p=4):
+    def __init__(self, ignore_idx=1, ignore_idx_p=7):
         super(TwoHeadedLoss, self).__init__()
         self.ignore_idx = ignore_idx
         self.ignore_idx_p = ignore_idx_p
@@ -30,7 +30,7 @@ class TwoHeadedLoss(torch.nn.Module):
         return total_loss
 
 class TwoHeadedLoss2(torch.nn.Module):
-    def __init__(self, ignore_idx=1, ignore_idx_p=4):
+    def __init__(self, ignore_idx=1, ignore_idx_p=7):
         super(TwoHeadedLoss2, self).__init__()
         self.ignore_idx = ignore_idx
         self.ignore_idx_p = ignore_idx
@@ -64,7 +64,7 @@ def load_model_and_optimizer(args, src_vocab_size, trg_vocab_size, trg2_vocab_si
             nn.init.xavier_uniform_(p)
             
     #criterion = nn.CrossEntropyLoss(ignore_index=1) # ignore padding tokens
-    criterion = TwoHeadedLoss(ignore_idx=1, ignore_idx_p=4)
+    criterion = TwoHeadedLoss(ignore_idx=1, ignore_idx_p=idx_mappings['pad'])
     
     #model = SummaryTransformer if (args.model_no == 0) else LAS
     net, optimizer, scheduler, start_epoch, acc = load_state(net, args, load_best=False, load_scheduler=False)
@@ -138,7 +138,7 @@ def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args):
                 labels = data[1][:,1:].contiguous().view(-1)
                 labels2 = data[2][:,1:].contiguous().view(-1)
                 src_mask, trg_mask = create_masks(src_input, trg_input)
-                trg2_mask = create_trg_mask(trg2_input, False, ignore_idx=4)
+                trg2_mask = create_trg_mask(trg2_input, False, ignore_idx=7)
                 if cuda:
                     src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
                     src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda(); trg2_mask = trg2_mask.cuda()
@@ -155,7 +155,7 @@ def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args):
             outputs = outputs.view(-1, outputs.size(-1))
             outputs2 = outputs2.view(-1, outputs2.size(-1))
             acc += evaluate(outputs, labels, ignore_idx=1)
-            acc2 += evaluate(outputs2, labels2, ignore_idx=4)
+            acc2 += evaluate(outputs2, labels2, ignore_idx=7)
     accuracy = (acc/(i + 1) + acc2/(i + 1))/2
     return accuracy
 
@@ -171,3 +171,30 @@ def decode_outputs(outputs, labels, vocab_decoder, args):
         o = [o]
     print("Sample Output: ", " ".join(vocab_decoder(o)))
     print("Sample Label: ", " ".join(vocab_decoder(l)))
+    
+def decode_outputs_p(outputs, labels, inv_idx, inv_map):
+    inv_map['pad'] = '<pad>'
+    inv_map['eos'] = '<eos>'
+    inv_map['word'] = '<word>'
+    if labels.is_cuda:
+        l = list(labels[:70].cpu().numpy())
+        o = list(torch.softmax(outputs, dim=1).max(1)[1][:70].cpu().numpy())
+    else:
+        l = list(labels[:70].numpy())
+        o = list(torch.softmax(outputs, dim=1).max(1)[1][:70].numpy())
+    ll = []
+    for t in l:
+        if t in inv_idx.keys():
+            ll.append(inv_idx[t])
+        else:
+            ll.append('pad')
+    ll = [inv_map[a] for a in ll]
+    oo = []
+    for t in o:
+        if t in inv_idx.keys():
+            oo.append(inv_idx[t])
+        else:
+            oo.append('pad')
+    oo = [inv_map[a] for a in oo]
+    print("Sample Output: ", " ".join(oo))
+    print("Sample Label: ", " ".join(ll))

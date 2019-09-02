@@ -62,14 +62,14 @@ def infer(args, from_data=False):
             
                 if args.model_no == 0:
                     src_input, trg_input, trg2_input = data[0], data[1][:, :-1], data[2][:, :-1]
-                    labels = data[1][:,1:].contiguous().view(-1)
-                    labels2 = data[2][:,1:].contiguous().view(-1)
+                    #labels = data[1][:,1:].contiguous().view(-1)
+                    #labels2 = data[2][:,1:].contiguous().view(-1)
                     src_mask, trg_mask = create_masks(src_input, trg_input)
                     trg2_mask = create_trg_mask(trg2_input, False, ignore_idx=idx_mappings['pad'])
                     if cuda:
-                        src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
+                        src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); #labels = labels.cuda().long()
                         src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda(); trg2_mask = trg2_mask.cuda()
-                        trg2_input = trg2_input.cuda().long(); labels2 = labels2.cuda().long()
+                        trg2_input = trg2_input.cuda().long(); #labels2 = labels2.cuda().long()
                     # self, src, trg, trg2, src_mask, trg_mask=None, trg_mask2=None, infer=False, trg_vocab_obj=None, \
                     #trg2_vocab_obj=None
                     stepwise_translated_words, final_step_words, stepwise_translated_words2, final_step_words2 = net(src_input, \
@@ -81,6 +81,44 @@ def infer(args, from_data=False):
                                                                                                                      infer=True, \
                                                                                                                      vocab, \
                                                                                                                      trg2_vocab)
+                    print("\nStepwise-translated:")
+                    print(" ".join(stepwise_translated_words))
+                    print()
+                    print("\nFinal step translated words: ")
+                    print(" ".join(final_step_words))
+                    print()
+                    print("\nStepwise-translated2:")
+                    print(" ".join(stepwise_translated_words2))
+                    print()
+                    print("\nFinal step translated words2: ")
+                    print(" ".join(final_step_words2))
+                    print()
+                    time.sleep(10)
+                
+    else:
+        while True:
+            with torch.no_grad():
+                sent = input("Input sentence to punctuate:/n")
+                if sent in ["quit", "exit"]:
+                    break
+                sent = torch.tensor(next(encoder.transform([sent]))).unsqueeze(0)
+                trg_input = torch.tensor(vocab.word_vocab['__sos']).unsqueeze(0)
+                trg2_input = torch.tensor(idx_mappings['sos']).unsqueeze(0)
+                src_mask, trg_mask = create_masks(sent, trg_input)
+                trg2_mask = create_trg_mask(trg2_input, False, ignore_idx=idx_mappings['pad'])
+                if cuda:
+                    sent = sent.cuda().long(); trg_input = trg_input.cuda().long(); trg2_input = trg2_input.cuda().long()
+                    src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda(); trg2_mask = trg2_mask.cuda()
+                stepwise_translated_words, final_step_words, stepwise_translated_words2, final_step_words2 = net(src_input, \
+                                                                                                                             trg_input, \
+                                                                                                                             trg2_input,\
+                                                                                                                             src_mask, \
+                                                                                                                             trg_mask, \
+                                                                                                                             trg2_mask, \
+                                                                                                                             infer=True, \
+                                                                                                                             vocab, \
+                                                                                                                             trg2_vocab)
+                
                 print("\nStepwise-translated:")
                 print(" ".join(stepwise_translated_words))
                 print()
@@ -93,7 +131,5 @@ def infer(args, from_data=False):
                 print("\nFinal step translated words2: ")
                 print(" ".join(final_step_words2))
                 print()
-                time.sleep(10)
-    else:
-        sent = input("Input sentence to punctuate:/n")
+
     return

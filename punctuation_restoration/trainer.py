@@ -34,10 +34,10 @@ def train_and_fit(args):
         tokenizer_en = tokener("en")
         vocab.word_tokenizer = tokenizer_en.tokenize
         vocab.custom_tokenizer = True
-        mappings = load_pickle("mappings.pkl")
-        idx_mappings = load_pickle("idx_mappings.pkl")
+        mappings = load_pickle("mappings.pkl") # {'!': 250, '?': 34, '.': 5, ',': 4}
+        idx_mappings = load_pickle("idx_mappings.pkl") # {250: 0, 34: 1, 5: 2, 4: 3, 'word': 4, 'sos': 5, 'eos': 6, 'pad': 7}
         
-        inv_idx = {v: k for k, v in idx_mappings.items()} # {0: 250, 1: 34, 2: 5, 3: 4, 4:'word', 5: 'sos', 6: 'eos', 7:'pad'}
+        inv_idx = {v: k for k, v in idx_mappings.items()} # {0: 250, 1: 34, 2: 5, 3: 4, 4: 'word', 5: 'sos', 6: 'eos', 7: 'pad'}
         inv_map = {v:k for k, v in mappings.items()} # {250: '!', 34: '?', 5: '.', 4: ','}
         
     logger.info("Max features length = %d %ss" % (max_features_length, args.level))
@@ -57,7 +57,7 @@ def train_and_fit(args):
                                                                                       cuda=cuda)
     losses_per_epoch, accuracy_per_epoch = load_results(model_no=args.model_no)
     
-    batch_update_steps = 30
+    batch_update_steps = 50
     logger.info("Starting training process...")
     for e in range(start_epoch, args.num_epochs):
         #l_rate = lrate(e + 1, d_model=32, k=10, warmup_n=25000)

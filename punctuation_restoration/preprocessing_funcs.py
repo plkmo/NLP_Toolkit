@@ -259,9 +259,9 @@ def create_TED_datasets(args):
         
         logger.info("Padding sos, eos tokens...") 
         idx_mappings['word'] = len(idx_mappings) # 4 = word
-        idx_mappings['sos'] = len(idx_mappings) + 1 # 5
-        idx_mappings['eos'] = len(idx_mappings) + 1 # 6
-        idx_mappings['pad'] = len(idx_mappings) + 1 # 7
+        idx_mappings['sos'] = len(idx_mappings)  # 5
+        idx_mappings['eos'] = len(idx_mappings)  # 6
+        idx_mappings['pad'] = len(idx_mappings)  # 7 = pad
         df.loc[:, 'labels'] = df.progress_apply(lambda x: pad_sos_eos(x["labels"], encoder.word_vocab["__sos"], \
                                                       encoder.word_vocab["__eos"]), axis=1) # pad sos eos
         df.loc[:, 'labels_p'] = df.progress_apply(lambda x: pad_sos_eos(x["labels_p"], idx_mappings['sos'], \

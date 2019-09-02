@@ -212,7 +212,8 @@ class PuncTransformer(nn.Module):
         self.fc1 = nn.Linear(d_model, trg_vocab)
         self.fc2 = nn.Linear(d_model, trg_vocab2)
     
-    def forward(self, src, trg, trg2, src_mask, trg_mask=None, trg_mask2=None, infer=False, trg_vocab_obj=None):
+    def forward(self, src, trg, trg2, src_mask, trg_mask=None, trg_mask2=None, infer=False, trg_vocab_obj=None, \
+                trg2_vocab_obj=None):
         e_out = self.encoder(src, src_mask); #print("e_out", e_out.shape)
         
         if infer == False:
@@ -224,24 +225,34 @@ class PuncTransformer(nn.Module):
             return x, x2
         else:
             stepwise_translated_words = []; stepwise_translated_word_idxs = []
+            stepwise_translated_words2 = []; stepwise_translated_word_idxs2 = []
             cuda = src.is_cuda
             for i in range(2, self.max_decoder_len):
-                trg_mask = create_trg_mask(trg, cuda=cuda)
+                trg_mask = create_trg_mask(trg, cuda=cuda, ignore_index=1)
+                trg2_mask = create_trg_mask(trg2, False, ignore_idx=self.idx_mappings['pad'])
                 if cuda:
-                    trg = trg.cuda(); trg_mask = trg_mask.cuda()
+                    trg = trg.cuda(); trg_mask = trg_mask.cuda(); trg2 = trg2.cuda(); trg2_mask = trg2_mask.cuda()
                 outputs = self.fc1(self.decoder(trg, e_out, src_mask, trg_mask))
+                outputs2 = self.fc2(self.decoder2(trg2, e_out, src_mask, trg2_mask))
                 out_idxs = torch.softmax(outputs, dim=2).max(2)[1]
+                out_idxs2 = torch.softmax(outputs2, dim=2).max(2)[1]
                 trg = torch.cat((trg, out_idxs[:,-1:]), dim=1)
+                trg2 = torch.cat((trg2, out_idxs2[:,-1:]), dim=1)
                 if cuda:
-                    out_idxs = out_idxs.cpu().numpy()
+                    out_idxs = out_idxs.cpu().numpy(); out_idxs2 = out_idxs2.cpu().numpy()
                 else:
-                    out_idxs = out_idxs.numpy()
+                    out_idxs = out_idxs.numpy(); out_idxs2 = out_idxs2.numpy()
                 stepwise_translated_word_idxs.append(out_idxs.tolist()[0][-1])
-                if stepwise_translated_word_idxs[-1] == trg_vocab_obj.vocab.stoi["<eos>"]: # trg_vocab_obj = FR
+                stepwise_translated_word_idxs2.append(out_idxs2.tolist()[0][-1])
+                if stepwise_translated_word_idxs[-1] == trg_vocab_obj.word_vocab['__eos']: # trg_vocab_obj = FR
                     break
-                stepwise_translated_words.append(trg_vocab_obj.vocab.itos[stepwise_translated_word_idxs[-1]])
-            final_step_words = [trg_vocab_obj.vocab.itos[i] for i in out_idxs[0][:-1]]
-            return stepwise_translated_words, final_step_words
+                if stepwise_translated_word_idxs2[-1] == trg2_vocab_obj['eos']: # <eos> for label2
+                    break
+                stepwise_translated_words.append(trg_vocab_obj.inverse_transform[stepwise_translated_word_idxs[-1]])
+                stepwise_translated_words2.append(trg2_vocab_obj.idx2punc[stepwise_translated_word_idxs2[-1]])
+            final_step_words = [trg_vocab_obj.inverse_transform[i] for i in out_idxs[0][:-1]]
+            final_step_words2 = [trg2_vocab_obj.idx2punc[i] for i in out_idxs[0][:-1]]
+            return stepwise_translated_words, final_step_words, stepwise_translated_words2, final_step_words2
     
     @classmethod # src_vocab, trg_vocab, d_model, num, n_heads
     def load_model(cls, path):

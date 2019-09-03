@@ -18,29 +18,31 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
 logger = logging.getLogger('__file__')
 
 class TwoHeadedLoss(torch.nn.Module):
-    def __init__(self, ignore_idx=1, ignore_idx_p=7):
+    def __init__(self, ignore_idx=1, ignore_idx_p=7, gamma=0.2):
         super(TwoHeadedLoss, self).__init__()
         self.ignore_idx = ignore_idx
         self.ignore_idx_p = ignore_idx_p
+        self.gamma = gamma
         self.criterion1 = nn.CrossEntropyLoss(ignore_index=self.ignore_idx)
         self.criterion2 = nn.CrossEntropyLoss(ignore_index=self.ignore_idx_p)
     
     def forward(self, pred, pred_p, labels, labels_p):
-        total_loss = self.criterion1(pred, labels) + self.criterion2(pred_p, labels_p)
+        total_loss = self.criterion1(pred, labels) + (self.gamma)*(self.criterion2(pred_p, labels_p))
         return total_loss
 
 class TwoHeadedLoss2(torch.nn.Module):
-    def __init__(self, ignore_idx=1, ignore_idx_p=7):
+    def __init__(self, ignore_idx=1, ignore_idx_p=7, gamma=0.2):
         super(TwoHeadedLoss2, self).__init__()
         self.ignore_idx = ignore_idx
         self.ignore_idx_p = ignore_idx
+        self.gamma = gamma
     
     def forward(self, pred, pred_p, labels, labels_p):
         pred_error = torch.sum((-labels* 
                                 (1e-8 + pred.float()).float().log()), 1)
         pred_p_error = torch.sum((-labels_p* 
                                 (1e-8 + pred_p.float()).float().log()), 1)
-        total_loss = pred_error + pred_p_error
+        total_loss = pred_error + self.gamma*pred_p_error
         return total_loss
 
 def load_model_and_optimizer(args, src_vocab_size, trg_vocab_size, trg2_vocab_size, max_features_length,\
@@ -64,7 +66,7 @@ def load_model_and_optimizer(args, src_vocab_size, trg_vocab_size, trg2_vocab_si
             nn.init.xavier_uniform_(p)
             
     #criterion = nn.CrossEntropyLoss(ignore_index=1) # ignore padding tokens
-    criterion = TwoHeadedLoss(ignore_idx=1, ignore_idx_p=idx_mappings['pad'])
+    criterion = TwoHeadedLoss(ignore_idx=1, ignore_idx_p=idx_mappings['pad'], gamma=0.2)
     
     #model = SummaryTransformer if (args.model_no == 0) else LAS
     net, optimizer, scheduler, start_epoch, acc = load_state(net, args, load_best=False, load_scheduler=False)

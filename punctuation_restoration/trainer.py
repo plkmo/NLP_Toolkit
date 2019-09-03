@@ -79,11 +79,13 @@ def train_and_fit(args):
                 outputs, outputs2 = net(src_input, trg_input, trg2_input, src_mask, trg_mask, trg2_mask)
                 
             elif args.model_no == 1:
-                src_input, trg_input = data[0], data[1][:, :-1]
+                src_input, trg_input, trg2_input = data[0], data[1][:, :-1], data[2][:, :-1]
                 labels = data[1][:,1:].contiguous().view(-1)
+                labels2 = data[2][:,1:].contiguous().view(-1)
                 if cuda:
                     src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
-                outputs = net(src_input, trg_input)
+                    trg2_input = trg2_input.cuda().long(); labels2 = labels2.cuda().long()
+                outputs, outputs2 = net(src_input, trg_input, trg2_input)
                     
             outputs = outputs.view(-1, outputs.size(-1))
             outputs2 = outputs2.view(-1, outputs2.size(-1))

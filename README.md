@@ -154,3 +154,15 @@ Run generate.py
 generate.py
 ```
 
+## 6) Punctuation Restoration
+Given unpunctuated (and perhaps un-capitalized) text, punctuation restoration aims to restore the punctuation of the text for easier readability. Applications include punctuating raw transcripts from audio speech data etc.
+
+### Format of dataset files
+
+### Running the model
+Run punctuate.py
+
+```bash
+punctuate.py
+```
+

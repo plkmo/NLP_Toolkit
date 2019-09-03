@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from .models.Transformer import PuncTransformer, create_masks, create_trg_mask
+from .models.LSTM_attention_model import puncLAS
 from .utils.misc import load_pickle, save_as_pickle, CosineWithRestarts
 from tqdm import tqdm
 import logging
@@ -55,12 +56,13 @@ def load_model_and_optimizer(args, src_vocab_size, trg_vocab_size, trg2_vocab_si
                               d_model=args.d_model, ff_dim=args.ff_dim,\
                                 num=args.num, n_heads=args.n_heads, max_encoder_len=max_features_length, \
                                 max_decoder_len=max_seq_length, mappings=mappings, idx_mappings=idx_mappings)
-    '''
+    
     elif args.model_no == 1:
-        logger.info("Loading encoder-decoder (LAS) model...")
-        net = LAS(vocab_size=vocab_size, listener_embed_size=args.LAS_embed_dim, listener_hidden_size=args.LAS_hidden_size, \
-                  output_class_dim=vocab_size, max_label_len=max_seq_length)
-    ''' 
+        logger.info("Loading encoder-decoder (puncLAS) model...")
+        net = puncLAS(vocab_size=src_vocab_size, listener_embed_size=args.LAS_embed_dim, listener_hidden_size=args.LAS_hidden_size, \
+                  output_class_dim=trg_vocab_size, output_class_dim2=trg2_vocab_size,\
+                  max_label_len=max_seq_length, max_label_len2=max_seq_length)
+     
     for p in net.parameters():
         if p.dim() > 1:
             nn.init.xavier_uniform_(p)
@@ -148,11 +150,13 @@ def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args):
                 outputs, outputs2 = net(src_input, trg_input, trg2_input, src_mask, trg_mask, trg2_mask)
                 
             elif args.model_no == 1:
-                src_input, trg_input = data[0], data[1][:, :-1]
+                src_input, trg_input, trg2_input = data[0], data[1][:, :-1], data[2][:, :-1]
                 labels = data[1][:,1:].contiguous().view(-1)
+                labels2 = data[2][:,1:].contiguous().view(-1)
                 if cuda:
                     src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
-                outputs = net(src_input, trg_input)
+                    trg2_input = trg2_input.cuda().long(); labels2 = labels2.cuda().long()
+                outputs, outputs2 = net(src_input, trg_input, trg2_input)
                 
             outputs = outputs.view(-1, outputs.size(-1))
             outputs2 = outputs2.view(-1, outputs2.size(-1))

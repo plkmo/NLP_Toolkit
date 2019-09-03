@@ -30,7 +30,7 @@ def train_and_fit(args):
     
     if args.level == "bpe":
         vocab = Encoder.load("./data/vocab.pkl")
-        vocab_size = vocab.vocab_size
+        vocab_size = len(vocab.bpe_vocab) + len(vocab.word_vocab)
         tokenizer_en = tokener("en")
         vocab.word_tokenizer = tokenizer_en.tokenize
         vocab.custom_tokenizer = True

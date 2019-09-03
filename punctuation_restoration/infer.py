@@ -78,7 +78,7 @@ def infer(args, from_data=False):
                                                                                                                      src_mask, \
                                                                                                                      trg_mask, \
                                                                                                                      trg2_mask, \
-                                                                                                                     infer=True, \
+                                                                                                                     True, \
                                                                                                                      vocab, \
                                                                                                                      trg2_vocab)
                     print("\nStepwise-translated:")
@@ -101,7 +101,7 @@ def infer(args, from_data=False):
                 sent = input("Input sentence to punctuate:/n")
                 if sent in ["quit", "exit"]:
                     break
-                sent = torch.tensor(next(encoder.transform([sent]))).unsqueeze(0)
+                sent = torch.tensor(next(vocab.transform([sent]))).unsqueeze(0)
                 trg_input = torch.tensor(vocab.word_vocab['__sos']).unsqueeze(0)
                 trg2_input = torch.tensor(idx_mappings['sos']).unsqueeze(0)
                 src_mask, trg_mask = create_masks(sent, trg_input)
@@ -115,7 +115,7 @@ def infer(args, from_data=False):
                                                                                                                              src_mask, \
                                                                                                                              trg_mask, \
                                                                                                                              trg2_mask, \
-                                                                                                                             infer=True, \
+                                                                                                                             True, \
                                                                                                                              vocab, \
                                                                                                                              trg2_vocab)
                 
@@ -133,3 +133,55 @@ def infer(args, from_data=False):
                 print()
 
     return
+
+class punctuator(object):
+    def __init__(self,):
+        super(punctuator, self).__init__()
+        logger.info("Loading data...")
+        self.args = load_pickle("args.pkl")
+        self.args.batch_size = 1
+        self.cuda = torch.cuda.is_available()
+        if self.args.level == "bpe":
+            self.vocab = Encoder.load("./data/vocab.pkl")
+            self.vocab_size = len(self.vocab.bpe_vocab) + len(self.vocab.word_vocab)
+            self.tokenizer_en = tokener("en")
+            self.vocab.word_tokenizer = self.tokenizer_en.tokenize
+            self.vocab.custom_tokenizer = True
+            self.mappings = load_pickle("mappings.pkl") # {'!': 250, '?': 34, '.': 5, ',': 4}
+            self.idx_mappings = load_pickle("idx_mappings.pkl") # {250: 0, 34: 1, 5: 2, 4: 3, 'word': 4, 'sos': 5, 'eos': 6, 'pad': 7}
+    
+        self.trg2_vocab = trg2_vocab_obj(self.idx_mappings, self.mappings)
+        
+        logger.info("Loading model and optimizers...")
+        self.net, _, _, _, _, _ = load_model_and_optimizer(args=self.args, src_vocab_size=self.vocab_size, \
+                                                                                          trg_vocab_size=self.vocab_size,\
+                                                                                          trg2_vocab_size=len(self.idx_mappings),\
+                                                                                          max_features_length=self.args.max_encoder_len,\
+                                                                                          max_seq_length=self.args.max_decoder_len, \
+                                                                                          mappings=self.mappings,\
+                                                                                          idx_mappings=self.idx_mappings,\
+                                                                                          cuda=self.cuda)
+    
+    def punctuate(self, sent):
+        sent = torch.tensor(next(self.vocab.transform([sent]))).unsqueeze(0)
+        if self.args.level == "bpe":
+            trg_input = torch.tensor(self.vocab.word_vocab['__sos']).unsqueeze(0)
+            trg2_input = torch.tensor(self.idx_mappings['sos']).unsqueeze(0)
+        
+        if self.args.model_no == 0:
+            src_mask, trg_mask = create_masks(sent, trg_input)
+            trg2_mask = create_trg_mask(trg2_input, False, ignore_idx=self.idx_mappings['pad'])
+            if self.cuda:
+                sent = sent.cuda().long(); trg_input = trg_input.cuda().long(); trg2_input = trg2_input.cuda().long()
+                src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda(); trg2_mask = trg2_mask.cuda()
+            with torch.no_grad():
+                stepwise_translated_words, final_step_words, stepwise_translated_words2, final_step_words2 = self.net(sent, \
+                                                                                                                 trg_input, \
+                                                                                                                 trg2_input,\
+                                                                                                                 src_mask, \
+                                                                                                                 trg_mask, \
+                                                                                                                 trg2_mask, \
+                                                                                                                 True, \
+                                                                                                                 self.vocab, \
+                                                                                                                 self.trg2_vocab)
+        return sent, stepwise_translated_words2

@@ -131,7 +131,7 @@ def evaluate(output, labels, ignore_idx=1):
     else:
         return (labels[idxs] == o_labels[idxs]).sum().item()
 
-def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args):
+def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args, ignore_idx2=7):
     acc = 0; acc2 = 0
     print("Evaluating...")
     with torch.no_grad():
@@ -142,7 +142,7 @@ def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args):
                 labels = data[1][:,1:].contiguous().view(-1)
                 labels2 = data[2][:,1:].contiguous().view(-1)
                 src_mask, trg_mask = create_masks(src_input, trg_input)
-                trg2_mask = create_trg_mask(trg2_input, False, ignore_idx=7)
+                trg2_mask = create_trg_mask(trg2_input, False, ignore_idx=ignore_idx2)
                 if cuda:
                     src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
                     src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda(); trg2_mask = trg2_mask.cuda()
@@ -161,7 +161,7 @@ def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args):
             outputs = outputs.view(-1, outputs.size(-1))
             outputs2 = outputs2.view(-1, outputs2.size(-1))
             acc += evaluate(outputs, labels, ignore_idx=1)
-            acc2 += evaluate(outputs2, labels2, ignore_idx=7)
+            acc2 += evaluate(outputs2, labels2, ignore_idx=ignore_idx2)
     accuracy = (acc/(i + 1) + acc2/(i + 1))/2
     return accuracy
 

@@ -104,7 +104,8 @@ def train_and_fit(args):
                       (e, (i + 1)*args.batch_size, train_length, losses_per_batch[-1]))
                 total_loss = 0.0
         losses_per_epoch.append(sum(losses_per_batch)/len(losses_per_batch))
-        accuracy_per_epoch.append(evaluate_results(net, train_loader, cuda, None, None, args))
+        accuracy_per_epoch.append(evaluate_results(net, train_loader, cuda, None, None, args, \
+                                                   ignore_idx2=idx_mappings['pad']))
         print("Losses at Epoch %d: %.7f" % (e, losses_per_epoch[-1]))
         print("Accuracy at Epoch %d: %.7f" % (e, accuracy_per_epoch[-1]))
         

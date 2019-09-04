@@ -178,22 +178,29 @@ class Pad_Sequence():
     collate_fn for dataloader to collate sequences of different lengths into a fixed length batch
     Returns padded x sequence, y sequence, x lengths and y lengths of batch
     """
+    def __init__(self, label_pad_value=1, label2_pad_value=7):
+        self.label_pad_value = label_pad_value
+        self.label2_pad_value = label2_pad_value
+        
     def __call__(self, batch):
         sorted_batch = sorted(batch, key=lambda x: x[0].shape[0], reverse=True)
         seqs = [x[0] for x in sorted_batch]
-        seqs_padded = pad_sequence(seqs, batch_first=True, padding_value=1)
+        seqs_padded = pad_sequence(seqs, batch_first=True, padding_value=self.label_pad_value)
         x_lengths = torch.LongTensor([len(x) for x in seqs])
         labels = list(map(lambda x: x[1], sorted_batch))
-        labels_padded = pad_sequence(labels, batch_first=True, padding_value=1)
+        labels_padded = pad_sequence(labels, batch_first=True, padding_value=self.label_pad_value)
         y_lengths = torch.LongTensor([len(x) for x in labels])
         
         labels2 = list(map(lambda x: x[2], sorted_batch))
-        labels2_padded = pad_sequence(labels2, batch_first=True, padding_value=7)
+        labels2_padded = pad_sequence(labels2, batch_first=True, padding_value=self.label2_pad_value)
         y2_lengths = torch.LongTensor([len(x) for x in labels2])
         return seqs_padded, labels_padded, labels2_padded, x_lengths, y_lengths, y2_lengths
 
 class punc_datasets(Dataset):
-    def __init__(self, df):
+    def __init__(self, df, label_pad_value=1, label2_pad_value=7, pad_max_length=False):
+        self.pad_max_length = pad_max_length
+        self.label_pad_value = label_pad_value
+        self.label2_pad_value = label2_pad_value
         self.X = df['train']
         self.y1 = df['labels']
         self.y2 = df['labels_p']
@@ -206,6 +213,12 @@ class punc_datasets(Dataset):
                 x = np.append(x, np.ones((max_len-x.shape[-1]), dtype=int), axis=0)
                 x = list(x)
             return x
+        
+        if pad_max_length:
+            logger.info("Padding sequences to max_lengths %d, %d" % (self.max_features_len, self.max_output_len))
+            self.X.loc[:, 'train'] = self.X.progress_apply(lambda x: x_padder(x['train'], self.max_features_len),\
+                                                              axis=1)
+        
     
     def __len__(self):
         return len(self.X)
@@ -285,10 +298,25 @@ def load_dataloaders(args):
     else:
         df = load_pickle("./data/eng.pkl")
         logger.info("Loaded preprocessed data from file...")
-    trainset = punc_datasets(df)
+    vocab = Encoder.load("./data/vocab.pkl")
+    idx_mappings = load_pickle("./data/idx_mappings.pkl") # {250: 0, 34: 1, 5: 2, 4: 3, 'word': 4, 'sos': 5, 'eos': 6, 'pad': 7}
+    
+    if args.model_no == 0:
+        trainset = punc_datasets(df=df, label_pad_value=vocab.word_vocab['__pad'], label2_pad_value=idx_mappings['pad'],\
+                                 pad_max_length=False)
+    elif args.model_no == 1:
+        trainset = punc_datasets(df=df, label_pad_value=vocab.word_vocab['__pad'], label2_pad_value=idx_mappings['pad'],\
+                                 pad_max_length=True)
+    
     train_length = len(trainset)
     max_features_len = trainset.max_features_len
     max_output_len = trainset.max_output_len
-    train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True,\
-                              num_workers=0, collate_fn=Pad_Sequence(), pin_memory=False)
-    return df, train_loader, train_length, max_features_len, max_output_len     
+    
+    if args.model_no == 0:
+        PS = Pad_Sequence(label_pad_value=vocab.word_vocab['__pad'], label2_pad_value=idx_mappings['pad'])
+        train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True,\
+                                  num_workers=0, collate_fn=PS, pin_memory=False)
+    elif args.model_no == 1:
+        train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True,\
+                                  num_workers=0, pin_memory=False)
+    return df, train_loader, train_length, max_features_len, max_output_len

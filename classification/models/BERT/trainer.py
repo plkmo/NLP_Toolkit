@@ -101,7 +101,7 @@ def train_and_fit(args):
     ax.set_xlabel("Epoch", fontsize=22)
     ax.set_ylabel("Training Loss per batch", fontsize=22)
     ax.set_title("Training Loss vs Epoch", fontsize=32)
-    plt.savefig(os.path.join("./data/" ,"loss_vs_epoch.png"))
+    plt.savefig(os.path.join("./data/" ,"loss_vs_epoch_%d.png" % args.model_no))
     
     fig2 = plt.figure(figsize=(20,20))
     ax2 = fig2.add_subplot(111)
@@ -110,6 +110,6 @@ def train_and_fit(args):
     ax2.set_xlabel("Epoch", fontsize=22)
     ax2.set_ylabel("Test Accuracy", fontsize=22)
     ax2.set_title("Test Accuracy vs Epoch", fontsize=32)
-    plt.savefig(os.path.join("./data/" ,"accuracy_vs_epoch.png"))
+    plt.savefig(os.path.join("./data/" ,"accuracy_vs_epoch_%d.png" % args.model_no))
     
     infer(test_loader, net)

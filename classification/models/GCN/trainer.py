@@ -96,7 +96,7 @@ def train_and_fit(args):
     ax.set_xlabel("Epoch", fontsize=15)
     ax.set_ylabel("Loss", fontsize=15)
     ax.set_title("Loss vs Epoch", fontsize=20)
-    plt.savefig(os.path.join("./data/", "loss_vs_epoch.png"))
+    plt.savefig(os.path.join("./data/", "loss_vs_epoch_%d.png" % args.model_no))
     
     fig = plt.figure(figsize=(13,13))
     ax = fig.add_subplot(111)
@@ -104,7 +104,7 @@ def train_and_fit(args):
     ax.set_xlabel("Epoch", fontsize=15)
     ax.set_ylabel("Accuracy on trained nodes", fontsize=15)
     ax.set_title("Accuracy (trained nodes) vs Epoch", fontsize=20)
-    plt.savefig(os.path.join("./data/", "trained_accuracy_vs_epoch.png"))
+    plt.savefig(os.path.join("./data/", "trained_accuracy_vs_epoch_%d.png" % args.model_no))
 
     if len(labels_not_selected) > 0:    
         fig = plt.figure(figsize=(13,13))
@@ -113,7 +113,7 @@ def train_and_fit(args):
         ax.set_xlabel("Epoch", fontsize=15)
         ax.set_ylabel("Accuracy on untrained nodes", fontsize=15)
         ax.set_title("Accuracy (untrained nodes) vs Epoch", fontsize=20)
-        plt.savefig(os.path.join("./data/", "untrained_accuracy_vs_epoch.png"))
+        plt.savefig(os.path.join("./data/", "untrained_accuracy_vs_epoch_%d.png" % args.model_no))
         
         fig = plt.figure(figsize=(13,13))
         ax = fig.add_subplot(111)
@@ -125,6 +125,6 @@ def train_and_fit(args):
         ax.set_ylabel("Accuracy", fontsize=15)
         ax.set_title("Accuracy vs Epoch", fontsize=20)
         ax.legend(fontsize=20)
-        plt.savefig(os.path.join("./data/", "combined_plot_accuracy_vs_epoch.png"))
+        plt.savefig(os.path.join("./data/", "combined_plot_accuracy_vs_epoch_%d.png" % args.model_no))
     
     infer(f, test_idxs, net)

@@ -215,9 +215,8 @@ class punc_datasets(Dataset):
             return x
         
         if pad_max_length:
-            logger.info("Padding sequences to max_lengths %d, %d" % (self.max_features_len, self.max_output_len))
-            self.X.loc[:, 'train'] = self.X.progress_apply(lambda x: x_padder(x['train'], self.max_features_len),\
-                                                              axis=1)
+            logger.info("Padding sequences to max_lengths %d, %d" % (80, self.max_output_len))
+            self.X = df.progress_apply(lambda x: x_padder(x['train'], 80), axis=1)
         
     
     def __len__(self):
@@ -317,6 +316,7 @@ def load_dataloaders(args):
         train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True,\
                                   num_workers=0, collate_fn=PS, pin_memory=False)
     elif args.model_no == 1:
+        PS = Pad_Sequence(label_pad_value=vocab.word_vocab['__pad'], label2_pad_value=idx_mappings['pad'])
         train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True,\
-                                  num_workers=0, pin_memory=False)
+                                  num_workers=0, collate_fn=PS, pin_memory=False)
     return df, train_loader, train_length, max_features_len, max_output_len

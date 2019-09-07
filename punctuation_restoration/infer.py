@@ -36,6 +36,7 @@ def infer(args, from_data=False):
     cuda = torch.cuda.is_available()
     
     if args.level == "bpe":
+        logger.info("Loading BPE info...")
         vocab = Encoder.load("./data/vocab.pkl")
         vocab_size = len(vocab.bpe_vocab) + len(vocab.word_vocab)
         tokenizer_en = tokener("en")
@@ -65,7 +66,7 @@ def infer(args, from_data=False):
                     #labels = data[1][:,1:].contiguous().view(-1)
                     #labels2 = data[2][:,1:].contiguous().view(-1)
                     src_mask, trg_mask = create_masks(src_input, trg_input)
-                    trg2_mask = create_trg_mask(trg2_input, False, ignore_idx=idx_mappings['pad'])
+                    trg2_mask = create_trg_mask(trg2_input, ignore_idx=idx_mappings['pad'])
                     if cuda:
                         src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); #labels = labels.cuda().long()
                         src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda(); trg2_mask = trg2_mask.cuda()
@@ -98,18 +99,18 @@ def infer(args, from_data=False):
     else:
         while True:
             with torch.no_grad():
-                sent = input("Input sentence to punctuate:/n")
+                sent = input("Input sentence to punctuate:\n")
                 if sent in ["quit", "exit"]:
                     break
                 sent = torch.tensor(next(vocab.transform([sent]))).unsqueeze(0)
-                trg_input = torch.tensor(vocab.word_vocab['__sos']).unsqueeze(0)
-                trg2_input = torch.tensor(idx_mappings['sos']).unsqueeze(0)
+                trg_input = torch.tensor([vocab.word_vocab['__sos']]).unsqueeze(0)
+                trg2_input = torch.tensor([idx_mappings['sos']]).unsqueeze(0)
                 src_mask, trg_mask = create_masks(sent, trg_input)
-                trg2_mask = create_trg_mask(trg2_input, False, ignore_idx=idx_mappings['pad'])
+                trg2_mask = create_trg_mask(trg2_input, ignore_idx=idx_mappings['pad'])
                 if cuda:
                     sent = sent.cuda().long(); trg_input = trg_input.cuda().long(); trg2_input = trg2_input.cuda().long()
                     src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda(); trg2_mask = trg2_mask.cuda()
-                stepwise_translated_words, final_step_words, stepwise_translated_words2, final_step_words2 = net(src_input, \
+                stepwise_translated_words, final_step_words, stepwise_translated_words2, final_step_words2 = net(sent, \
                                                                                                                              trg_input, \
                                                                                                                              trg2_input,\
                                                                                                                              src_mask, \
@@ -165,12 +166,12 @@ class punctuator(object):
     def punctuate(self, sent):
         sent = torch.tensor(next(self.vocab.transform([sent]))).unsqueeze(0)
         if self.args.level == "bpe":
-            trg_input = torch.tensor(self.vocab.word_vocab['__sos']).unsqueeze(0)
-            trg2_input = torch.tensor(self.idx_mappings['sos']).unsqueeze(0)
+            trg_input = torch.tensor([self.vocab.word_vocab['__sos']]).unsqueeze(0)
+            trg2_input = torch.tensor([self.idx_mappings['sos']]).unsqueeze(0)
         
         if self.args.model_no == 0:
             src_mask, trg_mask = create_masks(sent, trg_input)
-            trg2_mask = create_trg_mask(trg2_input, False, ignore_idx=self.idx_mappings['pad'])
+            trg2_mask = create_trg_mask(trg2_input, ignore_idx=self.idx_mappings['pad'])
             if self.cuda:
                 sent = sent.cuda().long(); trg_input = trg_input.cuda().long(); trg2_input = trg2_input.cuda().long()
                 src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda(); trg2_mask = trg2_mask.cuda()

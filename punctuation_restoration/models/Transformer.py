@@ -24,11 +24,11 @@ def create_masks(src, trg):
         trg_mask = None
     return src_mask, trg_mask
 
-def create_trg_mask(trg, cuda, ignore_idx=1):
+def create_trg_mask(trg, ignore_idx=1):
     trg_mask = (trg != ignore_idx).unsqueeze(-2)
     np_mask = np.triu(np.ones((1, trg.size(1),trg.size(1))),k=1).astype('uint8')
     np_mask = Variable(torch.from_numpy(np_mask) == 0)
-    if cuda:
+    if trg.is_cuda:
         np_mask = np_mask.cuda()
     trg_mask = trg_mask & np_mask
     return trg_mask
@@ -228,8 +228,8 @@ class PuncTransformer(nn.Module):
             stepwise_translated_words2 = []; stepwise_translated_word_idxs2 = []
             cuda = src.is_cuda
             for i in range(2, self.max_decoder_len):
-                trg_mask = create_trg_mask(trg, cuda=cuda, ignore_index=1)
-                trg2_mask = create_trg_mask(trg2, False, ignore_idx=self.idx_mappings['pad'])
+                trg_mask = create_trg_mask(trg, ignore_idx=1)
+                trg2_mask = create_trg_mask(trg2, ignore_idx=self.idx_mappings['pad'])
                 if cuda:
                     trg = trg.cuda(); trg_mask = trg_mask.cuda(); trg2 = trg2.cuda(); trg2_mask = trg2_mask.cuda()
                 outputs = self.fc1(self.decoder(trg, e_out, src_mask, trg_mask))
@@ -246,12 +246,12 @@ class PuncTransformer(nn.Module):
                 stepwise_translated_word_idxs2.append(out_idxs2.tolist()[0][-1])
                 if stepwise_translated_word_idxs[-1] == trg_vocab_obj.word_vocab['__eos']: # trg_vocab_obj = FR
                     break
-                if stepwise_translated_word_idxs2[-1] == trg2_vocab_obj['eos']: # <eos> for label2
+                if stepwise_translated_word_idxs2[-1] == trg2_vocab_obj.punc2idx['eos']: # <eos> for label2
                     break
-                stepwise_translated_words.append(trg_vocab_obj.inverse_transform[stepwise_translated_word_idxs[-1]])
+                stepwise_translated_words.append(next(trg_vocab_obj.inverse_transform([[stepwise_translated_word_idxs[-1]]])))
                 stepwise_translated_words2.append(trg2_vocab_obj.idx2punc[stepwise_translated_word_idxs2[-1]])
-            final_step_words = [trg_vocab_obj.inverse_transform[i] for i in out_idxs[0][:-1]]
-            final_step_words2 = [trg2_vocab_obj.idx2punc[i] for i in out_idxs[0][:-1]]
+            final_step_words = next(trg_vocab_obj.inverse_transform([out_idxs[0][:-1].tolist()]))
+            final_step_words2 = [trg2_vocab_obj.idx2punc[i] for i in out_idxs2[0][:-1]]
             return stepwise_translated_words, final_step_words, stepwise_translated_words2, final_step_words2
     
     @classmethod # src_vocab, trg_vocab, d_model, num, n_heads

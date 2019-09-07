@@ -70,7 +70,7 @@ def train_and_fit(args):
                 labels = data[1][:,1:].contiguous().view(-1)
                 labels2 = data[2][:,1:].contiguous().view(-1)
                 src_mask, trg_mask = create_masks(src_input, trg_input)
-                trg2_mask = create_trg_mask(trg2_input, False, ignore_idx=idx_mappings['pad'])
+                trg2_mask = create_trg_mask(trg2_input, ignore_idx=idx_mappings['pad'])
                 if cuda:
                     src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
                     src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda(); trg2_mask = trg2_mask.cuda()

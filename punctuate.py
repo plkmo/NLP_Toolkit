@@ -6,6 +6,7 @@ Created on Wed Aug 28 16:05:17 2019
 """
 from punctuation_restoration.preprocessing_funcs import load_dataloaders
 from punctuation_restoration.trainer import train_and_fit
+from punctuation_restoration.infer import infer
 from utils.misc import save_as_pickle
 from argparse import ArgumentParser
 import logging
@@ -30,7 +31,7 @@ if __name__ == "__main__":
     parser.add_argument("--LAS_embed_dim", type=int, default=128, help="PuncLSTM Embedding dimension")
     parser.add_argument("--LAS_hidden_size", type=int, default=128, help="PuncLSTM listener hidden_size")
     parser.add_argument("--num_epochs", type=int, default=500, help="No of epochs")
-    parser.add_argument("--lr", type=float, default=0.00005, help="learning rate")
+    parser.add_argument("--lr", type=float, default=0.00003, help="learning rate")
     parser.add_argument("--gradient_acc_steps", type=int, default=2, help="Number of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
     parser.add_argument("--T_max", type=int, default=5000, help="number of iterations before LR restart")
@@ -40,4 +41,5 @@ if __name__ == "__main__":
     save_as_pickle("args.pkl", args)
     
     #df, train_loader, train_length = load_dataloaders(args)
-    train_and_fit(args)
+    #train_and_fit(args)
+    infer(args, from_data=True)

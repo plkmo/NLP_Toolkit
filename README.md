@@ -1,13 +1,15 @@
 # NLP Toolkit
 Library containing state-of-the-art models for Natural Language Processing tasks
 
-## Tasks
+## Contents
+Tasks:  
 1. [Classification](##classification)
-2. Automatic Speech Recognition
-3. Text Summarization
-4. Machine Translation
-5. Natural Language Generation
-6. Punctuation Restoration
+2. [Automatic Speech Recognition](##automaticspeech-recognition)
+3. [Text Summarization](##text-summarization)
+4. [Machine Translation](##machine-translation)
+5. [Natural Language Generation](##natural-language-generation)
+6. [Punctuation Restoration](##punctuation-restoration)  
+  
 [Benchmark Results](#benchmark-results)
 
 ## 1) Classification
@@ -81,7 +83,7 @@ speech.py [-h]
 ```
 
 
-## 3) Summarization
+## 3) Text Summarization
 Text summarization aims to distill a paragraph chunk into a few sentences that capture the essential information. This library contains the following models for text summarization: 
 1. Convolutional Transformer 
 2. Seq2Seq (LAS architecture)

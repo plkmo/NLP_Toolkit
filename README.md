@@ -3,12 +3,12 @@ Library containing state-of-the-art models for Natural Language Processing tasks
 
 ## Contents
 Tasks:  
-1. [Classification](##classification)
+1. [Classification](#classification)
 2. [Automatic Speech Recognition](##automaticspeech-recognition)
 3. [Text Summarization](##text-summarization)
 4. [Machine Translation](##machine-translation)
 5. [Natural Language Generation](##natural-language-generation)
-6. [Punctuation Restoration](##punctuation-restoration)  
+6. [Punctuation Restoration](#punctuation-restoration)  
   
 [Benchmark Results](#benchmark-results)
 

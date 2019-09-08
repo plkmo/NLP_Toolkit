@@ -2,12 +2,13 @@
 Library containing state-of-the-art models for Natural Language Processing tasks
 
 ## Tasks
-1. Classification
+1. [Classification](##classification)
 2. Automatic Speech Recognition
 3. Text Summarization
 4. Machine Translation
 5. Natural Language Generation
 6. Punctuation Restoration
+[Benchmark Results](#benchmark-results)
 
 ## 1) Classification
 The goal of classification is to segregate documents into appropriate classes based on their text content. Currently, the classification toolkit uses the following models:
@@ -166,3 +167,4 @@ Run punctuate.py
 punctuate.py
 ```
 
+# Benchmark Results

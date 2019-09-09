@@ -43,7 +43,12 @@ class pyTransformer(nn.Module):
         self.embed2 = nn.Embedding(trg_vocab, d_model)
         self.transformer = nn.Transformer(d_model=d_model, nhead=n_heads, num_encoder_layers=num,\
                                           num_decoder_layers=num, dim_feedforward=ff_dim, dropout=0.1)
+        self.encoder = nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model, n_heads, ff_dim, dropout=0.1), \
+                                             num_layers=num, norm=nn.LayerNorm(normalized_shape=d_model, eps=1e-6))
+        self.decoder = nn.TransformerDecoder(nn.TransformerDecoderLayer(d_model, n_heads, ff_dim, dropout=0.1),\
+                                             num_layers=num, norm=nn.LayerNorm(normalized_shape=d_model, eps=1e-6))
         self.fc1 = nn.Linear(d_model, trg_vocab)
+        self.fc2 = nn.Linear(d_model, trg_vocab2)
     
     def forward(self, src, trg, src_mask, trg_mask=None, infer=False, trg_vocab_obj=None):
         #print(src[0,:], trg[0,:])

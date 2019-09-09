@@ -118,6 +118,17 @@ def get_punc_idx_labels(tokens, idx_mappings):
     '''
     return tokens2
 
+def get_labels2(tokens, idx_mappings):
+    punc_idxs = idx_mappings.keys()
+    tokens1 = []
+    for token in tokens:
+        if token not in punc_idxs:
+            tokens1.append(idx_mappings['word'])
+        else:
+            tokens1.append(idx_mappings[token])
+    return tokens1
+            
+
 def remove_punc(tokens, mappings):
     '''
     tokens = bpe_tokenized ids; mappings = bpe_punctuation dictionary
@@ -197,13 +208,16 @@ class Pad_Sequence():
         return seqs_padded, labels_padded, labels2_padded, x_lengths, y_lengths, y2_lengths
 
 class punc_datasets(Dataset):
-    def __init__(self, df, label_pad_value=1, label2_pad_value=7, pad_max_length=False):
+    def __init__(self, df, label_pad_value=1, label2_pad_value=7, labels2=True, pad_max_length=False):
         self.pad_max_length = pad_max_length
         self.label_pad_value = label_pad_value
         self.label2_pad_value = label2_pad_value
         self.X = df['train']
         self.y1 = df['labels']
-        self.y2 = df['labels_p']
+        if labels2:
+            self.y2 = df['labels2']
+        else:
+            self.y2 = df['labels_p']
         self.max_features_len = int(max(df['train'].apply(lambda x: len(x))))
         self.max_output_len = int(max(df['labels'].apply(lambda x: len(x))))
         
@@ -274,11 +288,15 @@ def create_TED_datasets(args):
         idx_mappings['sos'] = len(idx_mappings)  # 5
         idx_mappings['eos'] = len(idx_mappings)  # 6
         idx_mappings['pad'] = len(idx_mappings)  # 7 = pad
+        df.loc[:, 'labels2'] = df.progress_apply(lambda x: get_labels2(x['labels'], idx_mappings), axis=1)
         df.loc[:, 'labels'] = df.progress_apply(lambda x: pad_sos_eos(x["labels"], encoder.word_vocab["__sos"], \
                                                       encoder.word_vocab["__eos"]), axis=1) # pad sos eos
         df.loc[:, 'labels_p'] = df.progress_apply(lambda x: pad_sos_eos(x["labels_p"], idx_mappings['sos'], \
                                                       idx_mappings['eos']), axis=1)
         df.loc[:, 'labels_p_length'] = df.progress_apply(lambda x: len(x['labels_p']), axis=1)
+        df.loc[:, 'labels2'] = df.progress_apply(lambda x: pad_sos_eos(x["labels2"], idx_mappings['sos'], \
+                                                      idx_mappings['eos']), axis=1)
+        df.loc[:, 'labels2_length'] = df.progress_apply(lambda x: len(x['labels2']), axis=1)
         
         logger.info("Limiting tokens to max_encoder_length...")
         df = df[df['length'] <= (args.max_encoder_len - 2)]

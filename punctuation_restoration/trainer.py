@@ -89,6 +89,7 @@ def train_and_fit(args):
                     
             outputs = outputs.view(-1, outputs.size(-1))
             outputs2 = outputs2.view(-1, outputs2.size(-1))
+            #print(outputs.shape, outputs2.shape, labels.shape, labels2.shape)
             loss = criterion(outputs, outputs2, labels, labels2);
             loss = loss/args.gradient_acc_steps
             loss.backward();

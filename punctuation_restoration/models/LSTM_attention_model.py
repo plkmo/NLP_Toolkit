@@ -145,6 +145,93 @@ class Speller(nn.Module):
     def flatten_parameters(self):
         for l in range(len(self.rnn)):
             self.rnn[l].flatten_parameters()
+            
+            
+class Speller2(nn.Module):
+    def __init__(self, embed_dim, hidden_size, features_size, max_label_len, output_class_dim,\
+                 output_class_dim2, d_model=64, num_layers=2):
+        super(Speller2, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.embed = nn.Embedding(output_class_dim, embed_dim)
+        self.rnn = nn.ModuleList()
+        self.rnn += [nn.LSTMCell(input_size=embed_dim + d_model, hidden_size=hidden_size)]
+        self.rnn += [nn.LSTMCell(hidden_size, hidden_size) for _ in range(1, num_layers)]
+        self.attention = AttentionBlock(hidden_size, features_size, d_model)
+        self.max_label_len = max_label_len
+        self.label_dim = output_class_dim
+        self.character_distribution = nn.Linear(hidden_size + d_model, output_class_dim)
+        self.character_distribution2 = nn.Linear(hidden_size + d_model, output_class_dim2)
+        self.teacher_forcing = True
+            
+    def forward(self, listener_feature, trg_input, infer=False):
+        '''If infer=False, performs a forward pass and returns logits, else if 
+        infer=True, performs forward passes with initial trg_input=<sos>, whose output is appended to generate the next sequence until
+        <eos> or max_length is reached, returns the logits sequence'''
+        pred_y = []; pred_y2 = []
+        if not self.teacher_forcing:
+            y = [self.embed(torch.FloatTensor(np.zeros((listener_feature.shape[0], 1))))] # initialize sos token
+        else:
+            y = self.embed(trg_input); #print("y", y.shape); print("y1", y[:,1,:].shape)
+            
+        hidden_states = [torch.zeros((listener_feature.shape[0], self.hidden_size)) for _ in range(self.num_layers)]
+        c_states = [torch.zeros((listener_feature.shape[0], self.hidden_size)) for _ in range(self.num_layers)]
+        if listener_feature.is_cuda:
+            hidden_states = [hidden_state.cuda() for hidden_state in hidden_states]
+            c_states = [c_state.cuda() for c_state in c_states]
+        
+        if not infer:
+            for step in range(len(y[0,:,0])):
+                context, attention_score = self.attention(hidden_states[-1].unsqueeze(1), listener_feature); #print("Context", context.shape)
+                rnn_input = torch.cat([y[:,step,:], context.squeeze(1)], dim=1); #print("rnn_input", rnn_input.shape)
+                
+                for layer in range(self.num_layers):
+                    if layer == 0:
+                        hidden_states[0], c_states[0] = self.rnn[layer](rnn_input, (hidden_states[0], c_states[0])); #print("hidden_state", hidden_states[0].shape)
+                    else:
+                        hidden_states[layer], c_states[layer] = self.rnn[layer](hidden_states[layer-1], (hidden_states[layer], c_states[layer]))
+                
+                logits = self.character_distribution(torch.cat([hidden_states[-1], context.squeeze(1)], dim=1)); #print("logits", logits.shape)
+                logits2 = self.character_distribution2(torch.cat([hidden_states[-1], context.squeeze(1)], dim=1)); #print("logits", logits.shape)
+                if not self.teacher_forcing:
+                    y.append(self.embed(torch.softmax(logits, dim=1).max(1)[1]))
+                pred_y.append(logits)
+                pred_y2.append(logits2)
+            
+            pred_y = torch.stack(pred_y, dim=1); #print("pred_y", pred_y.shape)
+            pred_y2 = torch.stack(pred_y2, dim=1); #print("pred_y2", pred_y2.shape)
+        
+        else:
+            for step in range(self.max_label_len):
+                context, attention_score = self.attention(hidden_states[-1].unsqueeze(1), listener_feature); #print("Context", context.shape)
+                rnn_input = torch.cat([y[:,step,:], context.squeeze(1)], dim=1); #print("rnn_input", rnn_input.shape)
+                
+                for layer in range(self.num_layers):
+                    if layer == 0:
+                        hidden_states[0], c_states[0] = self.rnn[layer](rnn_input, (hidden_states[0], c_states[0])); #print("hidden_state", hidden_states[0].shape)
+                    else:
+                        hidden_states[layer], c_states[layer] = self.rnn[layer](hidden_states[layer-1], (hidden_states[layer], c_states[layer]))
+                
+                logits = self.character_distribution(torch.cat([hidden_states[-1], context.squeeze(1)], dim=1)); #print("logits", logits.shape)
+                logits2 = self.character_distribution2(torch.cat([hidden_states[-1], context.squeeze(1)], dim=1)); #print("logits2", logits2.shape)
+                pred_y.append(logits)
+                pred_y2.append(logits2)
+                pred_token = torch.softmax(logits, dim=1).max(1)[1]; #print(pred_token)
+                #pred_token2 = torch.softmax(logits2, dim=1).max(1)[1]; #print(pred_token2)
+                y = torch.cat([y, self.embed(pred_token).unsqueeze(1)], dim=1)
+                if pred_token.item() == 2:
+                    break
+            pred_y = torch.stack(pred_y, dim=1); #print("pred_y", pred_y.shape)
+            pred_y = torch.softmax(pred_y, dim=2).max(2)[1]
+            pred_y2 = torch.stack(pred_y2, dim=1); #print("pred_y", pred_y.shape)
+            pred_y2 = torch.softmax(pred_y2, dim=2).max(2)[1]
+        
+        return pred_y, pred_y2
+    
+    def flatten_parameters(self):
+        for l in range(len(self.rnn)):
+            self.rnn[l].flatten_parameters()
+
 
 class puncLAS(nn.Module):
     def __init__(self, vocab_size, listener_embed_size, listener_hidden_size, output_class_dim, \
@@ -179,7 +266,63 @@ class puncLAS(nn.Module):
                     listener_embed_size=checkpoint['listener_embed_size'], \
                     listener_hidden_size=checkpoint['listener_hidden_size'], \
                     output_class_dim=checkpoint['output_class_dim'],\
-                    output_class_dim2=checkpoint['output_class_dim'],\
+                    output_class_dim2=checkpoint['output_class_dim2'],\
+                    max_label_len=checkpoint['max_label_len'],\
+                    max_label_len2=checkpoint['max_label_len2'])
+        model.listener.flatten_parameters()
+        #model.speller.flatten_parameters()
+        model.load_state_dict(checkpoint['state_dict'])
+        return model
+    
+    def save_state(self, epoch, optimizer, scheduler, best_acc, path):
+        state = {
+                    'epoch': epoch + 1,\
+                    'state_dict': self.state_dict(),\
+                    'best_acc': best_acc,\
+                    'optimizer' : optimizer.state_dict(),\
+                    'scheduler' : scheduler.state_dict(),\
+                    'vocab_size': self.vocab_size,\
+                    'listener_embed_size' : self.listener_embed_size,\
+                    'listener_hidden_size': self.listener_hidden_size,\
+                    'output_class_dim': self.output_class_dim,\
+                    'output_class_dim2': self.output_class_dim2,\
+                    'max_label_len': self.max_label_len,\
+                    'max_label_len2': self.max_label_len2
+                }
+        torch.save(state, path)
+        
+
+class puncLAS2(nn.Module):
+    def __init__(self, vocab_size, listener_embed_size, listener_hidden_size, output_class_dim, \
+                 output_class_dim2, max_label_len = 80, max_label_len2=80):
+        super(puncLAS2, self).__init__()
+        self.vocab_size = vocab_size
+        self.listener_embed_size = listener_embed_size
+        self.listener_hidden_size = listener_hidden_size
+        self.output_class_dim = output_class_dim
+        self.output_class_dim2 = output_class_dim2
+        self.max_label_len = max_label_len
+        self.max_label_len2 = max_label_len2
+        self.embed = nn.Embedding(vocab_size, listener_embed_size)
+        self.listener = Listener(listener_embed_size, listener_hidden_size)
+        self.speller = Speller2(listener_hidden_size, listener_hidden_size, 2*listener_hidden_size, max_label_len, \
+                               output_class_dim, output_class_dim2, num_layers=2)
+    
+    def forward(self, x, trg_input, trg_input2, infer=False):
+        # x = batch_size X seq_len
+        x = self.embed(x)
+        x = self.listener(x)
+        x1, x2 = self.speller(x, trg_input, infer)
+        return x1, x2
+    
+    @classmethod
+    def load_model(cls, path):
+        checkpoint = torch.load(path)
+        model = cls(vocab_size=checkpoint['vocab_size'],\
+                    listener_embed_size=checkpoint['listener_embed_size'], \
+                    listener_hidden_size=checkpoint['listener_hidden_size'], \
+                    output_class_dim=checkpoint['output_class_dim'],\
+                    output_class_dim2=checkpoint['output_class_dim2'],\
                     max_label_len=checkpoint['max_label_len'],\
                     max_label_len2=checkpoint['max_label_len2'])
         model.listener.flatten_parameters()

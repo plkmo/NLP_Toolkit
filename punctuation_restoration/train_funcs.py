@@ -8,8 +8,8 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from .models.Transformer import PuncTransformer, create_masks, create_trg_mask
-from .models.LSTM_attention_model import puncLAS
+from .models.Transformer import PuncTransformer, PuncTransformer2, create_masks, create_trg_mask
+from .models.LSTM_attention_model import puncLAS, puncLAS2
 from .utils.misc import load_pickle, save_as_pickle, CosineWithRestarts
 from tqdm import tqdm
 import logging
@@ -49,19 +49,30 @@ class TwoHeadedLoss2(torch.nn.Module):
 def load_model_and_optimizer(args, src_vocab_size, trg_vocab_size, trg2_vocab_size, max_features_length,\
                              max_seq_length, mappings, idx_mappings, cuda):
     '''Loads the model (Transformer or encoder-decoder) based on provided arguments and parameters'''
-    
+    paper = 1
     if args.model_no == 0:
-        logger.info("Loading PuncTransformer...")        
-        net = PuncTransformer(src_vocab=src_vocab_size, trg_vocab=trg_vocab_size, trg_vocab2=trg2_vocab_size, \
-                              d_model=args.d_model, ff_dim=args.ff_dim,\
-                                num=args.num, n_heads=args.n_heads, max_encoder_len=max_features_length, \
-                                max_decoder_len=max_seq_length, mappings=mappings, idx_mappings=idx_mappings)
+        logger.info("Loading PuncTransformer...")
+        if paper == 0:        
+            net = PuncTransformer(src_vocab=src_vocab_size, trg_vocab=trg_vocab_size, trg_vocab2=trg2_vocab_size, \
+                                  d_model=args.d_model, ff_dim=args.ff_dim,\
+                                    num=args.num, n_heads=args.n_heads, max_encoder_len=max_features_length, \
+                                    max_decoder_len=max_seq_length, mappings=mappings, idx_mappings=idx_mappings)
+        elif paper == 1:
+            net = PuncTransformer2(src_vocab=src_vocab_size, trg_vocab=trg_vocab_size, trg_vocab2=trg2_vocab_size, \
+                                  d_model=args.d_model, ff_dim=args.ff_dim,\
+                                    num=args.num, n_heads=args.n_heads, max_encoder_len=max_features_length, \
+                                    max_decoder_len=max_seq_length, mappings=mappings, idx_mappings=idx_mappings)
     
     elif args.model_no == 1:
         logger.info("Loading encoder-decoder (puncLAS) model...")
-        net = puncLAS(vocab_size=src_vocab_size, listener_embed_size=args.LAS_embed_dim, listener_hidden_size=args.LAS_hidden_size, \
-                  output_class_dim=trg_vocab_size, output_class_dim2=trg2_vocab_size,\
-                  max_label_len=max_seq_length, max_label_len2=max_seq_length)
+        if paper == 0:
+            net = puncLAS(vocab_size=src_vocab_size, listener_embed_size=args.LAS_embed_dim, listener_hidden_size=args.LAS_hidden_size, \
+                      output_class_dim=trg_vocab_size, output_class_dim2=trg2_vocab_size,\
+                      max_label_len=max_seq_length, max_label_len2=max_seq_length)
+        elif paper == 1:
+            net = puncLAS2(vocab_size=src_vocab_size, listener_embed_size=args.LAS_embed_dim, listener_hidden_size=args.LAS_hidden_size, \
+                      output_class_dim=trg_vocab_size, output_class_dim2=trg2_vocab_size,\
+                      max_label_len=max_seq_length, max_label_len2=max_seq_length)
      
     for p in net.parameters():
         if p.dim() > 1:

@@ -25,17 +25,20 @@ def create_trg_mask(trg, cuda):
     return trg_mask
 
 class pyTransformer(nn.Module):
-    def __init__(self, src_vocab, trg_vocab, d_model, ff_dim, num, n_heads,\
-                 max_encoder_len=80, max_decoder_len=80):
+    def __init__(self, src_vocab, trg_vocab, trg_vocab2, d_model, ff_dim, num, n_heads,\
+                 max_encoder_len, max_decoder_len, mappings, idx_mappings):
         super(pyTransformer, self).__init__()
         self.src_vocab = src_vocab
         self.trg_vocab = trg_vocab
+        self.trg_vocab2 = trg_vocab2
         self.d_model = d_model
         self.ff_dim = ff_dim
         self.num = num
         self.n_heads = n_heads
         self.max_encoder_len = max_encoder_len
         self.max_decoder_len = max_decoder_len
+        self.mappings = mappings
+        self.idx_mappings = idx_mappings
         self.embed1 = nn.Embedding(src_vocab, d_model)
         self.embed2 = nn.Embedding(trg_vocab, d_model)
         self.transformer = nn.Transformer(d_model=d_model, nhead=n_heads, num_encoder_layers=num,\

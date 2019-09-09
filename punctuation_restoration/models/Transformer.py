@@ -291,4 +291,104 @@ class PuncTransformer(nn.Module):
                     'idx_mappings': self.idx_mappings
                 }
         torch.save(state, path)
+
+
+class PuncTransformer2(nn.Module):
+    def __init__(self, src_vocab, trg_vocab, trg_vocab2, d_model, ff_dim, num, n_heads,\
+                 max_encoder_len, max_decoder_len, mappings, idx_mappings):
+        super(PuncTransformer2, self).__init__()
+        self.src_vocab = src_vocab
+        self.trg_vocab = trg_vocab
+        self.trg_vocab2 = trg_vocab2
+        self.d_model = d_model
+        self.ff_dim = ff_dim
+        self.num = num
+        self.n_heads = n_heads
+        self.max_encoder_len = max_encoder_len
+        self.max_decoder_len = max_decoder_len
+        self.mappings = mappings
+        self.idx_mappings = idx_mappings
+        self.encoder = EncoderBlock(vocab_size=src_vocab, d_model=d_model, ff_dim=ff_dim,\
+                                    num=num, n_heads=n_heads, max_encoder_len=max_encoder_len)
+        self.decoder = DecoderBlock(vocab_size=trg_vocab, d_model=d_model, ff_dim=ff_dim,\
+                                    num=num, n_heads=n_heads, max_decoder_len=max_decoder_len)
+        self.fc1 = nn.Linear(d_model, trg_vocab)
+        self.fc2 = nn.Linear(d_model, trg_vocab2)
+    
+    def forward(self, src, trg, trg2, src_mask, trg_mask=None, trg_mask2=None, infer=False, trg_vocab_obj=None, \
+                trg2_vocab_obj=None):
+        e_out = self.encoder(src, src_mask); #print("e_out", e_out.shape)
         
+        if infer == False:
+            d_out = self.decoder(trg, e_out, src_mask, trg_mask); #print("d_out", d_out.shape)
+            x = self.fc1(d_out); #print("x", x.shape)
+            x2 = self.fc2(d_out)
+            return x, x2
+        else:
+            stepwise_translated_words = []; stepwise_translated_word_idxs = []
+            stepwise_translated_words2 = []; stepwise_translated_word_idxs2 = []
+            cuda = src.is_cuda
+            for i in range(2, self.max_decoder_len):
+                trg_mask = create_trg_mask(trg, ignore_idx=1)
+                if cuda:
+                    trg = trg.cuda(); trg_mask = trg_mask.cuda()
+                d_out = self.decoder(trg, e_out, src_mask, trg_mask)
+                outputs = self.fc1(d_out)
+                outputs2 = self.fc2(d_out)
+                out_idxs = torch.softmax(outputs, dim=2).max(2)[1]
+                out_idxs2 = torch.softmax(outputs2, dim=2).max(2)[1]
+                trg = torch.cat((trg, out_idxs[:,-1:]), dim=1)
+
+                if cuda:
+                    out_idxs = out_idxs.cpu().numpy(); out_idxs2 = out_idxs2.cpu().numpy()
+                else:
+                    out_idxs = out_idxs.numpy(); out_idxs2 = out_idxs2.numpy()
+                stepwise_translated_word_idxs.append(out_idxs.tolist()[0][-1])
+                stepwise_translated_word_idxs2.append(out_idxs2.tolist()[0][-1])
+                if stepwise_translated_word_idxs[-1] == trg_vocab_obj.word_vocab['__eos']: # trg_vocab_obj = FR
+                    break
+                if stepwise_translated_word_idxs2[-1] == trg2_vocab_obj.punc2idx['eos']: # <eos> for label2
+                    break
+                stepwise_translated_words.append(next(trg_vocab_obj.inverse_transform([[stepwise_translated_word_idxs[-1]]])))
+                stepwise_translated_words2.append(trg2_vocab_obj.idx2punc[stepwise_translated_word_idxs2[-1]])
+            final_step_words = next(trg_vocab_obj.inverse_transform([out_idxs[0][:-1].tolist()]))
+            final_step_words2 = [trg2_vocab_obj.idx2punc[i] for i in out_idxs2[0][:-1]]
+            return stepwise_translated_words, final_step_words, stepwise_translated_words2, final_step_words2
+    
+    @classmethod # src_vocab, trg_vocab, d_model, num, n_heads
+    def load_model(cls, path):
+        checkpoint = torch.load(path)
+        model = cls(src_vocab=checkpoint["src_vocab"], \
+                    trg_vocab=checkpoint["trg_vocab"], \
+                    trg_vocab2=checkpoint["trg_vocab2"], \
+                    d_model=checkpoint["d_model"], \
+                    ff_dim=checkpoint["ff_dim"], \
+                    num=checkpoint["num"], \
+                    n_heads=checkpoint["n_heads"], \
+                    max_encoder_len=checkpoint["max_encoder_len"], \
+                    max_decoder_len=checkpoint["max_decoder_len"], \
+                    mappings=checkpoint["mappings"],\
+                    idx_mappings=checkpoint["idx_mappings"])
+        model.load_state_dict(checkpoint['state_dict'])
+        return model
+    
+    def save_state(self, epoch, optimizer, scheduler, best_acc, path):
+        state = {
+                    'epoch': epoch + 1,\
+                    'state_dict': self.state_dict(),\
+                    'best_acc': best_acc,\
+                    'optimizer' : optimizer.state_dict(),\
+                    'scheduler' : scheduler.state_dict(),\
+                    'src_vocab' : self.src_vocab,\
+                    'trg_vocab': self.trg_vocab,\
+                    'trg_vocab2': self.trg_vocab2, \
+                    'd_model': self.d_model,\
+                    'ff_dim': self.ff_dim,\
+                    'num': self.num,\
+                    'n_heads': self.n_heads,\
+                    'max_encoder_len': self.max_encoder_len,\
+                    'max_decoder_len': self.max_decoder_len,\
+                    'mappings': self.mappings,\
+                    'idx_mappings': self.idx_mappings
+                }
+        torch.save(state, path)

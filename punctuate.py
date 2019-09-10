@@ -36,7 +36,8 @@ if __name__ == "__main__":
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
     parser.add_argument("--T_max", type=int, default=5000, help="number of iterations before LR restart")
     parser.add_argument("--model_no", type=int, default=0, help="Model ID - 0: PuncTransformer\n\
-                        1: PuncLSTM")
+                        1: PuncLSTM\n\
+                        2: pyTransformer")
     args = parser.parse_args()
     save_as_pickle("args.pkl", args)
     

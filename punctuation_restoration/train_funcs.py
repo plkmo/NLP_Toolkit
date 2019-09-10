@@ -8,8 +8,9 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from .models.Transformer import PuncTransformer, PuncTransformer2, create_masks, create_trg_mask
+from .models.Transformer import PuncTransformer, PuncTransformer2
 from .models.LSTM_attention_model import puncLAS, puncLAS2
+from .models.py_Transformer import pyTransformer
 from .utils.misc import load_pickle, save_as_pickle, CosineWithRestarts
 from tqdm import tqdm
 import logging
@@ -73,6 +74,12 @@ def load_model_and_optimizer(args, src_vocab_size, trg_vocab_size, trg2_vocab_si
             net = puncLAS2(vocab_size=src_vocab_size, listener_embed_size=args.LAS_embed_dim, listener_hidden_size=args.LAS_hidden_size, \
                       output_class_dim=trg_vocab_size, output_class_dim2=trg2_vocab_size,\
                       max_label_len=max_seq_length, max_label_len2=max_seq_length)
+    elif args.model_no == 2:
+        logger.info("Loading pyTransformer model...")
+        net = pyTransformer(src_vocab=src_vocab_size, trg_vocab=trg_vocab_size, trg_vocab2=trg2_vocab_size, \
+                                  d_model=args.d_model, ff_dim=args.ff_dim,\
+                                    num=args.num, n_heads=args.n_heads, max_encoder_len=max_features_length, \
+                                    max_decoder_len=max_seq_length, mappings=mappings, idx_mappings=idx_mappings)
      
     for p in net.parameters():
         if p.dim() > 1:
@@ -142,7 +149,7 @@ def evaluate(output, labels, ignore_idx=1):
     else:
         return (labels[idxs] == o_labels[idxs]).sum().item()
 
-def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args, ignore_idx2=7):
+def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args, create_masks, create_trg_mask, ignore_idx2=7):
     acc = 0; acc2 = 0
     print("Evaluating...")
     with torch.no_grad():

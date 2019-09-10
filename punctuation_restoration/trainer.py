@@ -9,7 +9,6 @@ import os
 import torch
 from torch.nn.utils import clip_grad_norm_
 from .preprocessing_funcs import load_dataloaders
-from .models.Transformer import create_masks, create_trg_mask
 from .train_funcs import load_state, load_results, load_model_and_optimizer, evaluate_results, decode_outputs, decode_outputs_p
 from .utils.word_char_level_vocab import tokener
 from .utils.bpe_vocab import Encoder
@@ -27,6 +26,11 @@ def train_and_fit(args):
     #cuda = False
     
     df, train_loader, train_length, max_features_length, max_output_len = load_dataloaders(args)
+    
+    if args.model_no == 0:
+        from .models.Transformer import create_masks, create_trg_mask
+    elif args.model_no == 2:
+        from .models.py_Transformer import create_masks, create_trg_mask
     
     if args.level == "bpe":
         vocab = Encoder.load("./data/vocab.pkl")
@@ -106,7 +110,7 @@ def train_and_fit(args):
                 total_loss = 0.0
         losses_per_epoch.append(sum(losses_per_batch)/len(losses_per_batch))
         accuracy_per_epoch.append(evaluate_results(net, train_loader, cuda, None, None, args, \
-                                                   ignore_idx2=idx_mappings['pad']))
+                                                   create_masks, create_trg_mask, ignore_idx2=idx_mappings['pad']))
         print("Losses at Epoch %d: %.7f" % (e, losses_per_epoch[-1]))
         print("Accuracy at Epoch %d: %.7f" % (e, accuracy_per_epoch[-1]))
         

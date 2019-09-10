@@ -6,7 +6,6 @@ Created on Mon Sep  2 12:26:35 2019
 """
 import torch
 from .preprocessing_funcs import load_dataloaders
-from .models.Transformer import create_masks, create_trg_mask
 from .train_funcs import load_model_and_optimizer
 from .utils.bpe_vocab import Encoder
 from .utils.misc import save_as_pickle, load_pickle
@@ -34,6 +33,11 @@ def infer(args, from_data=False):
     
     args.batch_size = 1
     cuda = torch.cuda.is_available()
+    
+    if args.model_no == 0:
+        from .models.Transformer import create_masks, create_trg_mask
+    elif args.model_no == 2:
+        from .models.py_Transformer import create_masks, create_trg_mask
     
     if args.level == "bpe":
         logger.info("Loading BPE info...")
@@ -140,6 +144,16 @@ class punctuator(object):
         super(punctuator, self).__init__()
         logger.info("Loading data...")
         self.args = load_pickle("args.pkl")
+        
+        if self.args.model_no == 0:
+            from .models.Transformer import create_masks, create_trg_mask
+        elif self.args.model_no == 2:
+            from .models.py_Transformer import create_masks, create_trg_mask
+        else:
+            create_masks, create_trg_mask = None, None
+            
+        self.create_masks = create_masks
+        self.create_trg_mask = create_trg_mask
         self.args.batch_size = 1
         self.cuda = torch.cuda.is_available()
         if self.args.level == "bpe":
@@ -170,8 +184,8 @@ class punctuator(object):
             trg2_input = torch.tensor([self.idx_mappings['sos']]).unsqueeze(0)
         
         if self.args.model_no == 0:
-            src_mask, trg_mask = create_masks(sent, trg_input)
-            trg2_mask = create_trg_mask(trg2_input, ignore_idx=self.idx_mappings['pad'])
+            src_mask, trg_mask = self.create_masks(sent, trg_input)
+            trg2_mask = self.create_trg_mask(trg2_input, ignore_idx=self.idx_mappings['pad'])
             if self.cuda:
                 sent = sent.cuda().long(); trg_input = trg_input.cuda().long(); trg2_input = trg2_input.cuda().long()
                 src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda(); trg2_mask = trg2_mask.cuda()

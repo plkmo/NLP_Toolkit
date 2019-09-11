@@ -173,9 +173,15 @@ punctuate.py
 
 ## 1) Classification (IMDB dataset – 25000 train, 25000 test data points)
 
-Fine-tuned XLNet English Model (12-layer, 768-hidden, 12-heads, 110M parameters)  
-![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/imdb/loss_vs_epoch_2.png) 
+### Fine-tuned XLNet English Model (12-layer, 768-hidden, 12-heads, 110M parameters)  
+![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/imdb/classification/loss_vs_epoch_2.png) 
 
-![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/imdb/accuracy_vs_epoch_2.png) 
+![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/imdb/classification/accuracy_vs_epoch_2.png) 
+
+### Fine-tuned BERT English Model (12-layer, 768-hidden, 12-heads, 110M parameters)  
+![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/imdb/classification/loss_vs_epoch_1.png) 
+
+![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/imdb/classification/accuracy_vs_epoch_1.png) 
+
 
 

@@ -6,6 +6,7 @@ Created on Wed Jun 19 12:01:47 2019
 """
 import torch
 from torch.autograd import Variable
+from nltk.translate import bleu_score
 from .models.Transformer.Transformer import create_masks
 from .train_funcs import load_model_and_optimizer
 from .preprocessing_funcs import tokener, load_dataloaders
@@ -13,6 +14,45 @@ import time
     
 def dum_tokenizer(sent):
     return sent.split()
+
+def calculate_bleu(src, trg, weights=(0.25, 0.25, 0.25, 0.25), corpus_level=False):
+    # src = [[sent words1], [sent words2], ...], trg = [sent words]
+    if not corpus_level:
+        score = bleu_score.sentence_bleu(src, trg, weights=weights)
+    else:
+        score = bleu_score.corpus_bleu(src, trg, weights=weights)
+    return score
+
+def evaluate_bleu(args):
+    args.batch_size = 1
+    #tokenizer_en = tokener("en")
+    train_iter, FR, EN, train_length = load_dataloaders(args)
+    src_vocab = len(EN.vocab)
+    trg_vocab = len(FR.vocab)
+    
+    cuda = torch.cuda.is_available()
+    net, _, _, _, _, _ = load_model_and_optimizer(args, src_vocab, \
+                                                  trg_vocab, cuda)
+    
+    net.eval()
+    trg_init = FR.vocab.stoi["<sos>"]
+    trg_init = Variable(torch.LongTensor([trg_init])).unsqueeze(0)
+    
+    refs = []; hyps = []
+    with torch.no_grad():
+        for i, data in enumerate(train_iter):
+            trg_input = trg_init
+            labels = data.FR[:,1:].contiguous().view(-1)
+            src_mask, trg_mask = create_masks(data.EN, trg_input)
+            if cuda:
+                data.EN = data.EN.cuda(); trg_input = trg_input.cuda(); labels = labels.cuda()
+                src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda()
+            stepwise_translated_words, final_step_words = net(data.EN, trg_input, src_mask, None,\
+                                                              infer=True, trg_vocab_obj=FR)
+            refs.append([stepwise_translated_words]) # need to remove <eos> tokens
+            hyps.append([FR.vocab.itos[i] for i in labels])
+    
+    return
 
 def infer(args, from_data=False):
     args.batch_size = 1
@@ -59,6 +99,7 @@ def infer(args, from_data=False):
                     src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda()
                 stepwise_translated_words, final_step_words = net(data.EN, trg_input, src_mask, None,\
                                                                   infer=True, trg_vocab_obj=FR)
+                score = calculate_bleu([stepwise_translated_words], [FR.vocab.itos[i] for i in labels])
                 print("\n\nInput:")
                 print(" ".join(EN.vocab.itos[i] for i in data.EN[0]))
                 print("\nStepwise-translated:")
@@ -67,6 +108,7 @@ def infer(args, from_data=False):
                 print(" ".join(final_step_words))
                 print("\nGround Truth:")
                 print(" ".join(FR.vocab.itos[i] for i in labels))
+                print("Bleu score (stepwise-translated sentence level): %.3f" % score)
                 time.sleep(7)
     
     else:
@@ -89,6 +131,7 @@ def infer(args, from_data=False):
             with torch.no_grad():
                 stepwise_translated_words, final_step_words = net(sent, trg, src_mask, None, \
                                                                   infer=True, trg_vocab_obj=FR)
+                
                 '''
                 e_out = net.encoder(sent, src_mask) # encoder output for english sentence
                 translated_word = []; translated_word_idxs = []

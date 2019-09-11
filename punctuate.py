@@ -31,7 +31,7 @@ if __name__ == "__main__":
     parser.add_argument("--LAS_embed_dim", type=int, default=512, help="PuncLSTM Embedding dimension")
     parser.add_argument("--LAS_hidden_size", type=int, default=512, help="PuncLSTM listener hidden_size")
     parser.add_argument("--num_epochs", type=int, default=500, help="No of epochs")
-    parser.add_argument("--lr", type=float, default=0.0007, help="learning rate")
+    parser.add_argument("--lr", type=float, default=0.0003, help="learning rate")
     parser.add_argument("--gradient_acc_steps", type=int, default=2, help="Number of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
     parser.add_argument("--T_max", type=int, default=5000, help="number of iterations before LR restart")

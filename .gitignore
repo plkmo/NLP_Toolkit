@@ -5,6 +5,7 @@
 *.bmp
 *.tiff
 *.pth
+*.pyc
 /data/*
 /__pycache__/*
 /utils/__pycache__/*

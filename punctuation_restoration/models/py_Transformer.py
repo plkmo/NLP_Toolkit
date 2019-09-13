@@ -73,7 +73,7 @@ class pyTransformer(nn.Module):
         checkpoint = torch.load(path)
         model = cls(src_vocab=checkpoint["src_vocab"], \
                     trg_vocab=checkpoint["trg_vocab"], \
-                    trg_vocab2=checkpoint["trg_vocab2"]
+                    trg_vocab2=checkpoint["trg_vocab2"],\
                     d_model=checkpoint["d_model"], \
                     ff_dim=checkpoint["ff_dim"], \
                     num=checkpoint["num"], \

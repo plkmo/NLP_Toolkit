@@ -6,8 +6,8 @@ Created on Sun Aug 18 13:03:13 2019
 """
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss
-from pytorch_transformers.modeling_gpt2 import GPT2PreTrainedModel, GPT2Model
-from pytorch_transformers.modeling_utils import (SequenceSummary, add_start_docstrings)
+from .modeling_gpt2 import GPT2PreTrainedModel, GPT2Model
+from .modeling_utils import (SequenceSummary, add_start_docstrings)
 
 GPT2_START_DOCSTRING = r"""    OpenAI GPT-2 model was proposed in
     `Language Models are Unsupervised Multitask Learners`_

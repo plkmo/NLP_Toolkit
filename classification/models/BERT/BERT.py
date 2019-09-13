@@ -4,7 +4,7 @@ Created on Fri Jun 28 10:31:32 2019
 
 @author: WT
 """
-from pytorch_pretrained_bert.modeling import BertModel, BertPreTrainedModel
+from .modeling import BertModel, BertPreTrainedModel
 import torch.nn as nn
 
 class BertForSequenceClassification(BertPreTrainedModel):

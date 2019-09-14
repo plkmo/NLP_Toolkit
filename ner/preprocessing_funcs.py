@@ -40,85 +40,32 @@ def clean_and_tokenize_text(text, table, tokenizer, clean_only=False):
             text = [w for w in text if not any(char.isdigit() for char in w)]
         return text
 
-def get_CNN_data(args, load_extracted=True):
+def get_NER_data(args, load_extracted=True):
     """
-    Extracts CNN dataset, saves then
-    returns dataframe containing body (main text) and highlights (summarized text)
+    Extracts NER dataset, saves then
+    returns dataframe containing body (main text) and NER tags columns
     table: table containing symbols to remove from text
     tokenizer: tokenizer to tokenize text into word tokens
     """
-    path = args.data_path
-    tokenizer_en = tokener()
+    train_path = args.train_path
+    if args.test_path is not None:
+        test_path = args.test_path
+    else:
+        test_path = None
+        
     table = str.maketrans("", "", '"#$%&\'()*+-/:;<=>@[\\]^_`{|}~')
     if load_extracted:
-        df = load_pickle("df_unencoded_CNN.pkl")
+        df_train =  load_pickle("df_train.pkl")
+        if os.path.isfile("./data/df_test.pkl") is not None:
+            df_test = load_pickle("df_test.pkl")
+            
     else:
-        logger.info("Extracting CNN stories...")
-        df = pd.DataFrame(index=[i for i in range(len(os.listdir(path)))], columns=["body", "highlights"])
-        for idx, file in tqdm(enumerate(os.listdir(path)), total=len(os.listdir(path))):
-            with open(os.path.join(path, file), encoding="utf8") as csv_file:
-                csv_reader = csv.reader(csv_file)
-                text = ""
-                for row in csv_reader:
-                    text += "".join(t for t in row)
-            highlights = re.search("@highlight(.*)", text).group(1)
-            highlights = highlights.replace("@highlight", ". ")
-            body = text[:re.search("@highlight", text).span(0)[0]]
-            df.iloc[idx]["body"] = body
-            df.iloc[idx]["highlights"] = highlights
-        save_as_pickle("df_unencoded_CNN.pkl", df)
+        logger.info("Extracting data stories...")
+        with open(train_path, "r", encoding="utf8") as f:
+            text = f.readlines()
         
-    if (args.level == "word") or (args.level == "char"):
-        logger.info("Tokenizing and cleaning extracted text...")
-        df.loc[:, "body"] = df.apply(lambda x: clean_and_tokenize_text(x["body"], table, tokenizer_en), axis=1)
-        df.loc[:, "highlights"] = df.apply(lambda x: clean_and_tokenize_text(x["highlights"], table, tokenizer_en), \
-                                      axis=1)
-        df.loc[:, "body_length"] = df.apply(lambda x: len(x['body']), axis=1)
-        df.loc[:, "highlights_length"] = df.apply(lambda x: len(x['highlights']), axis=1)
-        df = df[(df["body_length"] > 0) & (df["highlights_length"] > 0)]
-                
-        logger.info("Limiting to max features length, building vocab and converting to id tokens...")
-        df = df[df["body_length"] <= args.max_features_length]
-        v = vocab(level=args.level)
-        v.build_vocab(df["body"])
-        v.build_vocab(df["highlights"])
-        df.loc[:, "body"] = df.apply(lambda x: v.convert_w2idx(x["body"]), axis=1)
-        df.loc[:, "highlights"] = df.apply(lambda x: v.convert_w2idx(x["highlights"]), axis=1)
-        df.loc[:, "highlights"] = df.apply(lambda x: pad_sos_eos(x["highlights"], 0, 2), axis=1)
-        save_as_pickle("df_encoded_CNN.pkl", df)
-        save_as_pickle("vocab.pkl", v)
-        
-    elif args.level == "bpe":
-        encoder = Encoder(vocab_size=args.bpe_vocab_size, pct_bpe=args.bpe_word_ratio, word_tokenizer=tokenizer_en.tokenize)
-        df.loc[:, "body"] = df.apply(lambda x: clean_and_tokenize_text(x["body"], table, tokenizer_en, clean_only=True), axis=1)
-        df.loc[:, "highlights"] = df.apply(lambda x: clean_and_tokenize_text(x["highlights"], table, tokenizer_en, clean_only=True), \
-                                      axis=1)
-        logger.info("Training bpe, this might take a while...")
-        text_list = list(df["body"])
-        text_list.extend(list(df["highlights"]))
-        encoder.fit(text_list); del text_list
-        
-        logger.info("Tokenizing to ids and limiting to max features length...")
-        df.loc[:, "body"] = df.apply(lambda x: next(encoder.transform([x["body"]])), axis=1)
-        df.loc[:, "highlights"] = df.apply(lambda x: next(encoder.transform([x["highlights"]])), axis=1)
-        df.loc[:, "body_length"] = df.apply(lambda x: len(x['body']), axis=1)
-        df.loc[:, "highlights_length"] = df.apply(lambda x: len(x['highlights']), axis=1)
-        df = df[(df["body_length"] > 0) & (df["highlights_length"] > 0)]
-        df = df[df["body_length"] <= args.max_features_length]
-        
-        '''
-        logger.info("Converting tokens to ids...")
-        df.loc[:, "body"] = df.apply(lambda x: next(encoder.transform(list(" ".join(t for t in x["body"])))),\
-                                                  axis=1)
-        df.loc[:, "highlights"] = df.apply(lambda x: next(encoder.transform(list(" ".join(t for t in x["highlights"])))),\
-                                              axis=1)
-        '''
-        df.loc[:, "highlights"] = df.apply(lambda x: pad_sos_eos(x["highlights"], encoder.word_vocab["__sos"], encoder.word_vocab["__eos"]),\
-                                              axis=1)
-        
-        save_as_pickle("df_encoded_CNN.pkl", df)
-        encoder.save("./data/vocab.pkl")
-    return df
+    
+    return text
 
 class Pad_Sequence():
     """

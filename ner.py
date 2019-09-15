@@ -23,5 +23,5 @@ if __name__=="__main__":
     parser.add_argument("--model_no", type=int, default=2, help="Model ID: (0: Graph Convolution Network (GCN), 1: BERT, 2: XLNet)")
     
     args = parser.parse_args()
-    text = get_NER_data(args, load_extracted=False)
+    df_train, df_test = get_NER_data(args, load_extracted=False)
     #save_as_pickle("args.pkl", args)

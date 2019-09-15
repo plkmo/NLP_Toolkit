@@ -19,6 +19,7 @@ from .utils.misc_utils import save_as_pickle, load_pickle
 from .utils.word_char_level_vocab import tokener, vocab
 from .utils.bpe_vocab import Encoder
 
+tqdm.pandas(desc="prog_bar")
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger(__file__)
@@ -52,20 +53,60 @@ def get_NER_data(args, load_extracted=True):
         test_path = args.test_path
     else:
         test_path = None
+        df_test = None
         
     table = str.maketrans("", "", '"#$%&\'()*+-/:;<=>@[\\]^_`{|}~')
     if load_extracted:
+        logger.info("Loading pre-processed saved files...")
         df_train =  load_pickle("df_train.pkl")
         if os.path.isfile("./data/df_test.pkl") is not None:
             df_test = load_pickle("df_test.pkl")
+        else:
+            df_test = None
+        logger.info("Loaded!")
             
     else:
         logger.info("Extracting data stories...")
         with open(train_path, "r", encoding="utf8") as f:
             text = f.readlines()
+        sents, ners = [], []
+        sent, sent_ner = [], []
+        for line in tqdm(text):
+            line = line.split(" ")
+            if len(line) == 4:
+                word, pos, btag, ner = line
+                if word != '-DOCSTART-':
+                    sent.append(word); sent_ner.append(re.sub("\n", "", ner))
+            else:
+                sents.append(sent); ners.append(sent_ner)
+                sent, sent_ner = [], []
+        assert len(sents) == len(ners)
+        df_train = pd.DataFrame(data={"sents":sents, "ners":ners})
+        df_train['length'] = df_train.progress_apply(lambda x: len(x['ners']), axis=1)
+        df_train = df_train[df_train['length'] != 0]
+        save_as_pickle("df_train.pkl", df_train)
         
-    
-    return text
+        if test_path is not None:
+            with open(test_path, "r", encoding="utf8") as f:
+                text = f.readlines()
+            sents, ners = [], []
+            sent, sent_ner = [], []
+            for line in tqdm(text):
+                line = line.split(" ")
+                if len(line) == 4:
+                    word, pos, btag, ner = line
+                    if word != '-DOCSTART-':
+                        sent.append(word); sent_ner.append(re.sub("\n", "", ner))
+                else:
+                    sents.append(sent); ners.append(sent_ner)
+                    sent, sent_ner = [], []
+            assert len(sents) == len(ners)
+            df_test = pd.DataFrame(data={"sents":sents, "ners":ners})
+            df_test['length'] = df_test.progress_apply(lambda x: len(x['ners']), axis=1)
+            df_test = df_test[df_test['length'] != 0]
+            save_as_pickle("df_test.pkl", df_test)  
+        
+    return df_train, df_test
 
 class Pad_Sequence():
     """

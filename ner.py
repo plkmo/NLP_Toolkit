@@ -23,7 +23,7 @@ if __name__=="__main__":
     parser.add_argument("--tokens_length", type=int, default=200, help="Max tokens length for BERT")
     parser.add_argument("--gradient_acc_steps", type=int, default=1, help="No. of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
-    parser.add_argument("--num_epochs", type=int, default=25, help="No of epochs")
+    parser.add_argument("--num_epochs", type=int, default=125, help="No of epochs")
     parser.add_argument("--lr", type=float, default=0.0007, help="learning rate")
     parser.add_argument("--model_no", type=int, default=0, help="Model ID: (0: BERT, 1: XLNet)")
     

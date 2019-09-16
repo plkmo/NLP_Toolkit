@@ -28,7 +28,10 @@ def load_model_and_optimizer(args, cuda=False):
     for p in net.parameters():
         if p.dim() > 1:
             nn.init.xavier_uniform_(p)
-           
+    
+    if cuda:
+        net.cuda()
+        
     criterion = nn.CrossEntropyLoss(ignore_index=0) # ignore padding tokens
     optimizer = optim.Adam([{"params":net.bert.parameters(),"lr": args.lr/5},\
                              {"params":net.classifier.parameters(), "lr": args.lr}])
@@ -37,8 +40,7 @@ def load_model_and_optimizer(args, cuda=False):
     
     start_epoch, acc = load_state(net, optimizer, scheduler, args, load_best=False)
 
-    if cuda:
-        net.cuda()
+    
 
     return net, criterion, optimizer, scheduler, start_epoch, acc
 

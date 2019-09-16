@@ -118,17 +118,18 @@ def ner_preprocess(args, df_train, df_test=None):
     
     logger.info("Tokenizing...")
     if args.model_no == 0: # BERT
+        max_len = args.tokens_length - 2
         tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
-        df_train['sents_ids'] = df_train.progress_apply(lambda x: tokenizer.convert_tokens_to_ids(["[CLS]"] + x['sents'] + ["[SEP]"]),\
+        df_train['sents_ids'] = df_train.progress_apply(lambda x: tokenizer.convert_tokens_to_ids(["[CLS]"] + x['sents'][:max_len] + ["[SEP]"]),\
                                                             axis=1)
-        df_train['ners_ids'] = df_train.progress_apply(lambda x: convert_ners_to_ids(['<sos>'] + x['ners'] + ['<eos>'], vocab),\
+        df_train['ners_ids'] = df_train.progress_apply(lambda x: convert_ners_to_ids(x['ners'][:max_len], vocab),\
                                                             axis=1)
         save_as_pickle("df_train.pkl", df_train)
         
         if df_test is not None:
-            df_test['sents_ids'] = df_test.progress_apply(lambda x: tokenizer.convert_tokens_to_ids(["[CLS]"] + x['sents'] + ["[SEP]"]),\
+            df_test['sents_ids'] = df_test.progress_apply(lambda x: tokenizer.convert_tokens_to_ids(["[CLS]"] + x['sents'][:max_len] + ["[SEP]"]),\
                                                                 axis=1)
-            df_test['ners_ids'] = df_test.progress_apply(lambda x: convert_ners_to_ids(['<sos>'] + x['ners'] + ['<eos>'], vocab),\
+            df_test['ners_ids'] = df_test.progress_apply(lambda x: convert_ners_to_ids(x['ners'][:max_len], vocab),\
                                                                axis=1)
             save_as_pickle("df_test.pkl", df_test)
     

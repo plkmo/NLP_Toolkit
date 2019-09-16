@@ -9,8 +9,6 @@ import torch
 from torch.nn.utils import clip_grad_norm_
 from .preprocessing_funcs import load_dataloaders
 from .train_funcs import load_model_and_optimizer, evaluate_results, load_results, decode_outputs
-from .models.InputConv_Transformer import create_masks
-from .utils.bpe_vocab import Encoder
 from .utils.misc_utils import load_pickle, save_as_pickle
 import matplotlib.pyplot as plt
 import logging
@@ -23,24 +21,24 @@ def train_and_fit(args):
     
     cuda = torch.cuda.is_available()
     
-    train_loader, train_length, max_features_length, max_seq_len = load_dataloaders(args)
+    train_loader, train_length, test_loader, test_length = load_dataloaders(args)
     
-    if (args.level == "word") or (args.level == "char"):
-        vocab = load_pickle("vocab.pkl")
-        vocab_size = len(vocab.w2idx)
-    elif args.level == "bpe":
-        vocab = Encoder.load("./data/vocab.pkl")
-        vocab_size = vocab.vocab_size
+    vocab = load_pickle("vocab.pkl")
         
-    logger.info("Max features length = %d %ss" % (max_features_length, args.level))
-    logger.info("Vocabulary size: %d" % vocab_size)
+    logger.info("NER Vocabulary size: %d" % len(vocab.ner2idx))
     
     logger.info("Loading model and optimizers...")
-    net, criterion, optimizer, scheduler, start_epoch, acc = load_model_and_optimizer(args, vocab_size, max_features_length,\
-                                                                                      max_seq_len, cuda)
+    net, criterion, optimizer, scheduler, start_epoch, acc = load_model_and_optimizer(args, cuda)
+    
+    ### freeze all layers except for last encoder layer and classifier layer
+    logger.info("FREEZING MOST HIDDEN LAYERS...")
+    for name, param in net.named_parameters():
+        if ("classifier" not in name) and ("bert.pooler" not in name) and ("bert.encoder.layer.11" not in name):
+            param.requires_grad = False
+    
     losses_per_epoch, accuracy_per_epoch = load_results(model_no=args.model_no)
     
-    batch_update_steps = 3
+    batch_update_steps = int(len(train_loader)/10)
     logger.info("Starting training process...")
     for e in range(start_epoch, args.num_epochs):
         #l_rate = lrate(e + 1, d_model=32, k=10, warmup_n=25000)
@@ -49,13 +47,14 @@ def train_and_fit(args):
         for i, data in enumerate(train_loader):
             
             if args.model_no == 0:
-                src_input, trg_input = data[0], data[1][:, :-1]
-                labels = data[1][:,1:].contiguous().view(-1)
-                src_mask, trg_mask = create_masks(src_input, trg_input)
+                src_input = data[0]
+                labels = data[1].contiguous().view(-1)
+                src_mask = (src_input != 0).float()
                 if cuda:
-                    src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
-                    src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda()
-                outputs = net(src_input, trg_input, src_mask, trg_mask)
+                    src_input = src_input.cuda().long(); labels = labels.cuda().long()
+                    src_mask = src_mask.cuda()
+                outputs = net(src_input, attention_mask=src_mask)
+                outputs = outputs[0][:, 1:-1, :]
                 
             elif args.model_no == 1:
                 src_input, trg_input = data[0], data[1][:, :-1]
@@ -63,8 +62,9 @@ def train_and_fit(args):
                 if cuda:
                     src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
                 outputs = net(src_input, trg_input)
-                    
-            outputs = outputs.view(-1, outputs.size(-1))
+            
+            #print(outputs.shape); print(labels.shape)
+            outputs = outputs.reshape(-1, outputs.size(-1))
             loss = criterion(outputs, labels);
             loss = loss/args.gradient_acc_steps
             loss.backward();
@@ -80,27 +80,32 @@ def train_and_fit(args):
                       (e, (i + 1)*args.batch_size, train_length, losses_per_batch[-1]))
                 total_loss = 0.0
         losses_per_epoch.append(sum(losses_per_batch)/len(losses_per_batch))
-        accuracy_per_epoch.append(evaluate_results(net, train_loader, cuda, None, None, args))
+        accuracy_per_epoch.append(evaluate_results(net, test_loader, cuda, None, None, args))
         print("Losses at Epoch %d: %.7f" % (e, losses_per_epoch[-1]))
         print("Accuracy at Epoch %d: %.7f" % (e, accuracy_per_epoch[-1]))
         
-        if (args.level == "word") or (args.level == "char"):
-            decode_outputs(outputs, labels, vocab.convert_idx2w, args)
-        elif args.level == "bpe":
-            decode_outputs(outputs, labels, vocab.inverse_transform, args)
-        
+        decode_outputs(outputs, labels, vocab.idx2ner, args)
+                
         if accuracy_per_epoch[-1] > acc:
             acc = accuracy_per_epoch[-1]
-            net.save_state(epoch=(e+1), optimizer=optimizer, scheduler=scheduler, best_acc=acc,\
-                           path=os.path.join("./data/" ,\
-                    "test_model_best_%d.pth.tar" % args.model_no))
+            torch.save({
+                    'epoch': e,\
+                    'state_dict': net.state_dict(),\
+                    'best_acc': accuracy_per_epoch[-1],\
+                    'optimizer' : optimizer.state_dict(),\
+                    'scheduler' : scheduler.state_dict(),\
+                }, os.path.join("./data/" , "test_model_best_%d.pth.tar" % args.model_no))
 
         if (e % 1) == 0:
             save_as_pickle("test_losses_per_epoch_%d.pkl" % args.model_no, losses_per_epoch)
             save_as_pickle("test_accuracy_per_epoch_%d.pkl" % args.model_no, accuracy_per_epoch)
-            net.save_state(epoch=(e+1), optimizer=optimizer, scheduler=scheduler, best_acc=acc,\
-                           path=os.path.join("./data/" ,\
-                    "test_checkpoint_%d.pth.tar" % args.model_no))
+            torch.save({
+                    'epoch': e,\
+                    'state_dict': net.state_dict(),\
+                    'best_acc': accuracy_per_epoch[-1],\
+                    'optimizer' : optimizer.state_dict(),\
+                    'scheduler' : scheduler.state_dict(),\
+                }, os.path.join("./data/" , "test_checkpoint_%d.pth.tar" % args.model_no))
 
     logger.info("Finished training")
     fig = plt.figure(figsize=(13,13))

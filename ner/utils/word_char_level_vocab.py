@@ -30,8 +30,8 @@ class vocab_mapper(object):
         
         self.word2idx = {k:v for v, k in enumerate(sents, 1)}
         self.word2idx['<pad>'] = 0
-        self.ner2idx = {k:v for v, k in enumerate(ners, 3)}
-        self.ner2idx.update({'<pad>':0, '<sos>':1, '<eos>':2})
+        self.ner2idx = {k:v for v, k in enumerate(ners, 1)}
+        self.ner2idx.update({'<pad>':0}) #, '<sos>':1, '<eos>':2})
         self.idx2word = {v:k for k,v in self.word2idx.items()}
         self.idx2ner = {v:k for k, v in self.ner2idx.items()}
         logger.info("Done!")

@@ -6,6 +6,7 @@ Created on Tue Aug 13 09:17:59 2019
 """
 import torch
 from torch.autograd import Variable
+from .models.BERT.tokenization_bert import BertTokenizer
 from .preprocessing_funcs import load_dataloaders
 from .train_funcs import load_model_and_optimizer, decode_outputs
 from .utils.misc_utils import load_pickle
@@ -54,8 +55,23 @@ def infer(args, from_data=False):
                 #outputs = outputs.reshape(-1, outputs.size(-1))
                 #outputs = outputs.view(-1, outputs.size(-1))
                 
-                decode_outputs(outputs, labels, vocab.idx2ner, args, reshaped=True)
+                decode_outputs(outputs, labels, vocab.idx2ner, args, reshaped=False)
                 print("")
                 time.sleep(7)
     else:
-        pass
+        max_len = args.tokens_length - 2
+        tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+        while True:
+            sent = input("Type input sentence:\n")
+            if sent in ["quit", "exit"]:
+                break
+            
+            if args.model_no == 0:
+                sent = torch.tensor(tokenizer.encode(sent)).unsqueeze(0)
+                sent_mask = (sent != 0).float()
+                if cuda:
+                    sent = sent.cuda().long(); sent_mask = sent_mask.cuda()
+                outputs = net(sent, attention_mask=sent_mask)
+                outputs = outputs[0][:, 1:-1, :]
+                o = list(torch.softmax(outputs, dim=2).max(2)[1].numpy())
+                print("Sample Output: ", " ".join(vocab.idx2ner[oo] for oo in o))

@@ -7,7 +7,6 @@ Created on Wed Jul 17 16:25:58 2019
 
 import os
 import pandas as pd
-import csv
 import re
 import numpy as np
 import torch
@@ -16,8 +15,8 @@ from torch.nn.utils.rnn import pad_sequence
 from tqdm import tqdm
 import logging
 from .utils.misc_utils import save_as_pickle, load_pickle
-from .utils.word_char_level_vocab import tokener, vocab
-from .utils.bpe_vocab import Encoder
+from .utils.word_char_level_vocab import vocab_mapper
+from .models.BERT.tokenization_bert import BertTokenizer
 
 tqdm.pandas(desc="prog_bar")
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
@@ -40,6 +39,8 @@ def clean_and_tokenize_text(text, table, tokenizer, clean_only=False):
             text = tokenizer.tokenize(text)
             text = [w for w in text if not any(char.isdigit() for char in w)]
         return text
+    
+
 
 def get_NER_data(args, load_extracted=True):
     """
@@ -55,7 +56,6 @@ def get_NER_data(args, load_extracted=True):
         test_path = None
         df_test = None
         
-    table = str.maketrans("", "", '"#$%&\'()*+-/:;<=>@[\\]^_`{|}~')
     if load_extracted:
         logger.info("Loading pre-processed saved files...")
         df_train =  load_pickle("df_train.pkl")
@@ -66,7 +66,7 @@ def get_NER_data(args, load_extracted=True):
         logger.info("Loaded!")
             
     else:
-        logger.info("Extracting data stories...")
+        logger.info("Extracting data...")
         with open(train_path, "r", encoding="utf8") as f:
             text = f.readlines()
         sents, ners = [], []
@@ -84,7 +84,6 @@ def get_NER_data(args, load_extracted=True):
         df_train = pd.DataFrame(data={"sents":sents, "ners":ners})
         df_train['length'] = df_train.progress_apply(lambda x: len(x['ners']), axis=1)
         df_train = df_train[df_train['length'] != 0]
-        save_as_pickle("df_train.pkl", df_train)
         
         if test_path is not None:
             with open(test_path, "r", encoding="utf8") as f:
@@ -104,9 +103,52 @@ def get_NER_data(args, load_extracted=True):
             df_test = pd.DataFrame(data={"sents":sents, "ners":ners})
             df_test['length'] = df_test.progress_apply(lambda x: len(x['ners']), axis=1)
             df_test = df_test[df_test['length'] != 0]
-            save_as_pickle("df_test.pkl", df_test)  
+            
         
     return df_train, df_test
+
+def convert_ners_to_ids(ners, vocab):
+    return [vocab.ner2idx[ner] for ner in ners]
+        
+
+def ner_preprocess(args, df_train, df_test=None):
+    logger.info("Preprocessing...")
+    vocab = vocab_mapper(df_train, df_test)
+    vocab.save()
+    
+    logger.info("Tokenizing...")
+    if args.model_no == 0: # BERT
+        tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+        df_train['sents_ids'] = df_train.progress_apply(lambda x: tokenizer.convert_tokens_to_ids(["[CLS]"] + x['sents'] + ["[SEP]"]),\
+                                                            axis=1)
+        df_train['ners_ids'] = df_train.progress_apply(lambda x: convert_ners_to_ids(['<sos>'] + x['ners'] + ['<eos>'], vocab),\
+                                                            axis=1)
+        save_as_pickle("df_train.pkl", df_train)
+        
+        if df_test is not None:
+            df_test['sents_ids'] = df_test.progress_apply(lambda x: tokenizer.convert_tokens_to_ids(["[CLS]"] + x['sents'] + ["[SEP]"]),\
+                                                                axis=1)
+            df_test['ners_ids'] = df_test.progress_apply(lambda x: convert_ners_to_ids(['<sos>'] + x['ners'] + ['<eos>'], vocab),\
+                                                               axis=1)
+            save_as_pickle("df_test.pkl", df_test)
+    
+    logger.info("Done and saved preprocessed data!")
+    return vocab, tokenizer, df_train, df_test
+
+def preprocess_data(args):
+    if not os.path.isfile("./data/df_train.pkl"):
+        df_train, df_test = get_NER_data(args, load_extracted=False)
+        vocab, tokenizer, df_train, df_test = ner_preprocess(args, df_train, df_test)
+    else:
+        df_train = load_pickle("df_train.pkl")
+        if os.path.isfile("./data/df_test.pkl"):
+            df_test = load_pickle("df_test.pkl")
+        else:
+            df_test = None
+        logger.info("Loaded preprocessed data!")
+        
+    return df_train, df_test
+    
 
 class Pad_Sequence():
     """
@@ -116,10 +158,11 @@ class Pad_Sequence():
     def __call__(self, batch):
         sorted_batch = sorted(batch, key=lambda x: x[0].shape[0], reverse=True)
         seqs = [x[0] for x in sorted_batch]
-        seqs_padded = pad_sequence(seqs, batch_first=True, padding_value=1)
+        seqs_padded = pad_sequence(seqs, batch_first=True, padding_value=0) # tokenizer.pad_token_id = 0
         x_lengths = torch.LongTensor([len(x) for x in seqs])
+        
         labels = list(map(lambda x: x[1], sorted_batch))
-        labels_padded = pad_sequence(labels, batch_first=True, padding_value=1)
+        labels_padded = pad_sequence(labels, batch_first=True, padding_value=0) # vocab.ner2idx['<pad>'] = 0
         y_lengths = torch.LongTensor([len(x) for x in labels])
         return seqs_padded, labels_padded, x_lengths, y_lengths
 
@@ -136,10 +179,10 @@ class text_dataset(Dataset):
         if args.model_no == 1:
             self.X = df["body"].apply(lambda x: x_padder(x, args.max_features_length))
         else:
-            self.X = df["body"]
-        self.y = df["highlights"]
-        self.max_x_len = int(max(df["body"].apply(lambda x: len(x))))
-        self.max_y_len = int(max(df["highlights"].apply(lambda x: len(x))))
+            self.X = df["sents_ids"]
+        self.y = df["ners_ids"]
+        self.max_x_len = int(max(df["sents_ids"].apply(lambda x: len(x))))
+        self.max_y_len = int(max(df["ners_ids"].apply(lambda x: len(x))))
         
     def __len__(self):
         return len(self.y)
@@ -153,19 +196,21 @@ def load_dataloaders(args):
     """Load processed data if exist, else do preprocessing and loads it.  Feeds preprocessed data into dataloader, 
     returns dataloader """
     logger.info("Loading dataloaders...")
-    p_path = os.path.join("./data/", "df_unencoded_CNN.pkl")
-    train_path = os.path.join("./data/", "df_encoded_CNN.pkl")
-    if (not os.path.isfile(p_path)) and (not os.path.isfile(train_path)):
-        df = get_CNN_data(args, load_extracted=False)
-    elif os.path.isfile(p_path) and (not os.path.isfile(train_path)):
-        df = get_CNN_data(args, load_extracted=True)
-    elif os.path.isfile(train_path):
-        df = load_pickle("df_encoded_CNN.pkl")
+    df_train, df_test = preprocess_data(args)
     
-    trainset = text_dataset(df, args)
-    max_features_length = trainset.max_x_len
-    max_seq_len = trainset.max_y_len
+    trainset = text_dataset(df_train, args)
+    #max_features_length = trainset.max_x_len
+    #max_seq_len = trainset.max_y_len
     train_length = len(trainset)
     train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True,\
                               num_workers=0, collate_fn=Pad_Sequence(), pin_memory=False)
-    return train_loader, train_length, max_features_length, max_seq_len
+    
+    if df_test is not None:
+        testset = text_dataset(df_test, args)
+        test_length = len(testset)
+        test_loader = DataLoader(testset, batch_size=args.batch_size, shuffle=True,\
+                                  num_workers=0, collate_fn=Pad_Sequence(), pin_memory=False)
+    else:
+        test_loader, test_length = None, None
+        
+    return train_loader, train_length, test_loader, test_length

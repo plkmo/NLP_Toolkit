@@ -50,10 +50,11 @@ def train_and_fit(args):
                 src_input = data[0]
                 labels = data[1].contiguous().view(-1)
                 src_mask = (src_input != 0).float()
+                token_type = torch.zeros((src_input.shape[0], src_input.shape[1]), dtype=torch.long)
                 if cuda:
                     src_input = src_input.cuda().long(); labels = labels.cuda().long()
-                    src_mask = src_mask.cuda()
-                outputs = net(src_input, attention_mask=src_mask)
+                    src_mask = src_mask.cuda(); token_type=token_type.cuda()
+                outputs = net(src_input, attention_mask=src_mask, token_type_ids=token_type)
                 outputs = outputs[0][:, 1:-1, :]
                 
             elif args.model_no == 1:

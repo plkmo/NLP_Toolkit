@@ -33,7 +33,7 @@ def load_model_and_optimizer(args, cuda=False):
         net.cuda()
         
     criterion = nn.CrossEntropyLoss(ignore_index=0) # ignore padding tokens
-    optimizer = optim.Adam([{"params":net.bert.parameters(),"lr": args.lr/2},\
+    optimizer = optim.Adam([{"params":net.bert.parameters(),"lr": args.lr/20},\
                              {"params":net.classifier.parameters(), "lr": args.lr}])
     #scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2,4,6,8,10,13,15,17,20,23,25], gamma=0.8)
     scheduler = CosineWithRestarts(optimizer, T_max=330)
@@ -130,10 +130,11 @@ def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args):
                 src_input = data[0]
                 labels = data[1].contiguous().view(-1)
                 src_mask = (src_input != 0).float()
+                token_type = torch.zeros((src_input.shape[0], src_input.shape[1]), dtype=torch.long)
                 if cuda:
                     src_input = src_input.cuda().long(); labels = labels.cuda().long()
-                    src_mask = src_mask.cuda()
-                outputs = net(src_input, attention_mask=src_mask)
+                    src_mask = src_mask.cuda(); token_type=token_type.cuda()
+                outputs = net(src_input, attention_mask=src_mask, token_type_ids=token_type)
                 outputs = outputs[0][:, 1:-1, :]
                 
             elif args.model_no == 1:

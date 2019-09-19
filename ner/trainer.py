@@ -32,7 +32,8 @@ def train_and_fit(args):
     
     ### freeze all layers except for last encoder layer and classifier layer
     logger.info("FREEZING MOST HIDDEN LAYERS...")
-    unfrozen_layers = ["classifier", "bert.pooler", "bert.encoder.layer.11", "bert.encoder.layer.10"]
+    unfrozen_layers = ["classifier", "bert.pooler", "bert.encoder.layer.11", "bert.encoder.layer.10", "bert.encoder.layer.9",\
+                       "bert.encoder.layer.8", "bert.encoder.layer.7", "bert.encoder.layer.6", "bert.encoder.layer.5"]
     for name, param in net.named_parameters():
         if not any([layer in name for layer in unfrozen_layers]):
             print("[FROZE]: %s" % name)
@@ -60,7 +61,7 @@ def train_and_fit(args):
                     src_input = src_input.cuda().long(); labels = labels.cuda().long()
                     src_mask = src_mask.cuda(); token_type=token_type.cuda()
                 outputs = net(src_input, attention_mask=src_mask, token_type_ids=token_type)
-                outputs = outputs[0]
+                outputs = outputs[0]; #print(outputs[0,0,:])
                 
             elif args.model_no == 1:
                 src_input, trg_input = data[0], data[1][:, :-1]
@@ -70,7 +71,7 @@ def train_and_fit(args):
                 outputs = net(src_input, trg_input)
             
             #print(outputs.shape); print(labels.shape)
-            outputs = outputs.reshape(-1, outputs.size(-1))
+            outputs = outputs.view(-1, outputs.size(-1))
             loss = criterion(outputs, labels);
             loss = loss/args.gradient_acc_steps
             loss.backward();

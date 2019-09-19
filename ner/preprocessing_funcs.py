@@ -119,7 +119,7 @@ def ner_preprocess(args, df_train, df_test=None, include_cls=True):
     logger.info("Tokenizing...")
     if args.model_no == 0: # BERT
         max_len = args.tokens_length
-        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True, do_basic_tokenize=True)
         if include_cls:
             df_train['sents_ids'] = df_train.progress_apply(lambda x: tokenizer.convert_tokens_to_ids(["[CLS]"] + x['sents'][:max_len] + ["[SEP]"]),\
                                                                 axis=1)

@@ -23,7 +23,7 @@ def load_model_and_optimizer(args, cuda=False):
     
     if args.model_no == 0:
         logger.info("Loading pre-trained BERT for token classification...")
-        net = BertForTokenClassification.from_pretrained('bert-base-cased', num_labels=args.num_classes)
+        net = BertForTokenClassification.from_pretrained('bert-base-uncased', num_labels=args.num_classes)
         
     for p in net.parameters():
         if p.dim() > 1:

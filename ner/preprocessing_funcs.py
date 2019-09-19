@@ -76,7 +76,7 @@ def get_NER_data(args, load_extracted=True):
             if len(line) == 4:
                 word, pos, btag, ner = line
                 if word != '-DOCSTART-':
-                    sent.append(word); sent_ner.append(re.sub("\n", "", ner))
+                    sent.append(word.lower()); sent_ner.append(re.sub("\n", "", ner))
             else:
                 sents.append(sent); ners.append(sent_ner)
                 sent, sent_ner = [], []
@@ -95,7 +95,7 @@ def get_NER_data(args, load_extracted=True):
                 if len(line) == 4:
                     word, pos, btag, ner = line
                     if word != '-DOCSTART-':
-                        sent.append(word); sent_ner.append(re.sub("\n", "", ner))
+                        sent.append(word.lower()); sent_ner.append(re.sub("\n", "", ner))
                 else:
                     sents.append(sent); ners.append(sent_ner)
                     sent, sent_ner = [], []
@@ -111,7 +111,7 @@ def convert_ners_to_ids(ners, vocab):
     return [vocab.ner2idx[ner] for ner in ners]
         
 
-def ner_preprocess(args, df_train, df_test=None, include_cls=False):
+def ner_preprocess(args, df_train, df_test=None, include_cls=True):
     logger.info("Preprocessing...")
     vocab = vocab_mapper(df_train, df_test)
     vocab.save()
@@ -119,7 +119,7 @@ def ner_preprocess(args, df_train, df_test=None, include_cls=False):
     logger.info("Tokenizing...")
     if args.model_no == 0: # BERT
         max_len = args.tokens_length
-        tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
         if include_cls:
             df_train['sents_ids'] = df_train.progress_apply(lambda x: tokenizer.convert_tokens_to_ids(["[CLS]"] + x['sents'][:max_len] + ["[SEP]"]),\
                                                                 axis=1)

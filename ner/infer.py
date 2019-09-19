@@ -61,9 +61,10 @@ def infer(args, from_data=False):
                 time.sleep(7)
     else:
         max_len = args.tokens_length - 2
-        tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
         while True:
             sent = input("Type input sentence:\n")
+            sent = sent.lower()
             if sent in ["quit", "exit"]:
                 break
             

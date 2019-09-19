@@ -43,7 +43,7 @@ def infer(args, from_data=False):
                         src_input = src_input.cuda().long(); labels = labels.cuda().long()
                         src_mask = src_mask.cuda(); token_type=token_type.cuda()
                     outputs = net(src_input, attention_mask=src_mask, token_type_ids=token_type)
-                    outputs = outputs[0][:, 1:-1, :]
+                    outputs = outputs[0]
                     
                 elif args.model_no == 1:
                     src_input, trg_input = data[0], data[1][:, :-1]

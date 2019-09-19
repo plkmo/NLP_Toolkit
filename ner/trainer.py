@@ -32,8 +32,10 @@ def train_and_fit(args):
     
     ### freeze all layers except for last encoder layer and classifier layer
     logger.info("FREEZING MOST HIDDEN LAYERS...")
+    frozen_layers = ["classifier", "bert.pooler", "bert.encoder.layer.11", "bert.encoder.layer.10"]
     for name, param in net.named_parameters():
-        if ("classifier" not in name) and ("bert.pooler" not in name) and ("bert.encoder.layer.11" not in name):
+        if any([layer in name for layer in frozen_layers]):
+            print("[FROZE]: %s" % name)
             param.requires_grad = False
     
     losses_per_epoch, accuracy_per_epoch = load_results(model_no=args.model_no)

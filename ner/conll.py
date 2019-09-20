@@ -358,10 +358,10 @@ def get_dataloaders(args, tokenizer):
     all_label_ids = torch.tensor([f.label_ids for f in features], dtype=torch.long)
     print("Num_classes: %d" % len(label_map))
 
-    dataset = TensorDataset(all_input_ids, all_label_ids)
-    train_length = len(dataset)
-    train_loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True,\
-                              num_workers=0, pin_memory=False)
+    train_dataset = TensorDataset(all_input_ids, all_label_ids)
+    train_length = len(train_dataset)
+    train_sampler = RandomSampler(train_dataset)
+    train_loader = DataLoader(train_dataset, sampler=train_sampler, batch_size=args.batch_size)
     
     # test #
     examples = read_examples_from_file("./data/ner/conll2003/", evaluate=True)
@@ -386,9 +386,9 @@ def get_dataloaders(args, tokenizer):
     all_label_ids = torch.tensor([f.label_ids for f in features], dtype=torch.long)
     print("Num_classes: %d" % len(label_map))
 
-    dataset = TensorDataset(all_input_ids, all_label_ids)
-    test_length = len(dataset)
-    test_loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True,\
-                              num_workers=0, pin_memory=False)
+    test_dataset = TensorDataset(all_input_ids, all_label_ids)
+    test_length = len(test_dataset)
+    test_sampler = RandomSampler(test_dataset)
+    test_loader = DataLoader(test_dataset, sampler=test_sampler, batch_size=args.batch_size)
     
     return train_loader, train_length, test_loader, test_length

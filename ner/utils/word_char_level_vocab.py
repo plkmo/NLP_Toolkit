@@ -37,7 +37,8 @@ class vocab_mapper(object):
             self.idx2ner = {v:k for k, v in self.ner2idx.items()}
             logger.info("Done!")
         else:
-            self.ner2idx = {'I-ORG': 1,
+            '''
+            self.ner2idx = {'I-ORG': 1,  
                             'I-MISC': 2,
                             'I-LOC': 3,
                             'I-PER': 4,
@@ -47,6 +48,8 @@ class vocab_mapper(object):
                             'O': 8,
                             '<pad>': -9,
                             'B-PER': 0}
+            '''
+            self.ner2idx = {"O":0, "B-MISC":1, "I-MISC":2,  "B-PER":3, "I-PER":4, "B-ORG":5, "I-ORG":6, "B-LOC":7, "I-LOC":8}
             self.idx2ner = {v:k for k, v in self.ner2idx.items()}
     
     def save(self, filename="vocab.pkl"):

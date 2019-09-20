@@ -30,9 +30,9 @@ class vocab_mapper(object):
                 sents = list(set(sents)); ners = list(set(ners))
             
             self.word2idx = {k:v for v, k in enumerate(sents, 0)}
-            self.word2idx['<pad>'] = -9
+            self.word2idx['<pad>'] = -100
             self.ner2idx = {k:v for v, k in enumerate(ners, 0)}
-            self.ner2idx.update({'<pad>':-9, 'B-PER':len(self.ner2idx)}) #, '<sos>':1, '<eos>':2})
+            self.ner2idx.update({'<pad>':-100, 'B-PER':len(self.ner2idx)}) #, '<sos>':1, '<eos>':2})
             self.idx2word = {v:k for k,v in self.word2idx.items()}
             self.idx2ner = {v:k for k, v in self.ner2idx.items()}
             logger.info("Done!")
@@ -49,7 +49,8 @@ class vocab_mapper(object):
                             '<pad>': -9,
                             'B-PER': 0}
             '''
-            self.ner2idx = {"O":0, "B-MISC":1, "I-MISC":2,  "B-PER":3, "I-PER":4, "B-ORG":5, "I-ORG":6, "B-LOC":7, "I-LOC":8}
+            self.ner2idx = {"O":0, "B-MISC":1, "I-MISC":2,  "B-PER":3, "I-PER":4, "B-ORG":5, "I-ORG":6, "B-LOC":7, "I-LOC":8,\
+                            '<pad':-100}
             self.idx2ner = {v:k for k, v in self.ner2idx.items()}
     
     def save(self, filename="vocab.pkl"):

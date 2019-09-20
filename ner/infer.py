@@ -37,7 +37,7 @@ def infer(args, from_data=False):
                 if args.model_no == 0:
                     src_input = data[0]
                     labels = data[1].contiguous().view(-1)
-                    src_mask = (src_input != 0).float()
+                    src_mask = (src_input != 0).long()
                     token_type = torch.zeros((src_input.shape[0], src_input.shape[1]), dtype=torch.long)
                     if cuda:
                         src_input = src_input.cuda().long(); labels = labels.cuda().long()
@@ -70,7 +70,7 @@ def infer(args, from_data=False):
             
             if args.model_no == 0:
                 sent = torch.tensor(tokenizer.encode(sent)).unsqueeze(0)
-                sent_mask = (sent != 0).float()
+                sent_mask = (sent != 0).long()
                 if cuda:
                     sent = sent.cuda().long(); sent_mask = sent_mask.cuda()
                 outputs = net(sent, attention_mask=sent_mask)

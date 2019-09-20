@@ -153,7 +153,7 @@ def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args, ignore_idx)
             if args.model_no == 0:
                 src_input = data[0]
                 labels = data[1].contiguous().view(-1)
-                src_mask = (src_input != 0).float()
+                src_mask = (src_input != 0).long()
                 token_type = torch.zeros((src_input.shape[0], src_input.shape[1]), dtype=torch.long)
                 if cuda:
                     src_input = src_input.cuda().long(); labels = labels.cuda().long()

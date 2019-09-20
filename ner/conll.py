@@ -156,6 +156,7 @@ def convert_examples_to_features(examples,
     """
 
     #label_map = {label: i for i, label in enumerate(label_list)}
+    '''
     label_map = {'I-ORG': 1,
                  'I-MISC': 2,
                  'I-LOC': 3,
@@ -166,7 +167,8 @@ def convert_examples_to_features(examples,
                  'O': 8,
                  '<pad>': -9,
                  'B-PER': 0}
-    
+    '''
+    label_map = {"O":0, "B-MISC":1, "I-MISC":2,  "B-PER":3, "I-PER":4, "B-ORG":5, "I-ORG":6, "B-LOC":7, "I-LOC":8}
     features = []
     for (ex_index, example) in enumerate(examples):
         if ex_index % 10000 == 0:

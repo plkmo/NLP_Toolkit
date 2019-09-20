@@ -98,7 +98,7 @@ def train_and_fit(args):
             loss = loss/args.gradient_acc_steps
             loss.backward();
             #clip_grad_norm_(net.parameters(), args.max_norm)
-            if (e % args.gradient_acc_steps) == 0:
+            if (i % args.gradient_acc_steps) == 0:
                 optimizer.step()
                 optimizer.zero_grad()
                 scheduler.step()

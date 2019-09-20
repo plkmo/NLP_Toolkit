@@ -17,6 +17,7 @@ import logging
 from .utils.misc_utils import save_as_pickle, load_pickle
 from .utils.word_char_level_vocab import vocab_mapper
 from .models.BERT.tokenization_bert import BertTokenizer
+from .conll import get_dataloaders
 
 tqdm.pandas(desc="prog_bar")
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
@@ -185,11 +186,11 @@ class Pad_Sequence():
     def __call__(self, batch):
         sorted_batch = sorted(batch, key=lambda x: x[0].shape[0], reverse=True)
         seqs = [x[0] for x in sorted_batch]
-        seqs_padded = pad_sequence(seqs, batch_first=True, padding_value=0) # tokenizer.pad_token_id = 0
+        seqs_padded = pad_sequence(seqs, batch_first=True, padding_value=-9) # tokenizer.pad_token_id = 0
         x_lengths = torch.LongTensor([len(x) for x in seqs])
         
         labels = list(map(lambda x: x[1], sorted_batch))
-        labels_padded = pad_sequence(labels, batch_first=True, padding_value=0) # vocab.ner2idx['<pad>'] = 0
+        labels_padded = pad_sequence(labels, batch_first=True, padding_value=-9) # vocab.ner2idx['<pad>'] = 0
         y_lengths = torch.LongTensor([len(x) for x in labels])
         return seqs_padded, labels_padded, x_lengths, y_lengths
 
@@ -219,25 +220,33 @@ class text_dataset(Dataset):
         y = torch.tensor(self.y.iloc[idx])
         return X, y
 
-def load_dataloaders(args):
+def load_dataloaders(args, use_other=True):
     """Load processed data if exist, else do preprocessing and loads it.  Feeds preprocessed data into dataloader, 
     returns dataloader """
     logger.info("Loading dataloaders...")
-    df_train, df_test = preprocess_data(args)
     
-    trainset = text_dataset(df_train, args)
-    #max_features_length = trainset.max_x_len
-    #max_seq_len = trainset.max_y_len
-    train_length = len(trainset)
-    train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True,\
-                              num_workers=0, collate_fn=Pad_Sequence(), pin_memory=False)
-    
-    if df_test is not None:
-        testset = text_dataset(df_test, args)
-        test_length = len(testset)
-        test_loader = DataLoader(testset, batch_size=args.batch_size, shuffle=True,\
-                                  num_workers=0, collate_fn=Pad_Sequence(), pin_memory=False)
-    else:
-        test_loader, test_length = None, None
+    if not use_other:
+        df_train, df_test = preprocess_data(args)
         
+        trainset = text_dataset(df_train, args)
+        #max_features_length = trainset.max_x_len
+        #max_seq_len = trainset.max_y_len
+        train_length = len(trainset)
+        train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True,\
+                                  num_workers=0, collate_fn=Pad_Sequence(), pin_memory=False)
+        
+        if df_test is not None:
+            testset = text_dataset(df_test, args)
+            test_length = len(testset)
+            test_loader = DataLoader(testset, batch_size=args.batch_size, shuffle=True,\
+                                      num_workers=0, collate_fn=Pad_Sequence(), pin_memory=False)
+        else:
+            test_loader, test_length = None, None
+    
+    else:
+        vocab = vocab_mapper()
+        vocab.save()
+        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True, do_basic_tokenize=True)
+        train_loader, train_length, test_loader, test_length = get_dataloaders(args, tokenizer)
+    
     return train_loader, train_length, test_loader, test_length

@@ -13,28 +13,41 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
 logger = logging.getLogger(__file__)
 
 class vocab_mapper(object):
-    def __init__(self, df_train, df_test=None, ner_only=True):
+    def __init__(self, df_train=None, df_test=None, ner_only=True):
         
-        logger.info("Building vocab...")
-        sents = []; ners = []
-        for _, row in tqdm(df_train.iterrows(), total=len(df_train)):
-            sent, ner = row[0], row[1]
-            sents.extend(sent); ners.extend(ner)
-        sents = list(set(sents)); ners = list(set(ners))
-        
-        if df_test is not None:
-            for _, row in tqdm(df_test.iterrows(), total=len(df_test)):
+        if df_train is not None:
+            logger.info("Building vocab...")
+            sents = []; ners = []
+            for _, row in tqdm(df_train.iterrows(), total=len(df_train)):
                 sent, ner = row[0], row[1]
                 sents.extend(sent); ners.extend(ner)
             sents = list(set(sents)); ners = list(set(ners))
-        
-        self.word2idx = {k:v for v, k in enumerate(sents, 1)}
-        self.word2idx['<pad>'] = 0
-        self.ner2idx = {k:v for v, k in enumerate(ners, 1)}
-        self.ner2idx.update({'<pad>':0}) #, '<sos>':1, '<eos>':2})
-        self.idx2word = {v:k for k,v in self.word2idx.items()}
-        self.idx2ner = {v:k for k, v in self.ner2idx.items()}
-        logger.info("Done!")
+            
+            if df_test is not None:
+                for _, row in tqdm(df_test.iterrows(), total=len(df_test)):
+                    sent, ner = row[0], row[1]
+                    sents.extend(sent); ners.extend(ner)
+                sents = list(set(sents)); ners = list(set(ners))
+            
+            self.word2idx = {k:v for v, k in enumerate(sents, 0)}
+            self.word2idx['<pad>'] = -9
+            self.ner2idx = {k:v for v, k in enumerate(ners, 0)}
+            self.ner2idx.update({'<pad>':-9, 'B-PER':len(self.ner2idx)}) #, '<sos>':1, '<eos>':2})
+            self.idx2word = {v:k for k,v in self.word2idx.items()}
+            self.idx2ner = {v:k for k, v in self.ner2idx.items()}
+            logger.info("Done!")
+        else:
+            self.ner2idx = {'I-ORG': 1,
+                            'I-MISC': 2,
+                            'I-LOC': 3,
+                            'I-PER': 4,
+                            'B-MISC': 5,
+                            'B-LOC': 6,
+                            'B-ORG': 7,
+                            'O': 8,
+                            '<pad>': -9,
+                            'B-PER': 0}
+            self.idx2ner = {v:k for k, v in self.ner2idx.items()}
     
     def save(self, filename="vocab.pkl"):
         save_as_pickle(filename, self)

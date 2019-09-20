@@ -68,7 +68,7 @@ def train_and_fit(args, pyTransformer=False):
             loss.backward()
             if pyTransformer:
                 clip_grad_norm_(net.parameters(), args.max_norm)
-            if (e % args.gradient_acc_steps) == 0:
+            if (i % args.gradient_acc_steps) == 0:
                 optimizer.step()
                 optimizer.zero_grad()
                 scheduler.step()

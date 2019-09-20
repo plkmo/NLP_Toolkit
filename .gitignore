@@ -29,3 +29,4 @@
 /punctuation_restoration/__pycache__/*
 /punctuation_restoration/models/__pycache__/*
 /punctuation_restoration/utils/__pycache__/*
+/ner/data/*

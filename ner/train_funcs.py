@@ -10,7 +10,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from .models.BERT.modeling_bert import BertForTokenClassification
+from .models.BERT.configuration_bert import BertConfig
 from .utils.misc_utils import load_pickle, save_as_pickle, CosineWithRestarts
+from .models.optimization import AdamW, WarmupLinearSchedule
 from tqdm import tqdm
 import logging
 
@@ -18,12 +20,16 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger('__file__')
 
-def load_model_and_optimizer(args, cuda=False):
+def load_model_and_optimizer(args, len_train_loader, cuda=False):
     '''Loads the model (Transformer or encoder-decoder) based on provided arguments and parameters'''
     
     if args.model_no == 0:
         logger.info("Loading pre-trained BERT for token classification...")
-        net = BertForTokenClassification.from_pretrained('bert-base-uncased', num_labels=args.num_classes)
+        config = BertConfig.from_pretrained('bert-base-uncased',
+                                          num_labels=args.num_classes)
+        net = BertForTokenClassification.from_pretrained('bert-base-uncased', config=config)
+        
+        #net = BertForTokenClassification.from_pretrained('bert-base-uncased', num_labels=args.num_classes)
         
     for p in net.parameters():
         if p.dim() > 1:
@@ -32,12 +38,30 @@ def load_model_and_optimizer(args, cuda=False):
     if cuda:
         net.cuda()
         
-    criterion = nn.CrossEntropyLoss(ignore_index=0) # ignore padding tokens
+    criterion = nn.CrossEntropyLoss(ignore_index=-9) # ignore padding tokens
+    
+    # Prepare optimizer and schedule (linear warmup and decay)
+    if args.max_steps > 0:
+        t_total = args.max_steps
+        args.num_epochs = args.max_steps // (len_train_loader // args.gradient_acc_steps) + 1
+    else:
+        t_total = len_train_loader // args.gradient_acc_steps*args.num_epochs
+    
+    no_decay = ["bias", "LayerNorm.weight"]
+    optimizer_grouped_parameters = [
+        {"params": [p for n, p in net.named_parameters() if not any(nd in n for nd in no_decay)],
+         "weight_decay": args.weight_decay},
+        {"params": [p for n, p in net.named_parameters() if any(nd in n for nd in no_decay)], "weight_decay": 0.0}
+    ]
+    optimizer = AdamW(optimizer_grouped_parameters, lr=args.lr, eps=args.adam_epsilon)
+    scheduler = WarmupLinearSchedule(optimizer, warmup_steps=args.warmup_steps, t_total=t_total)
+    
+    '''
     optimizer = optim.Adam([{"params":net.bert.parameters(),"lr": args.lr/5},\
                              {"params":net.classifier.parameters(), "lr": args.lr}])
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2,4,6,8,10,13,15,17,20,23,25], gamma=0.8)
     #scheduler = CosineWithRestarts(optimizer, T_max=330)
-    
+    '''
     start_epoch, acc = load_state(net, optimizer, scheduler, args, load_best=False)
 
     
@@ -111,16 +135,16 @@ def load_results(model_no=0):
         losses_per_epoch, accuracy_per_epoch = [], []
     return losses_per_epoch, accuracy_per_epoch
 
-def evaluate(output, labels):
+def evaluate(output, labels, ignore_idx):
     ### ignore index 0 (padding) when calculating accuracy
-    idxs = (labels != 0).nonzero().squeeze()
+    idxs = (labels != ignore_idx).nonzero().squeeze()
     o_labels = torch.softmax(output, dim=1).max(1)[1]; #print(output.shape, o_labels.shape)
     if len(idxs) > 1:
         return (labels[idxs] == o_labels[idxs]).sum().item()/len(idxs)
     else:
         return (labels[idxs] == o_labels[idxs]).sum().item()
 
-def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args):
+def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args, ignore_idx):
     acc = 0
     print("Evaluating...")
     with torch.no_grad():
@@ -146,7 +170,20 @@ def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args):
             
             #print(outputs.shape); print(labels.shape)
             outputs = outputs.reshape(-1, outputs.size(-1))
-            acc += evaluate(outputs, labels)
+            acc += evaluate(outputs, labels, ignore_idx)
+    
+    '''
+    results = {
+        "loss": eval_loss,
+        "precision": precision_score(out_label_list, preds_list),
+        "recall": recall_score(out_label_list, preds_list),
+        "f1": f1_score(out_label_list, preds_list)
+    }
+
+    logger.info("***** Eval results *****")
+    for key in sorted(results.keys()):
+        logger.info("  %s = %s", key, str(results[key]))
+    ''' 
     return acc/(i + 1)
 
 def decode_outputs(outputs, labels, vocab_decoder, args, reshaped=True):

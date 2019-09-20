@@ -6,6 +6,7 @@ Created on Mon Aug  5 21:58:17 2019
 """
 import os
 import torch
+from torch.nn import CrossEntropyLoss
 from torch.nn.utils import clip_grad_norm_
 from .preprocessing_funcs import load_dataloaders
 from .train_funcs import load_model_and_optimizer, evaluate_results, load_results, decode_outputs
@@ -24,16 +25,18 @@ def train_and_fit(args):
     train_loader, train_length, test_loader, test_length = load_dataloaders(args)
     
     vocab = load_pickle("vocab.pkl")
-        
     logger.info("NER Vocabulary size: %d" % len(vocab.ner2idx))
     
-    logger.info("Loading model and optimizers...")
-    net, criterion, optimizer, scheduler, start_epoch, acc = load_model_and_optimizer(args, cuda)
+    ignore_idx = CrossEntropyLoss().ignore_index
     
+    logger.info("Loading model and optimizers...")
+    net, criterion, optimizer, scheduler, start_epoch, acc = load_model_and_optimizer(args, len(train_loader), cuda)
+    
+    '''
     ### freeze all layers except for last encoder layer and classifier layer
     logger.info("FREEZING MOST HIDDEN LAYERS...")
-    unfrozen_layers = ["classifier", "bert.pooler", "bert.encoder.layer.11", "bert.encoder.layer.10", "bert.encoder.layer.9",\
-                       "bert.encoder.layer.8", "bert.encoder.layer.7", "bert.encoder.layer.6", "bert.encoder.layer.5"]
+    unfrozen_layers = ["classifier", "bert.pooler", ]#"bert.encoder.layer.11", "bert.encoder.layer.10", "bert.encoder.layer.9",\
+                       #"bert.encoder.layer.8", "bert.encoder.layer.7", "bert.encoder.layer.6", "bert.encoder.layer.5"]
     for name, param in net.named_parameters():
         if not any([layer in name for layer in unfrozen_layers]):
             print("[FROZE]: %s" % name)
@@ -41,6 +44,7 @@ def train_and_fit(args):
         else:
             print("[FREE]: %s" % name)
             param.requires_grad = True
+    '''
     
     losses_per_epoch, accuracy_per_epoch = load_results(model_no=args.model_no)
     
@@ -48,20 +52,22 @@ def train_and_fit(args):
     logger.info("Starting training process...")
     for e in range(start_epoch, args.num_epochs):
         #l_rate = lrate(e + 1, d_model=32, k=10, warmup_n=25000)
-        net.train()
+        
         losses_per_batch = []; total_loss = 0.0
         for i, data in enumerate(train_loader):
-            
+            net.train()
             if args.model_no == 0:
                 src_input = data[0]
-                labels = data[1].contiguous().view(-1)
+                labels = data[1]
+                #labels = data[1].contiguous().view(-1)
                 src_mask = (src_input != 0).float()
                 token_type = torch.zeros((src_input.shape[0], src_input.shape[1]), dtype=torch.long)
                 if cuda:
                     src_input = src_input.cuda().long(); labels = labels.cuda().long()
                     src_mask = src_mask.cuda(); token_type=token_type.cuda()
-                outputs = net(src_input, attention_mask=src_mask, token_type_ids=token_type)
-                outputs = outputs[0]; #print(outputs[0,0,:])
+                outputs = net(src_input, attention_mask=src_mask, token_type_ids=token_type, labels=labels)
+                #outputs = outputs[0]; #print(outputs[0,0,:])
+                loss = outputs[0]
                 
             elif args.model_no == 1:
                 src_input, trg_input = data[0], data[1][:, :-1]
@@ -71,15 +77,15 @@ def train_and_fit(args):
                 outputs = net(src_input, trg_input)
             
             #print(outputs.shape); print(labels.shape)
-            outputs = outputs.view(-1, outputs.size(-1))
-            loss = criterion(outputs, labels);
+            #outputs = outputs.view(-1, outputs.size(-1))
+            #loss = criterion(outputs, labels);
             loss = loss/args.gradient_acc_steps
             loss.backward();
-            #clip_grad_norm_(net.parameters(), args.max_norm)
-            if (e % args.gradient_acc_steps) == 0:
+            clip_grad_norm_(net.parameters(), args.max_norm)
+            if (i % args.gradient_acc_steps) == 0:
                 optimizer.step()
-                optimizer.zero_grad()
                 scheduler.step()
+                net.zero_grad()
             total_loss += loss.item()
             if i % batch_update_steps == (batch_update_steps - 1): # print every (batch_update_steps) mini-batches of size = batch_size
                 losses_per_batch.append(args.gradient_acc_steps*total_loss/batch_update_steps)
@@ -87,11 +93,11 @@ def train_and_fit(args):
                       (e, (i + 1)*args.batch_size, train_length, losses_per_batch[-1]))
                 total_loss = 0.0
         losses_per_epoch.append(sum(losses_per_batch)/len(losses_per_batch))
-        accuracy_per_epoch.append(evaluate_results(net, test_loader, cuda, None, None, args))
+        accuracy_per_epoch.append(evaluate_results(net, test_loader, cuda, None, None, args, ignore_idx))
         print("Losses at Epoch %d: %.7f" % (e, losses_per_epoch[-1]))
         print("Accuracy at Epoch %d: %.7f" % (e, accuracy_per_epoch[-1]))
         
-        decode_outputs(outputs, labels, vocab.idx2ner, args)
+        decode_outputs(outputs[1], labels, vocab.idx2ner, args)
                 
         if accuracy_per_epoch[-1] > acc:
             acc = accuracy_per_epoch[-1]

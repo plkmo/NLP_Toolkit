@@ -109,7 +109,15 @@ def get_NER_data(args, load_extracted=True):
 
 def convert_ners_to_ids(ners, vocab):
     return [vocab.ner2idx[ner] for ner in ners]
-        
+
+def generate_ner_ids_labels(sent_tokens, sent_ners, tokenizer, vocab):
+    ner_pad_id = vocab.ner2idx['<pad>']
+    sent_ids, ners_ids = [], []
+    for word, ner in zip(sent_tokens, sent_ners):
+        sub_word_ids = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(word))
+        ner_ids = convert_ners_to_ids([ner], vocab) + [ner_pad_id]*(len(sub_word_ids) - 1)
+        sent_ids.extend(sub_word_ids); ners_ids.extend(ner_ids)
+    return sent_ids, ners_ids
 
 def ner_preprocess(args, df_train, df_test=None, include_cls=True):
     logger.info("Preprocessing...")
@@ -120,29 +128,35 @@ def ner_preprocess(args, df_train, df_test=None, include_cls=True):
     if args.model_no == 0: # BERT
         max_len = args.tokens_length
         tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True, do_basic_tokenize=True)
+        ner_pad_id = vocab.ner2idx['<pad>']
+        cls_id = tokenizer.convert_tokens_to_ids(["[CLS]"])
+        sep_id = tokenizer.convert_tokens_to_ids(["[SEP]"])
+        
         if include_cls:
-            df_train['sents_ids'] = df_train.progress_apply(lambda x: tokenizer.convert_tokens_to_ids(["[CLS]"] + x['sents'][:max_len] + ["[SEP]"]),\
+            df_train['sents_ids'] = df_train.progress_apply(lambda x: generate_ner_ids_labels(x['sents'], x['ners'], tokenizer, vocab),\
                                                                 axis=1)
-            df_train['ners_ids'] = df_train.progress_apply(lambda x: convert_ners_to_ids(['<pad>'] + x['ners'][:max_len] + ['<pad>']\
-                                                                , vocab), axis=1) # corresponding extra padding
+            df_train['ners_ids'] = df_train.progress_apply(lambda x: [ner_pad_id] + x['sents_ids'][1][:(max_len - 2)] + [ner_pad_id], axis=1)
+            df_train['sents_ids'] = df_train.progress_apply(lambda x: cls_id + x['sents_ids'][0][:(max_len - 2)] + sep_id, axis=1)
+            
         else:
-            df_train['sents_ids'] = df_train.progress_apply(lambda x: tokenizer.convert_tokens_to_ids(x['sents'][:max_len]),\
+            df_train['sents_ids'] = df_train.progress_apply(lambda x: generate_ner_ids_labels(x['sents'], x['ners'], tokenizer, vocab),\
                                                                 axis=1)
-            df_train['ners_ids'] = df_train.progress_apply(lambda x: convert_ners_to_ids(x['ners'][:max_len]\
-                                                                , vocab), axis=1)
+            df_train['ners_ids'] = df_train.progress_apply(lambda x: x['sents_ids'][1][:(max_len - 2)], axis=1)
+            df_train['sents_ids'] = df_train.progress_apply(lambda x: x['sents_ids'][0][:(max_len - 2)], axis=1)
         save_as_pickle("df_train.pkl", df_train)
         
         if df_test is not None:
             if include_cls:
-                df_test['sents_ids'] = df_test.progress_apply(lambda x: tokenizer.convert_tokens_to_ids(["[CLS]"] + x['sents'][:max_len] + ["[SEP]"]),\
+                df_test['sents_ids'] = df_test.progress_apply(lambda x: generate_ner_ids_labels(x['sents'], x['ners'], tokenizer, vocab),\
                                                                     axis=1)
-                df_test['ners_ids'] = df_test.progress_apply(lambda x: convert_ners_to_ids(['<pad>'] + x['ners'][:max_len] + ['<pad>'], \
-                                                                       vocab), axis=1)
+                df_test['ners_ids'] = df_test.progress_apply(lambda x: [ner_pad_id] + x['sents_ids'][1][:(max_len - 2)] + [ner_pad_id], axis=1)
+                df_test['sents_ids'] = df_test.progress_apply(lambda x: cls_id + x['sents_ids'][0][:(max_len - 2)] + sep_id, axis=1)
+                
             else:
-                df_test['sents_ids'] = df_test.progress_apply(lambda x: tokenizer.convert_tokens_to_ids(x['sents'][:max_len]),\
+                df_test['sents_ids'] = df_test.progress_apply(lambda x: generate_ner_ids_labels(x['sents'], x['ners'], tokenizer, vocab),\
                                                                     axis=1)
-                df_test['ners_ids'] = df_test.progress_apply(lambda x: convert_ners_to_ids(x['ners'][:max_len], \
-                                                                       vocab), axis=1)
+                df_test['ners_ids'] = df_test.progress_apply(lambda x: x['sents_ids'][1][:(max_len - 2)], axis=1)
+                df_test['sents_ids'] = df_test.progress_apply(lambda x: x['sents_ids'][0][:(max_len - 2)], axis=1)
             save_as_pickle("df_test.pkl", df_test)
     
     logger.info("Done and saved preprocessed data!")

@@ -61,7 +61,7 @@ def infer(args, from_data=False):
                 time.sleep(7)
     else:
         max_len = args.tokens_length - 2
-        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True, do_basic_tokenize=True)
         while True:
             sent = input("Type input sentence:\n")
             sent = sent.lower()

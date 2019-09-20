@@ -33,7 +33,7 @@ def load_model_and_optimizer(args, cuda=False):
         net.cuda()
         
     criterion = nn.CrossEntropyLoss(ignore_index=0) # ignore padding tokens
-    optimizer = optim.Adam([{"params":net.bert.parameters(),"lr": args.lr/2},\
+    optimizer = optim.Adam([{"params":net.bert.parameters(),"lr": args.lr/5},\
                              {"params":net.classifier.parameters(), "lr": args.lr}])
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2,4,6,8,10,13,15,17,20,23,25], gamma=0.8)
     #scheduler = CosineWithRestarts(optimizer, T_max=330)

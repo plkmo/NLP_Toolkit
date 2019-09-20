@@ -97,7 +97,7 @@ def train_and_fit(args):
         print("Losses at Epoch %d: %.7f" % (e, losses_per_epoch[-1]))
         print("Accuracy at Epoch %d: %.7f" % (e, accuracy_per_epoch[-1]))
         
-        decode_outputs(outputs[1], labels, vocab.idx2ner, args)
+        decode_outputs(outputs[1].view(-1, outputs[1].size(-1)), labels, vocab.idx2ner, args)
                 
         if accuracy_per_epoch[-1] > acc:
             acc = accuracy_per_epoch[-1]

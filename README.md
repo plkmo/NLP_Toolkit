@@ -13,6 +13,9 @@ Tasks:
   
 [Benchmark Results](#benchmark-results)
 
+## Pre-requisites
+torch==1.2.0 ; spacy==2.1.8 ; seqeval==0.0.12
+
 ## 1) Classification
 The goal of classification is to segregate documents into appropriate classes based on their text content. Currently, the classification toolkit uses the following models:
 1. Text-based Graph Convolution Networks (GCN)
@@ -30,7 +33,7 @@ Run classify.py with arguments below.
 ```bash
 classify.py [-h] 
 	[--train_data TRAIN_DATA (default: "./data/train.csv")] 
-	[--infer_data INFER_DATA (default: "./data/infer.csv")]            	
+	[--infer_data INFER_DATA (default: "./data/infer.csv")]            
 	[--max_vocab_len MAX_VOCAB_LEN (default: 7000)]  
 	[--hidden_size_1 HIDDEN_SIZE_1 (default: 330)]
 	[--hidden_size_2 HIDDEN_SIZE_2 (default: 130)]
@@ -85,7 +88,7 @@ speech.py [-h]
 
 
 ## 3) Text Summarization
-Text summarization aims to distill a paragraph chunk into a few sentences that capture the essential information. This library contains the following models for text summarization: 
+Text summarization aims to distil a paragraph chunk into a few sentences that capture the essential information. This library contains the following models for text summarization: 
 1. Convolutional Transformer 
 2. Seq2Seq (LAS architecture)
 
@@ -127,7 +130,7 @@ A source .txt file with each line containing the text/sentence to be translated,
 Run translate.py with arguments below
 
 ```bash
-translate.py [-h] 
+translate.py [-h]  
 	[--src_path SRC_PATH]
 	[--trg_path TRG_PATH] 
 	[--batch_size BATCH_SIZE (default: 50)]
@@ -162,12 +165,33 @@ generate.py
 Given unpunctuated (and perhaps un-capitalized) text, punctuation restoration aims to restore the punctuation of the text for easier readability. Applications include punctuating raw transcripts from audio speech data etc.
 
 ### Format of dataset files
+Currently only supports TED talk transcripts format, whereby punctuated text is annotated by <transcripts> tags. Eg. <transcript> <punctuated text> </transcript>. The <punctuated text> is then used for training.
 
 ### Running the model
 Run punctuate.py
 
 ```bash
-punctuate.py
+punctuate.py [-h] 
+	[--data_path DATA_PATH] 
+       [--level LEVEL (default: “bpe")]   
+	[--bpe_word_ratio BPE_WORD_RATIO (default: 0.7)]
+	[--bpe_vocab_size BPE_VOCAB_SIZE (default: 7000)]
+	[--batch_size BATCH_SIZE (default: 32)]
+	[--d_model D_MODEL (default: 512)]
+	[--ff_dim FF_DIM (default: 2048)]
+	[--num NUM (default: 6)]
+	[--n_heads N_HEADS(default: 8)]
+	[--max_encoder_len MAX_ENCODER_LEN (default: 80)]
+	[--max_decoder_len MAX_DECODER_LEN (default: 80)]	
+	[--LAS_embed_dim LAS_EMBED_DIM (default: 512)]
+	[--LAS_hidden_size LAS_HIDDEN_SIZE (default: 512)]
+	[--num_epochs NUM_EPOCHS (default: 500)] 
+	[--lr LR default=0.0005]    
+	[--gradient_acc_steps GRADIENT_ACC_STEPS (default: 2)]
+	[--max_norm MAX_NORM (default: 1.0)] 
+	[--T_max T_MAX (default: 5000)] 
+	[--model_no MODEL_NO (default: 0 (0: Transformer))]
+
 ```
 
 ## 7) Named Entity Recognition
@@ -179,7 +203,10 @@ In Named entity recognition (NER), the task is to recognise entities such as per
 Run ner.py
 
 ```bash
-ner.py
+ner.py [-h] 
+	[--train_path TRAIN_PATH] 
+	[--test_path TEST_PATH]
+
 ```
 
 

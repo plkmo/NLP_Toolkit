@@ -42,7 +42,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
     parser.add_argument("--num_epochs", type=int, default=1700, help="No of epochs")
     parser.add_argument("--lr", type=float, default=0.0031, help="learning rate")
-    parser.add_argument("--model_no", type=int, default=2, help="Model ID: (0: Graph Convolution Network (GCN), 1: BERT, 2: XLNet)")
+    parser.add_argument("--model_no", type=int, default=1, help="Model ID: (0: Graph Convolution Network (GCN), 1: BERT, 2: XLNet)")
     args = parser.parse_args()
     save_as_pickle("args.pkl", args)
     

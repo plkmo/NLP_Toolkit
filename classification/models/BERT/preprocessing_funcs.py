@@ -7,7 +7,7 @@ Created on Wed Jul 31 10:44:05 2019
 import os
 import pickle
 import pandas as pd
-from pytorch_pretrained_bert import BertTokenizer
+from .tokenization_bert import BertTokenizer
 import logging
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \

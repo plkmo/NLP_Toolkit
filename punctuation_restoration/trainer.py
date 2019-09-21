@@ -31,6 +31,8 @@ def train_and_fit(args):
         from .models.Transformer import create_masks, create_trg_mask
     elif args.model_no == 2:
         from .models.py_Transformer import create_masks, create_trg_mask
+    else:
+        create_masks, create_trg_mask = None, None
     
     if args.level == "bpe":
         vocab = Encoder.load("./data/vocab.pkl")

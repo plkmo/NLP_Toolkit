@@ -12,9 +12,12 @@ Tasks:
 7. [Named Entity Recognition](#7-named-entity-recognition)
   
 [Benchmark Results](#benchmark-results)
+[References](#references)
 
 ## Pre-requisites
 torch==1.2.0 ; spacy==2.1.8 ; seqeval==0.0.12
+
+** Pre-trained models (XLNet, BERT, GPT-2) are courtesy of huggingface (https://github.com/huggingface/pytorch-transformers)
 
 ## 1) Classification
 The goal of classification is to segregate documents into appropriate classes based on their text content. Currently, the classification toolkit uses the following models:
@@ -233,5 +236,8 @@ ner.py [-h]
 ![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/conll2003/ner/test_Accuracy_vs_epoch_0.png) 
 
 
-
-
+# References
+1. Attention Is All You Need, Vaswani et al, https://arxiv.org/abs/1706.03762
+2. Graph Convolutional Networks for Text Classification, Liang Yao et al, https://arxiv.org/abs/1809.05679
+3. Speech-Transformer: A No-Recurrence Sequence-To-Sequence Model For Speech Recognition, Linhao Dong et al, https://ieeexplore.ieee.org/document/8462506
+4. Listen,Attend and Spell, William Chan et al, https://arxiv.org/abs/1508.01211

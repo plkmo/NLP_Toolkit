@@ -17,7 +17,7 @@ import logging
 from .utils.misc_utils import save_as_pickle, load_pickle
 from .utils.word_char_level_vocab import vocab_mapper
 from .models.BERT.tokenization_bert import BertTokenizer
-from .conll import get_dataloaders
+from .conll import load_and_cache_examples
 
 tqdm.pandas(desc="prog_bar")
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
@@ -186,13 +186,13 @@ class Pad_Sequence():
     def __call__(self, batch):
         sorted_batch = sorted(batch, key=lambda x: x[0].shape[0], reverse=True)
         seqs = [x[0] for x in sorted_batch]
-        seqs_padded = pad_sequence(seqs, batch_first=True, padding_value=-9) # tokenizer.pad_token_id = 0
+        seqs_padded = pad_sequence(seqs, batch_first=True, padding_value=0) # tokenizer.pad_token_id = 0
         x_lengths = torch.LongTensor([len(x) for x in seqs])
         
         labels = list(map(lambda x: x[1], sorted_batch))
-        labels_padded = pad_sequence(labels, batch_first=True, padding_value=-9) # vocab.ner2idx['<pad>'] = 0
+        labels_padded = pad_sequence(labels, batch_first=True, padding_value=-100) # vocab.ner2idx['<pad>'] = 0
         y_lengths = torch.LongTensor([len(x) for x in labels])
-        return seqs_padded, labels_padded, x_lengths, y_lengths
+        return seqs_padded, labels_padded#, x_lengths, y_lengths
 
 class text_dataset(Dataset):
     def __init__(self, df, args):
@@ -220,7 +220,7 @@ class text_dataset(Dataset):
         y = torch.tensor(self.y.iloc[idx])
         return X, y
 
-def load_dataloaders(args, use_other=True):
+def load_dataloaders(args, use_other=False):
     """Load processed data if exist, else do preprocessing and loads it.  Feeds preprocessed data into dataloader, 
     returns dataloader """
     logger.info("Loading dataloaders...")
@@ -246,7 +246,7 @@ def load_dataloaders(args, use_other=True):
     else:
         vocab = vocab_mapper()
         vocab.save()
-        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True, do_basic_tokenize=True)
-        train_loader, train_length, test_loader, test_length = get_dataloaders(args, tokenizer)
+        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
+        train_loader, train_length, test_loader, test_length = load_and_cache_examples(args, tokenizer)
     
     return train_loader, train_length, test_loader, test_length

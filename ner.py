@@ -4,10 +4,6 @@ Created on Sat Sep 14 18:04:45 2019
 
 @author: WT
 """
-from ner.models.BERT.tokenization_bert import BertTokenizer
-from ner.conll import get_dataloaders
-from ner.preprocessing_funcs import load_dataloaders
-from ner.train_funcs import load_model_and_optimizer
 from ner.trainer import train_and_fit
 from utils.misc import save_as_pickle, load_pickle
 from argparse import ArgumentParser
@@ -33,15 +29,12 @@ if __name__=="__main__":
                         help="Epsilon for Adam optimizer.")
     parser.add_argument("--gradient_acc_steps", type=int, default=1, help="No. of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
-    parser.add_argument("--num_epochs", type=int, default=3, help="No of epochs")
+    parser.add_argument("--num_epochs", type=int, default=5, help="No of epochs")
     parser.add_argument("--lr", type=float, default=5e-5, help="learning rate")
     parser.add_argument("--model_no", type=int, default=0, help="Model ID: (0: BERT, 1: XLNet)")
     parser.add_argument("--model_type", type=str, default='bert', help="Model ID: (0: BERT, 1: XLNet)")
     
     args = parser.parse_args()
     save_as_pickle("args.pkl", args)
-    #tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True, do_basic_tokenize=True)
-    #train_loader, train_length, test_loader, test_length = get_dataloaders(args, tokenizer)
-    #train_loader, a, test_loader, b = load_dataloaders(args)
-    #net = load_model_and_optimizer(args)
+
     train_and_fit(args)

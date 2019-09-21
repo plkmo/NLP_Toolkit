@@ -87,51 +87,6 @@ def read_examples_from_file(data_dir, evaluate=False):
                                          labels=labels))
     return examples
 
-def load_and_cache_examples(args, tokenizer, pad_token_label_id, evaluate=False):
-    if args.local_rank not in [-1, 0] and not evaluate:
-        torch.distributed.barrier()  # Make sure only the first process in distributed training process the dataset, and the others will use the cache
-
-    # Load data features from cache or dataset file
-    cached_features_file = os.path.join(args.data_dir, "cached_{}_{}_{}".format("dev" if evaluate else "train",
-        list(filter(None, args.model_name_or_path.split("/"))).pop(),
-        str(args.max_seq_length)))
-    if os.path.exists(cached_features_file):
-        logger.info("Loading features from cached file %s", cached_features_file)
-        features = torch.load(cached_features_file)
-    else:
-        logger.info("Creating features from dataset file at %s", args.data_dir)
-        label_list = get_labels()
-        examples = read_examples_from_file(args.data_dir, evaluate=evaluate)
-        features = convert_examples_to_features(examples, label_list, args.max_seq_length, tokenizer,
-                                                cls_token_at_end=bool(args.model_type in ["xlnet"]),
-                                                # xlnet has a cls token at the end
-                                                cls_token=tokenizer.cls_token,
-                                                cls_token_segment_id=2 if args.model_type in ["xlnet"] else 0,
-                                                sep_token=tokenizer.sep_token,
-                                                sep_token_extra=bool(args.model_type in ["roberta"]),
-                                                # roberta uses an extra separator b/w pairs of sentences, cf. github.com/pytorch/fairseq/commit/1684e166e3da03f5b600dbb7855cb98ddfcd0805
-                                                pad_on_left=bool(args.model_type in ["xlnet"]),
-                                                # pad on the left for xlnet
-                                                pad_token=tokenizer.convert_tokens_to_ids([tokenizer.pad_token])[0],
-                                                pad_token_segment_id=4 if args.model_type in ["xlnet"] else 0,
-                                                pad_token_label_id=pad_token_label_id
-                                                )
-        if args.local_rank in [-1, 0]:
-            logger.info("Saving features into cached file %s", cached_features_file)
-            torch.save(features, cached_features_file)
-
-    if args.local_rank == 0 and not evaluate:
-        torch.distributed.barrier()  # Make sure only the first process in distributed training process the dataset, and the others will use the cache
-
-    # Convert to Tensors and build dataset
-    all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)
-    all_input_mask = torch.tensor([f.input_mask for f in features], dtype=torch.long)
-    all_segment_ids = torch.tensor([f.segment_ids for f in features], dtype=torch.long)
-    all_label_ids = torch.tensor([f.label_ids for f in features], dtype=torch.long)
-
-    dataset = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
-    return dataset
-
 def convert_examples_to_features(examples,
                                  label_list,
                                  max_seq_length,
@@ -146,8 +101,7 @@ def convert_examples_to_features(examples,
                                  pad_token_segment_id=0,
                                  pad_token_label_id=-1,
                                  sequence_a_segment_id=0,
-                                 mask_padding_with_zero=True,\
-                                 ):
+                                 mask_padding_with_zero=True):
     """ Loads a data file into a list of `InputBatch`s
         `cls_token_at_end` define the location of the CLS token:
             - False (Default, BERT/XLM pattern): [CLS] + A + [SEP] + B + [SEP]
@@ -156,19 +110,8 @@ def convert_examples_to_features(examples,
     """
 
     #label_map = {label: i for i, label in enumerate(label_list)}
-    '''
-    label_map = {'I-ORG': 1,
-                 'I-MISC': 2,
-                 'I-LOC': 3,
-                 'I-PER': 4,
-                 'B-MISC': 5,
-                 'B-LOC': 6,
-                 'B-ORG': 7,
-                 'O': 8,
-                 '<pad>': -9,
-                 'B-PER': 0}
-    '''
     label_map = {"O":0, "B-MISC":1, "I-MISC":2,  "B-PER":3, "I-PER":4, "B-ORG":5, "I-ORG":6, "B-LOC":7, "I-LOC":8}
+
     features = []
     for (ex_index, example) in enumerate(examples):
         if ex_index % 10000 == 0:
@@ -261,11 +204,18 @@ def convert_examples_to_features(examples,
                               input_mask=input_mask,
                               segment_ids=segment_ids,
                               label_ids=label_ids))
-    return features, label_map
+    return features
 
 
-def get_labels():
-    return ["O", "B-MISC", "I-MISC",  "B-PER", "I-PER", "B-ORG", "I-ORG", "B-LOC", "I-LOC"]
+def get_labels(path):
+    if path:
+        with open(path, "r") as f:
+            labels = f.read().splitlines()
+        if "O" not in labels:
+            labels = ["O"] + labels
+        return labels
+    else:
+        return ["O", "B-MISC", "I-MISC",  "B-PER", "I-PER", "B-ORG", "I-ORG", "B-LOC", "I-LOC"]
 
 
 def evaluate(args, model, tokenizer, pad_token_label_id, prefix=""):
@@ -355,12 +305,12 @@ def get_dataloaders(args, tokenizer):
                                             )
     # Convert to Tensors and build dataset
     all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)
-    #all_input_mask = torch.tensor([f.input_mask for f in features], dtype=torch.long)
-    #all_segment_ids = torch.tensor([f.segment_ids for f in features], dtype=torch.long)
+    all_input_mask = torch.tensor([f.input_mask for f in features], dtype=torch.long)
+    all_segment_ids = torch.tensor([f.segment_ids for f in features], dtype=torch.long)
     all_label_ids = torch.tensor([f.label_ids for f in features], dtype=torch.long)
     print("Num_classes: %d" % len(label_map))
 
-    train_dataset = TensorDataset(all_input_ids, all_label_ids)
+    train_dataset = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
     train_length = len(train_dataset)
     train_sampler = RandomSampler(train_dataset)
     train_loader = DataLoader(train_dataset, sampler=train_sampler, batch_size=args.batch_size)
@@ -383,14 +333,102 @@ def get_dataloaders(args, tokenizer):
                                             )
     # Convert to Tensors and build dataset
     all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)
-    #all_input_mask = torch.tensor([f.input_mask for f in features], dtype=torch.long)
-    #all_segment_ids = torch.tensor([f.segment_ids for f in features], dtype=torch.long)
+    all_input_mask = torch.tensor([f.input_mask for f in features], dtype=torch.long)
+    all_segment_ids = torch.tensor([f.segment_ids for f in features], dtype=torch.long)
     all_label_ids = torch.tensor([f.label_ids for f in features], dtype=torch.long)
     print("Num_classes: %d" % len(label_map))
 
-    test_dataset = TensorDataset(all_input_ids, all_label_ids)
+    test_dataset = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
     test_length = len(test_dataset)
     test_sampler = RandomSampler(test_dataset)
     test_loader = DataLoader(test_dataset, sampler=test_sampler, batch_size=args.batch_size)
+    
+    return train_loader, train_length, test_loader, test_length
+
+
+def load_and_cache_examples(args, tokenizer, test=True):
+    labels = get_labels(path=None)
+    pad_token_label_id = CrossEntropyLoss().ignore_index
+    
+    # Load train data features from cache or dataset file
+    cached_features_file = os.path.join("./data/ner/conll2003/", "cached_{}_{}_{}".format("train",
+        list(filter(None, args.model_type.split("/"))).pop(),
+        str(args.tokens_length)))
+    if os.path.exists(cached_features_file):
+        logger.info("Loading features from cached file %s", cached_features_file)
+        features = torch.load(cached_features_file)
+    else:
+        logger.info("Creating features from dataset file at %s", "./data/ner/conll2003/")
+        examples = read_examples_from_file("./data/ner/conll2003/", evaluate=False)
+        features = convert_examples_to_features(examples, labels, args.tokens_length, tokenizer,
+                                                cls_token_at_end=bool(args.model_type in ["xlnet"]),
+                                                # xlnet has a cls token at the end
+                                                cls_token=tokenizer.cls_token,
+                                                cls_token_segment_id=2 if args.model_type in ["xlnet"] else 0,
+                                                sep_token=tokenizer.sep_token,
+                                                sep_token_extra=bool(args.model_type in ["roberta"]),
+                                                # roberta uses an extra separator b/w pairs of sentences, cf. github.com/pytorch/fairseq/commit/1684e166e3da03f5b600dbb7855cb98ddfcd0805
+                                                pad_on_left=bool(args.model_type in ["xlnet"]),
+                                                # pad on the left for xlnet
+                                                pad_token=tokenizer.convert_tokens_to_ids([tokenizer.pad_token])[0],
+                                                pad_token_segment_id=4 if args.model_type in ["xlnet"] else 0,
+                                                pad_token_label_id=pad_token_label_id
+                                                )
+
+        logger.info("Saving features into cached file %s", cached_features_file)
+        torch.save(features, cached_features_file)
+
+    # Convert to Tensors and build dataset
+    all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)
+    all_input_mask = torch.tensor([f.input_mask for f in features], dtype=torch.long)
+    all_segment_ids = torch.tensor([f.segment_ids for f in features], dtype=torch.long)
+    all_label_ids = torch.tensor([f.label_ids for f in features], dtype=torch.long)
+
+    train_dataset = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
+    train_length = len(train_dataset)
+    train_sampler = RandomSampler(train_dataset)
+    train_loader = DataLoader(train_dataset, sampler=train_sampler, batch_size=args.batch_size)
+    
+    if test:
+        # Load train data features from cache or dataset file
+        cached_features_file = os.path.join("./data/ner/conll2003/", "cached_{}_{}_{}".format("dev",
+            list(filter(None, args.model_type.split("/"))).pop(),
+            str(args.tokens_length)))
+        if os.path.exists(cached_features_file):
+            logger.info("Loading features from cached file %s", cached_features_file)
+            features = torch.load(cached_features_file)
+        else:
+            logger.info("Creating features from dataset file at %s", "./data/ner/conll2003/")
+            examples = read_examples_from_file("./data/ner/conll2003/", evaluate=True)
+            features = convert_examples_to_features(examples, labels, args.tokens_length, tokenizer,
+                                                    cls_token_at_end=bool(args.model_type in ["xlnet"]),
+                                                    # xlnet has a cls token at the end
+                                                    cls_token=tokenizer.cls_token,
+                                                    cls_token_segment_id=2 if args.model_type in ["xlnet"] else 0,
+                                                    sep_token=tokenizer.sep_token,
+                                                    sep_token_extra=bool(args.model_type in ["roberta"]),
+                                                    # roberta uses an extra separator b/w pairs of sentences, cf. github.com/pytorch/fairseq/commit/1684e166e3da03f5b600dbb7855cb98ddfcd0805
+                                                    pad_on_left=bool(args.model_type in ["xlnet"]),
+                                                    # pad on the left for xlnet
+                                                    pad_token=tokenizer.convert_tokens_to_ids([tokenizer.pad_token])[0],
+                                                    pad_token_segment_id=4 if args.model_type in ["xlnet"] else 0,
+                                                    pad_token_label_id=pad_token_label_id
+                                                    )
+    
+            logger.info("Saving features into cached file %s", cached_features_file)
+            torch.save(features, cached_features_file)
+    
+        # Convert to Tensors and build dataset
+        all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)
+        all_input_mask = torch.tensor([f.input_mask for f in features], dtype=torch.long)
+        all_segment_ids = torch.tensor([f.segment_ids for f in features], dtype=torch.long)
+        all_label_ids = torch.tensor([f.label_ids for f in features], dtype=torch.long)
+    
+        test_dataset = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
+        test_length = len(test_dataset)
+        test_sampler = RandomSampler(test_dataset)
+        test_loader = DataLoader(test_dataset, sampler=test_sampler, batch_size=args.batch_size)
+    else:
+        test_loader, test_length = None, None
     
     return train_loader, train_length, test_loader, test_length

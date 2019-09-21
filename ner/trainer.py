@@ -25,7 +25,7 @@ def train_and_fit(args):
     train_loader, train_length, test_loader, test_length = load_dataloaders(args)
     
     vocab = load_pickle("vocab.pkl")
-    logger.info("NER Vocabulary size: %d" % len(vocab.ner2idx))
+    logger.info("NER Vocabulary size: %d" % (len(vocab.ner2idx) - 1))
     
     ignore_idx = CrossEntropyLoss().ignore_index
     
@@ -50,18 +50,25 @@ def train_and_fit(args):
     
     batch_update_steps = int(len(train_loader)/10)
     logger.info("Starting training process...")
+    net.zero_grad()
     for e in range(start_epoch, args.num_epochs):
-        #l_rate = lrate(e + 1, d_model=32, k=10, warmup_n=25000)
         
         losses_per_batch = []; total_loss = 0.0
         for i, data in enumerate(train_loader):
             net.train()
             if args.model_no == 0:
-                src_input = data[0]
-                labels = data[1]
                 #labels = data[1].contiguous().view(-1)
-                src_mask = (src_input != 0).long()
-                token_type = torch.zeros((src_input.shape[0], src_input.shape[1]), dtype=torch.long)
+                if len(data) == 4:
+                    src_input = data[0]
+                    src_mask = data[1]
+                    token_type = data[2]
+                    labels = data[3]
+                else:
+                    src_input = data[0]
+                    labels = data[1]
+                    src_mask = (src_input != 0).long()
+                    token_type = torch.zeros((src_input.shape[0], src_input.shape[1]), dtype=torch.long)
+        
                 if cuda:
                     src_input = src_input.cuda().long(); labels = labels.cuda().long()
                     src_mask = src_mask.cuda(); token_type=token_type.cuda()
@@ -93,7 +100,9 @@ def train_and_fit(args):
                       (e, (i + 1)*args.batch_size, train_length, losses_per_batch[-1]))
                 total_loss = 0.0
         losses_per_epoch.append(sum(losses_per_batch)/len(losses_per_batch))
-        accuracy_per_epoch.append(evaluate_results(net, test_loader, cuda, None, None, args, ignore_idx))
+        accuracy_per_epoch.append(evaluate_results(net, test_loader if test_loader is not None else train_loader, \
+                                                   cuda, None, None, args, ignore_idx,\
+                                                   vocab.idx2ner)['accuracy'])
         print("Losses at Epoch %d: %.7f" % (e, losses_per_epoch[-1]))
         print("Accuracy at Epoch %d: %.7f" % (e, accuracy_per_epoch[-1]))
         

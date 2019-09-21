@@ -35,10 +35,16 @@ def infer(args, from_data=False):
             for i, data in enumerate(train_loader):
                 
                 if args.model_no == 0:
-                    src_input = data[0]
-                    labels = data[1].contiguous().view(-1)
-                    src_mask = (src_input != 0).long()
-                    token_type = torch.zeros((src_input.shape[0], src_input.shape[1]), dtype=torch.long)
+                    if len(data) == 4:
+                        src_input = data[0]
+                        src_mask = data[1]
+                        token_type = data[2]
+                        labels = data[3]
+                    else:
+                        src_input = data[0]
+                        labels = data[1]
+                        src_mask = (src_input != 0).long()
+                        token_type = torch.zeros((src_input.shape[0], src_input.shape[1]), dtype=torch.long)
                     if cuda:
                         src_input = src_input.cuda().long(); labels = labels.cuda().long()
                         src_mask = src_mask.cuda(); token_type=token_type.cuda()

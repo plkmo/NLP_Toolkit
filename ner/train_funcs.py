@@ -13,6 +13,7 @@ from .models.BERT.modeling_bert import BertForTokenClassification
 from .models.BERT.configuration_bert import BertConfig
 from .utils.misc_utils import load_pickle, save_as_pickle, CosineWithRestarts
 from .models.optimization import AdamW, WarmupLinearSchedule
+from seqeval.metrics import precision_score, recall_score, f1_score
 from tqdm import tqdm
 import logging
 
@@ -28,17 +29,11 @@ def load_model_and_optimizer(args, len_train_loader, cuda=False):
         config = BertConfig.from_pretrained('bert-base-uncased',
                                           num_labels=args.num_classes)
         net = BertForTokenClassification.from_pretrained('bert-base-uncased', config=config)
-        
-        #net = BertForTokenClassification.from_pretrained('bert-base-uncased', num_labels=args.num_classes)
-        
-    for p in net.parameters():
-        if p.dim() > 1:
-            nn.init.xavier_uniform_(p)
-    
+
     if cuda:
         net.cuda()
         
-    criterion = nn.CrossEntropyLoss(ignore_index=-9) # ignore padding tokens
+    criterion = nn.CrossEntropyLoss() # ignore padding tokens
     
     # Prepare optimizer and schedule (linear warmup and decay)
     if args.max_steps > 0:
@@ -56,15 +51,7 @@ def load_model_and_optimizer(args, len_train_loader, cuda=False):
     optimizer = AdamW(optimizer_grouped_parameters, lr=args.lr, eps=args.adam_epsilon)
     scheduler = WarmupLinearSchedule(optimizer, warmup_steps=args.warmup_steps, t_total=t_total)
     
-    '''
-    optimizer = optim.Adam([{"params":net.bert.parameters(),"lr": args.lr/5},\
-                             {"params":net.classifier.parameters(), "lr": args.lr}])
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2,4,6,8,10,13,15,17,20,23,25], gamma=0.8)
-    #scheduler = CosineWithRestarts(optimizer, T_max=330)
-    '''
     start_epoch, acc = load_state(net, optimizer, scheduler, args, load_best=False)
-
-    
 
     return net, criterion, optimizer, scheduler, start_epoch, acc
 
@@ -139,22 +126,34 @@ def evaluate(output, labels, ignore_idx):
     ### ignore index 0 (padding) when calculating accuracy
     idxs = (labels != ignore_idx).nonzero().squeeze()
     o_labels = torch.softmax(output, dim=1).max(1)[1]; #print(output.shape, o_labels.shape)
+    l = labels[idxs]; o = o_labels[idxs]
+    
     if len(idxs) > 1:
-        return (labels[idxs] == o_labels[idxs]).sum().item()/len(idxs)
+        acc = (l == o).sum().item()/len(idxs)
     else:
-        return (labels[idxs] == o_labels[idxs]).sum().item()
+        acc = (l == o).sum().item()
+    l = l.cpu().numpy().tolist() if l.is_cuda else l.numpy().tolist()
+    o = o.cpu().numpy().tolist() if o.is_cuda else o.numpy().tolist()
+    return acc, (o, l)
 
-def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args, ignore_idx):
+def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args, ignore_idx, idx2ner):
     acc = 0
     print("Evaluating...")
+    out_labels = []; true_labels = []
     with torch.no_grad():
         net.eval()
         for i, data in tqdm(enumerate(data_loader), total=len(data_loader)):
             if args.model_no == 0:
-                src_input = data[0]
-                labels = data[1].contiguous().view(-1)
-                src_mask = (src_input != 0).long()
-                token_type = torch.zeros((src_input.shape[0], src_input.shape[1]), dtype=torch.long)
+                if len(data) == 4:
+                    src_input = data[0]
+                    src_mask = data[1]
+                    token_type = data[2]
+                    labels = data[3].contiguous().view(-1)
+                else:
+                    src_input = data[0]
+                    labels = data[1].contiguous().view(-1)
+                    src_mask = (src_input != 0).long()
+                    token_type = torch.zeros((src_input.shape[0], src_input.shape[1]), dtype=torch.long)
                 if cuda:
                     src_input = src_input.cuda().long(); labels = labels.cuda().long()
                     src_mask = src_mask.cuda(); token_type=token_type.cuda()
@@ -170,21 +169,23 @@ def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args, ignore_idx)
             
             #print(outputs.shape); print(labels.shape)
             outputs = outputs.reshape(-1, outputs.size(-1))
-            acc += evaluate(outputs, labels, ignore_idx)
-    
-    '''
+            cal_acc, (o, l) = evaluate(outputs, labels, ignore_idx)
+            out_labels.append([idx2ner[i] for i in o]); true_labels.append([idx2ner[i] for i in l])
+            acc += cal_acc
+            
+    eval_acc = acc/(i + 1)
     results = {
-        "loss": eval_loss,
-        "precision": precision_score(out_label_list, preds_list),
-        "recall": recall_score(out_label_list, preds_list),
-        "f1": f1_score(out_label_list, preds_list)
+        "accuracy": eval_acc,
+        "precision": precision_score(true_labels, out_labels),
+        "recall": recall_score(true_labels, out_labels),
+        "f1": f1_score(true_labels, out_labels)
     }
 
     logger.info("***** Eval results *****")
     for key in sorted(results.keys()):
         logger.info("  %s = %s", key, str(results[key]))
-    ''' 
-    return acc/(i + 1)
+        
+    return results
 
 def decode_outputs(outputs, labels, vocab_decoder, args, reshaped=True):
     if reshaped:

@@ -9,6 +9,7 @@ Tasks:
 4. [Machine Translation](#4-machine-translation)
 5. [Natural Language Generation](#5-natural-language-generation)
 6. [Punctuation Restoration](#6-punctuation-restoration)  
+7. [Named Entity Recognition](#7-named-entity-recognition)
   
 [Benchmark Results](#benchmark-results)
 
@@ -168,6 +169,19 @@ Run punctuate.py
 ```bash
 punctuate.py
 ```
+
+## 7) Named Entity Recognition
+In Named entity recognition (NER), the task is to recognise entities such as persons, organisations. Current models for this task: BERT
+
+### Format of dataset files
+
+### Running the model
+Run ner.py
+
+```bash
+ner.py
+```
+
 
 # Benchmark Results
 

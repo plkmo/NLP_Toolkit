@@ -1,5 +1,6 @@
 # NLP Toolkit
-Library containing state-of-the-art models for Natural Language Processing tasks
+Library containing state-of-the-art models for Natural Language Processing tasks 
+*Note this repo is continually being updated (see [To do list](#to-do-list)) 
 
 ## Contents
 Tasks:  
@@ -11,7 +12,7 @@ Tasks:
 6. [Punctuation Restoration](#6-punctuation-restoration)  
 7. [Named Entity Recognition](#7-named-entity-recognition)
   
-[Benchmark Results](#benchmark-results)
+[Benchmark Results](#benchmark-results)  
 [References](#references)
 
 ## Pre-requisites
@@ -241,3 +242,9 @@ ner.py [-h]
 2. Graph Convolutional Networks for Text Classification, Liang Yao et al, https://arxiv.org/abs/1809.05679
 3. Speech-Transformer: A No-Recurrence Sequence-To-Sequence Model For Speech Recognition, Linhao Dong et al, https://ieeexplore.ieee.org/document/8462506
 4. Listen,Attend and Spell, William Chan et al, https://arxiv.org/abs/1508.01211
+
+# To do list
+- Include benchmark results for all tasks
+- Include more models for punctuation restoration, translation, NER
+- Include demo for trained models for ASR, punctuation restoration, NER, summarization, translation, classification
+

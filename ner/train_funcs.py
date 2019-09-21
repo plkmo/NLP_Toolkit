@@ -201,10 +201,10 @@ def decode_outputs(outputs, labels, vocab_decoder, args, reshaped=True):
     
     else:
         if labels.is_cuda:
-            l = list(labels[0,:].cpu().numpy())
-            o = list(torch.softmax(outputs, dim=2).max(2)[1].cpu().numpy())
+            l = labels[0,:].cpu().numpy().tolist()
+            o = torch.softmax(outputs, dim=2).max(2)[1].cpu().numpy().tolist()[0]
         else:
-            l = list(labels[0,:].numpy())
-            o = list(torch.softmax(outputs, dim=2).max(2)[1].numpy())
+            l = labels[0,:].numpy().tolist()
+            o = torch.softmax(outputs, dim=2).max(2)[1].numpy().tolist()[0]
         print("Sample Output: ", " ".join(vocab_decoder[oo] for oo in o))
         print("Sample Label: ", " ".join(vocab_decoder[ll] for ll in l))

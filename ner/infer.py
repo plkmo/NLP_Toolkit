@@ -23,11 +23,12 @@ def infer(args, from_data=False):
     
     vocab = load_pickle("vocab.pkl")
         
-    logger.info("NER Vocabulary size: %d" % len(vocab.ner2idx))    
+    logger.info("NER Vocabulary size: %d" % (len(vocab.ner2idx) - 1))    
     
     logger.info("Loading model and optimizers...")
-    net, _, _, _, start_epoch, acc = load_model_and_optimizer(args, cuda)
-    
+    net, _, _, _, start_epoch, acc = load_model_and_optimizer(args, 10, cuda)
+
+    net.eval()
     
     if from_data:
         train_loader, train_length, test_loader, test_length = load_dataloaders(args)
@@ -67,7 +68,9 @@ def infer(args, from_data=False):
                 time.sleep(7)
     else:
         max_len = args.tokens_length - 2
-        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True, do_basic_tokenize=True)
+        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
+        cls_id = tokenizer.convert_tokens_to_ids(["[CLS]"])
+        sep_id = tokenizer.convert_tokens_to_ids(["[SEP]"])
         while True:
             sent = input("Type input sentence:\n")
             sent = sent.lower()
@@ -75,11 +78,26 @@ def infer(args, from_data=False):
                 break
             
             if args.model_no == 0:
-                sent = torch.tensor(tokenizer.encode(sent)).unsqueeze(0)
+                words = tokenizer.tokenize(sent)
+                sent = torch.tensor(cls_id + tokenizer.encode(sent) + sep_id).unsqueeze(0)
                 sent_mask = (sent != 0).long()
+                token_type = torch.zeros((sent.shape[0], sent.shape[1]), dtype=torch.long)
                 if cuda:
                     sent = sent.cuda().long(); sent_mask = sent_mask.cuda()
-                outputs = net(sent, attention_mask=sent_mask)
-                outputs = outputs[0][:, 1:-1, :]
-                o = list(torch.softmax(outputs, dim=2).max(2)[1].numpy())
-                print("Sample Output: ", " ".join(vocab.idx2ner[oo] for oo in o))
+                    token_type=token_type.cuda()
+                outputs = net(sent, attention_mask=sent_mask, token_type_ids=token_type)
+                outputs = outputs[0]
+                o = torch.softmax(outputs, dim=2).max(2)[1].cpu().numpy().tolist()[0] if outputs.is_cuda else\
+                         torch.softmax(outputs, dim=2).max(2)[1].numpy().tolist()[0]
+                decoded = [vocab.idx2ner[oo] for oo in o[1:-1]]
+                
+                pointer = 0; ner_tags = []
+                for word in words:
+                    ner_tags.append(decoded[pointer])
+                    pointer += len(tokenizer.encode(word)) 
+                
+                assert len(ner_tags) == len(words)
+                
+                print("Words --- Tags:")
+                for word, tag in zip(words, ner_tags):
+                    print("%s (%s): " % (word, tag))

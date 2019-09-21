@@ -5,6 +5,7 @@ Created on Sat Sep 14 18:04:45 2019
 @author: WT
 """
 from ner.trainer import train_and_fit
+from ner.infer import infer
 from utils.misc import save_as_pickle, load_pickle
 from argparse import ArgumentParser
 import logging
@@ -38,3 +39,4 @@ if __name__=="__main__":
     save_as_pickle("args.pkl", args)
 
     train_and_fit(args)
+    infer(args, from_data=False)

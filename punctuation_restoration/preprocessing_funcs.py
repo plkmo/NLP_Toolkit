@@ -289,13 +289,14 @@ def create_TED_datasets(args):
         idx_mappings['eos'] = len(idx_mappings)  # 6
         idx_mappings['pad'] = len(idx_mappings)  # 7 = pad
         df.loc[:, 'labels2'] = df.progress_apply(lambda x: get_labels2(x['labels'], idx_mappings), axis=1)
+
         df.loc[:, 'labels'] = df.progress_apply(lambda x: pad_sos_eos(x["labels"], encoder.word_vocab["__sos"], \
                                                       encoder.word_vocab["__eos"]), axis=1) # pad sos eos
         df.loc[:, 'labels_p'] = df.progress_apply(lambda x: pad_sos_eos(x["labels_p"], idx_mappings['sos'], \
                                                       idx_mappings['eos']), axis=1)
-        df.loc[:, 'labels_p_length'] = df.progress_apply(lambda x: len(x['labels_p']), axis=1)
         df.loc[:, 'labels2'] = df.progress_apply(lambda x: pad_sos_eos(x["labels2"], idx_mappings['sos'], \
                                                       idx_mappings['eos']), axis=1)
+        df.loc[:, 'labels_p_length'] = df.progress_apply(lambda x: len(x['labels_p']), axis=1)
         df.loc[:, 'labels2_length'] = df.progress_apply(lambda x: len(x['labels2']), axis=1)
         
         logger.info("Limiting tokens to max_encoder_length...")

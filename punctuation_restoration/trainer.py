@@ -63,7 +63,7 @@ def train_and_fit(args):
                                                                                       cuda=cuda)
     losses_per_epoch, accuracy_per_epoch = load_results(model_no=args.model_no)
     
-    batch_update_steps = 50
+    batch_update_steps = int(len(train_loader)/10)
     logger.info("Starting training process...")
     for e in range(start_epoch, args.num_epochs):
         #l_rate = lrate(e + 1, d_model=32, k=10, warmup_n=25000)

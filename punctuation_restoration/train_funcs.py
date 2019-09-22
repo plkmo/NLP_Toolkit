@@ -12,6 +12,7 @@ from .models.Transformer import PuncTransformer, PuncTransformer2
 from .models.LSTM_attention_model import puncLAS, puncLAS2
 from .models.py_Transformer import pyTransformer
 from .utils.misc import load_pickle, save_as_pickle, CosineWithRestarts
+from seqeval.metrics import precision_score, recall_score, f1_score
 from tqdm import tqdm
 import logging
 
@@ -85,10 +86,8 @@ def load_model_and_optimizer(args, src_vocab_size, trg_vocab_size, trg2_vocab_si
         if p.dim() > 1:
             nn.init.xavier_uniform_(p)
             
-    #criterion = nn.CrossEntropyLoss(ignore_index=1) # ignore padding tokens
     criterion = TwoHeadedLoss(ignore_idx=1, ignore_idx_p=idx_mappings['pad'], gamma=0.2)
     
-    #model = SummaryTransformer if (args.model_no == 0) else LAS
     net, optimizer, scheduler, start_epoch, acc = load_state(net, args, load_best=False, load_scheduler=False)
 
     if cuda:
@@ -139,19 +138,25 @@ def load_results(model_no=0):
     else:
         losses_per_epoch, accuracy_per_epoch = [], []
     return losses_per_epoch, accuracy_per_epoch
-
-def evaluate(output, labels, ignore_idx=1):
-    ### ignore index (padding) when calculating accuracy
+    
+def evaluate(output, labels, ignore_idx):
+    ### ignore index 0 (padding) when calculating accuracy
     idxs = (labels != ignore_idx).nonzero().squeeze()
     o_labels = torch.softmax(output, dim=1).max(1)[1]; #print(output.shape, o_labels.shape)
+    l = labels[idxs]; o = o_labels[idxs]
+    
     if len(idxs) > 1:
-        return (labels[idxs] == o_labels[idxs]).sum().item()/len(idxs)
+        acc = (l == o).sum().item()/len(idxs)
     else:
-        return (labels[idxs] == o_labels[idxs]).sum().item()
+        acc = (l == o).sum().item()
+    l = l.cpu().numpy().tolist() if l.is_cuda else l.numpy().tolist()
+    o = o.cpu().numpy().tolist() if o.is_cuda else o.numpy().tolist()
+    return acc, (o, l)
 
 def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args, create_masks, create_trg_mask, ignore_idx2=7):
     acc = 0; acc2 = 0
     print("Evaluating...")
+    out_labels = []; true_labels = []
     with torch.no_grad():
         net.eval()
         for i, data in tqdm(enumerate(data_loader), total=len(data_loader)):
@@ -178,9 +183,22 @@ def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args, create_mask
                 
             outputs = outputs.view(-1, outputs.size(-1))
             outputs2 = outputs2.view(-1, outputs2.size(-1))
-            acc += evaluate(outputs, labels, ignore_idx=1)
-            acc2 += evaluate(outputs2, labels2, ignore_idx=ignore_idx2)
+            acc += evaluate(outputs, labels, ignore_idx=1)[0]
+            cal_acc, (o, l) = evaluate(outputs2, labels2, ignore_idx=ignore_idx2)
+            out_labels.append([str(i) for i in o]); true_labels.append([str(i) for i in l])
+            acc2 += cal_acc
     accuracy = (acc/(i + 1) + acc2/(i + 1))/2
+    results = {
+        "accuracy": accuracy,
+        "precision": precision_score(true_labels, out_labels),
+        "recall": recall_score(true_labels, out_labels),
+        "f1": f1_score(true_labels, out_labels)
+    }
+
+    logger.info("***** Eval results *****")
+    for key in sorted(results.keys()):
+        logger.info("  %s = %s", key, str(results[key]))
+    
     return accuracy
 
 def decode_outputs(outputs, labels, vocab_decoder, args):

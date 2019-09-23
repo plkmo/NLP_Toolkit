@@ -100,6 +100,16 @@ def infer(args, from_data=False):
                     print()
                     time.sleep(10)
                 
+                elif args.model_no == 1:
+                    src_input, trg_input, trg2_input = data[0], data[1][:, :-1], data[2][:, :-1]
+                    labels = data[1][:,1:].contiguous().view(-1)
+                    labels2 = data[2][:,1:].contiguous().view(-1)
+                    if cuda:
+                        src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
+                        trg2_input = trg2_input.cuda().long(); labels2 = labels2.cuda().long()
+                    outputs, outputs2 = net(src_input, trg_input, trg2_input, infer=True)
+                    print(outputs, outputs2)
+                
     else:
         while True:
             with torch.no_grad():

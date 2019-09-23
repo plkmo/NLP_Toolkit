@@ -4,7 +4,8 @@ Created on Tue Jun 11 15:23:19 2019
 
 @author: WT
 """
-
+import sys
+import csv
 import pandas as pd
 import os
 import re
@@ -13,6 +14,18 @@ from torchtext.data import BucketIterator
 import spacy
 import logging
 
+maxInt = sys.maxsize
+
+while True:
+    # decrease the maxInt value by factor 10 
+    # as long as the OverflowError occurs.
+
+    try:
+        csv.field_size_limit(maxInt)
+        break
+    except OverflowError:
+        maxInt = int(maxInt/10)
+        
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger(__file__)

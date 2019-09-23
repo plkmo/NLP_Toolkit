@@ -5,7 +5,7 @@ Created on Tue Aug  6 14:31:51 2019
 @author: WT
 """
 from translation.trainer import train_and_fit
-from translation.evaluate import infer
+from translation.evaluate import infer, evaluate_corpus_bleu
 from utils.misc import save_as_pickle
 from argparse import ArgumentParser
 import logging
@@ -30,11 +30,17 @@ if __name__=="__main__":
     parser.add_argument("--gradient_acc_steps", type=int, default=1, help="Number of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
     parser.add_argument("--model_no", type=int, default=0, help="Model ID (0: Transformer)")
+    
+    parser.add_argument("--evaluate_only", type=int, default=0, help="Only evaluate the trained model on dataset")
+    parser.add_argument("--infer_only", type=int, default=0, help="Only infer input sentences")
     args = parser.parse_args()
     
     save_as_pickle("args.pkl", args)
     
     '''PyTorch's transformer module runs much slower'''
-    train_and_fit(args, pytransformer=False)
-    
-    #infer(args, True)
+    if (not args.evaluate_only) and (not args.infer_only):
+        train_and_fit(args, pytransformer=False)
+    elif args.evaluate_only:
+        evaluate_corpus_bleu(args)
+    elif args.infer_only:
+        infer(args, True)

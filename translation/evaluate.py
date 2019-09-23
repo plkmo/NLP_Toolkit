@@ -10,12 +10,18 @@ from nltk.translate import bleu_score
 from .models.Transformer.Transformer import create_masks
 from .train_funcs import load_model_and_optimizer
 from .preprocessing_funcs import tokener, load_dataloaders
+from tqdm import tqdm
 import time
+import logging
+
+logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
+                    datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
+logger = logging.getLogger('__file__')
     
 def dum_tokenizer(sent):
     return sent.split()
 
-def calculate_bleu(src, trg, weights=(0.25, 0.25, 0.25, 0.25), corpus_level=False):
+def calculate_bleu(src, trg, corpus_level=False, weights=(0.25, 0.25, 0.25, 0.25)):
     # src = [[sent words1], [sent words2], ...], trg = [sent words]
     if not corpus_level:
         score = bleu_score.sentence_bleu(src, trg, weights=weights)
@@ -23,7 +29,7 @@ def calculate_bleu(src, trg, weights=(0.25, 0.25, 0.25, 0.25), corpus_level=Fals
         score = bleu_score.corpus_bleu(src, trg, weights=weights)
     return score
 
-def evaluate_bleu(args):
+def evaluate_corpus_bleu(args, early_stopping=True, stop_no=1000):
     args.batch_size = 1
     #tokenizer_en = tokener("en")
     train_iter, FR, EN, train_length = load_dataloaders(args)
@@ -38,9 +44,10 @@ def evaluate_bleu(args):
     trg_init = FR.vocab.stoi["<sos>"]
     trg_init = Variable(torch.LongTensor([trg_init])).unsqueeze(0)
     
+    logger.info("Evaluating corpus bleu...")
     refs = []; hyps = []
     with torch.no_grad():
-        for i, data in enumerate(train_iter):
+        for i, data in tqdm(enumerate(train_iter), total=len(train_iter)):
             trg_input = trg_init
             labels = data.FR[:,1:].contiguous().view(-1)
             src_mask, trg_mask = create_masks(data.EN, trg_input)
@@ -50,9 +57,13 @@ def evaluate_bleu(args):
             stepwise_translated_words, final_step_words = net(data.EN, trg_input, src_mask, None,\
                                                               infer=True, trg_vocab_obj=FR)
             refs.append([stepwise_translated_words]) # need to remove <eos> tokens
-            hyps.append([FR.vocab.itos[i] for i in labels])
-    
-    return
+            hyps.append([FR.vocab.itos[i] for i in labels[:-1]])
+            if early_stopping and ((i + 1) % stop_no == 0):
+                print(refs); print(hyps)
+                break
+    score = calculate_bleu(refs, hyps, corpus_level=True)
+    print("Corpus bleu score: %.5f" % score)
+    return score
 
 def infer(args, from_data=False):
     args.batch_size = 1
@@ -100,6 +111,7 @@ def infer(args, from_data=False):
                 stepwise_translated_words, final_step_words = net(data.EN, trg_input, src_mask, None,\
                                                                   infer=True, trg_vocab_obj=FR)
                 score = calculate_bleu([stepwise_translated_words], [FR.vocab.itos[i] for i in labels])
+                print([stepwise_translated_words]); print([FR.vocab.itos[i] for i in labels])
                 print("\n\nInput:")
                 print(" ".join(EN.vocab.itos[i] for i in data.EN[0]))
                 print("\nStepwise-translated:")
@@ -108,7 +120,7 @@ def infer(args, from_data=False):
                 print(" ".join(final_step_words))
                 print("\nGround Truth:")
                 print(" ".join(FR.vocab.itos[i] for i in labels))
-                print("Bleu score (stepwise-translated sentence level): %.3f" % score)
+                print("Bleu score (stepwise-translated sentence level): %.5f" % score)
                 time.sleep(7)
     
     else:

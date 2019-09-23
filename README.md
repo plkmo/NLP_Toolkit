@@ -16,7 +16,7 @@ Tasks:
 [References](#references)
 
 ## Pre-requisites
-torch==1.2.0 ; spacy==2.1.8 ; seqeval==0.0.12
+torch==1.2.0 ; spacy==2.1.8 ; torchtext==0.4.0 ; seqeval==0.0.12
 
 ** Pre-trained models (XLNet, BERT, GPT-2) are courtesy of huggingface (https://github.com/huggingface/pytorch-transformers)
 

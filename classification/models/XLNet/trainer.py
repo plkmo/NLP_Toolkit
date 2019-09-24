@@ -11,9 +11,7 @@ import torch.optim as optim
 from torch.nn.utils import clip_grad_norm_
 from .preprocessing_funcs import save_as_pickle, load_pickle
 from .train_funcs import load_dataloaders, load_state, load_results, model_eval, infer
-#from .BERT import BertForSequenceClassification
 from .XLNet import XLNetForSequenceClassification
-#from pytorch_transformers import XLNetForSequenceClassification
 import matplotlib.pyplot as plt
 import logging
 
@@ -27,7 +25,6 @@ def train_and_fit(args):
     train_loader, test_loader, train_len = load_dataloaders(args)
     
     net = XLNetForSequenceClassification.from_pretrained('xlnet-base-cased', num_labels=args.num_classes)
-    #net = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=args.num_classes)
     if cuda:
         net.cuda()
         

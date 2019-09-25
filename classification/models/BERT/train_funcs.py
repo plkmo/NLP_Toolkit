@@ -77,8 +77,10 @@ def load_state(net, optimizer, scheduler, args, load_best=False):
         start_epoch = checkpoint['epoch']
         best_pred = checkpoint['best_acc']
         net.load_state_dict(checkpoint['state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer'])
-        scheduler.load_state_dict(checkpoint['scheduler'])
+        if optimizer is not None:
+            optimizer.load_state_dict(checkpoint['optimizer'])
+        if scheduler is not None:
+            scheduler.load_state_dict(checkpoint['scheduler'])
         logger.info("Loaded model and optimizer.")    
     return start_epoch, best_pred
 

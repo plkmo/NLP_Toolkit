@@ -44,7 +44,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_epochs", type=int, default=1700, help="No of epochs")
     parser.add_argument("--lr", type=float, default=0.0031, help="learning rate")
     parser.add_argument("--model_no", type=int, default=2, help="Model ID: (0: Graph Convolution Network (GCN), 1: BERT, 2: XLNet)")
-    parser.add_argument("--infer", type=int, default=0, help="Infer input sentence labels from trained model")
+    parser.add_argument("--infer", type=int, default=1, help="Infer input sentence labels from trained model")
     args = parser.parse_args()
     save_as_pickle("args.pkl", args)
     
@@ -59,4 +59,4 @@ if __name__ == "__main__":
         if args.model_no == 0:
             logger.info("Infer function not compatible with GCN!")
         else:
-            infer_from_trained(args)
+            inferer = infer_from_trained(args)

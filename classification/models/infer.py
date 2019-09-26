@@ -4,9 +4,12 @@ Created on Tue Sep 24 17:33:49 2019
 
 @author: plkmo
 """
+import pandas as pd
 import torch
+from tqdm import tqdm
 import logging
 
+tqdm.pandas(desc="prog-bar")
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger('__file__')
@@ -47,7 +50,10 @@ class infer_from_trained(object):
             sentence = sentence.cuda()
             type_ids = type_ids.cuda()
             src_mask = src_mask.cuda()
-        outputs = self.net(sentence, token_type_ids=type_ids, attention_mask=src_mask)
+        if self.args.model_no == 1:
+            outputs = self.net(sentence, token_type_ids=type_ids, attention_mask=src_mask)
+        else:
+            outputs, _ = self.net(sentence, token_type_ids=type_ids, attention_mask=src_mask)
         _, predicted = torch.max(outputs.data, 1)
         predicted = predicted.cpu().item() if self.cuda else predicted.item()
         print("Predicted class: %d" % predicted)
@@ -55,13 +61,16 @@ class infer_from_trained(object):
     
     def infer_from_input(self):
         while True:
-            user_input = input("Type input sentence:\n")
+            user_input = input("Type input sentence (Type \'exit' or \'quit' to quit):\n")
             if user_input in ["exit", "quit"]:
                 break
             predicted = self.infer_sentence(user_input)
-            print("Predicted class: %d" % predicted)
         return predicted
     
     def infer_from_file(self, in_file="./data/input.txt", out_file="./data/output.txt"):
-        pass
+        df = pd.read_csv(in_file, header=None, names=["sents"])
+        df['labels'] = df.progress_apply(lambda x: self.infer_sentence(x['sents']), axis=1)
+        df.to_csv(out_file, index=False)
+        logger.info("Done and saved as %s!" % out_file)
+        return
             

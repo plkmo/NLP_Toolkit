@@ -36,9 +36,14 @@ if __name__ == "__main__":
     parser.add_argument("--gradient_acc_steps", type=int, default=4, help="Number of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
     parser.add_argument("--model_no", type=int, default=0, help="Model ID: 0 = Transformer, 1 = LAS")
+    
+    parser.add_argument("--train", type=int, default=1, help="Train model on dataset")
+    parser.add_argument("--infer", type=int, default=0, help="Infer input sentence labels from trained model")
     args = parser.parse_args()
     save_as_pickle("args.pkl", args)
     
-    train_and_fit(args, pyTransformer=False)
-    #infer(file_path="./data/train-clean-5/19/198/19-198-0008.flac", speaker='19')
-    outputs = infer()
+    if args.train:
+        train_and_fit(args, pyTransformer=False)
+    if args.infer:
+        infer(file_path="./data/train-clean-5/19/198/19-198-0008.flac", speaker='19')
+        outputs = infer()

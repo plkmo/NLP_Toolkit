@@ -50,7 +50,9 @@ classify.py [-h]
 	[--max_norm MAX_NORM (default: 1)] 
 	[--num_epochs NUM_EPOCHS (default: 1700)] 
 	[--lr LR default=0.0031]
-	[--model_no MODEL_NO (default: 0 (0: Graph Convolution Network 	(GCN), 1: BERT, 2: XLNet))]
+	[--model_no MODEL_NO (default: 0 (0: Graph Convolution Network 	(GCN), 1: BERT, 2: XLNet))] 
+	[--train TRAIN (default:1)]  
+	[--infer INFER (default: 0 (Infer input sentence labels from 	trained model))]
 ```
 The script outputs a results.csv file containing the indexes of the documents in infer.csv and their corresponding predicted labels.
 
@@ -87,7 +89,10 @@ speech.py [-h]
 	[--lr LR default=0.003]    
 	[--gradient_acc_steps GRADIENT_ACC_STEPS (default: 4)]
 	[--max_norm MAX_NORM (default: 1)] 
-	[--model_no MODEL_NO (default: 0 (0: Transformer, 1: LAS))]
+	[--model_no MODEL_NO (default: 0 (0: Transformer, 1: LAS))]  
+	[--train TRAIN (default:1)]  
+	[--infer INFER (default: 0 (Infer input sentence labels from 	trained model))]
+
 ```
 
 
@@ -120,7 +125,10 @@ summarize.py [-h]
 	[--lr LR default=0.003]    
 	[--gradient_acc_steps GRADIENT_ACC_STEPS (default: 4)]
 	[--max_norm MAX_NORM (default: 1)] 
-	[--model_no MODEL_NO (default: 0 (0: Transformer, 1: LAS))]
+	[--model_no MODEL_NO (default: 0 (0: Transformer, 1: LAS))]  
+	[--train TRAIN (default:1)]  
+	[--infer INFER (default: 0 (Infer input sentence labels from 	trained model))]
+
 ```
 
 ## 4) Machine Translation
@@ -148,7 +156,11 @@ translate.py [-h]
 	[--lr LR default=0.0001]    
 	[--gradient_acc_steps GRADIENT_ACC_STEPS (default: 1)]
 	[--max_norm MAX_NORM (default: 1)] 
-	[--model_no MODEL_NO (default: 0 (0: Transformer))]
+	[--model_no MODEL_NO (default: 0 (0: Transformer))]  
+	[--train TRAIN (default:1)]  
+	[--evaluate EVALUATE (default:0)]
+	[--infer INFER (default: 0)]
+	
 ```
 
 ## 5) Natural Language Generation
@@ -194,7 +206,10 @@ punctuate.py [-h]
 	[--gradient_acc_steps GRADIENT_ACC_STEPS (default: 2)]
 	[--max_norm MAX_NORM (default: 1.0)] 
 	[--T_max T_MAX (default: 5000)] 
-	[--model_no MODEL_NO (default: 0 (0: Transformer))]
+	[--model_no MODEL_NO (default: 0 (0: Transformer))]  
+	[--train TRAIN (default:1)]  
+	[--infer INFER (default: 0 (Infer input sentence labels from 	trained model))]
+
 
 ```
 
@@ -210,6 +225,9 @@ Run ner.py
 ner.py [-h] 
 	[--train_path TRAIN_PATH] 
 	[--test_path TEST_PATH]
+	[--train TRAIN (default:1)]  
+	[--evaluate EVALUATE (default:0)]
+
 
 ```
 

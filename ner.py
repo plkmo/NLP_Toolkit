@@ -35,8 +35,13 @@ if __name__=="__main__":
     parser.add_argument("--model_no", type=int, default=0, help="Model ID: (0: BERT, 1: XLNet)")
     parser.add_argument("--model_type", type=str, default='bert', help="Model ID: (0: BERT, 1: XLNet)")
     
+    parser.add_argument("--train", type=int, default=1, help="Train model on dataset")
+    parser.add_argument("--infer", type=int, default=0, help="Infer labels from trained model")
     args = parser.parse_args()
     save_as_pickle("args.pkl", args)
-
-    train_and_fit(args)
-    infer(args, from_data=False)
+    
+    if args.train:
+        train_and_fit(args)
+    
+    if args.infer:
+        infer(args, from_data=False)

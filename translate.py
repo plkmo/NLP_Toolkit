@@ -31,16 +31,17 @@ if __name__=="__main__":
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
     parser.add_argument("--model_no", type=int, default=0, help="Model ID (0: Transformer)")
     
-    parser.add_argument("--evaluate_only", type=int, default=0, help="Only evaluate the trained model on dataset")
-    parser.add_argument("--infer_only", type=int, default=0, help="Only infer input sentences")
+    parser.add_argument("--train", type=int, default=1, help="Train model on dataset")
+    parser.add_argument("--evaluate", type=int, default=0, help="Evaluate the trained model on dataset")
+    parser.add_argument("--infer", type=int, default=0, help="Infer input sentences")
     args = parser.parse_args()
     
     save_as_pickle("args.pkl", args)
     
     '''PyTorch's transformer module runs much slower'''
-    if (not args.evaluate_only) and (not args.infer_only):
+    if args.train:
         train_and_fit(args, pytransformer=False)
-    elif args.evaluate_only:
+    if args.evaluate:
         evaluate_corpus_bleu(args)
-    elif args.infer_only:
+    if args.infer:
         infer(args, True)

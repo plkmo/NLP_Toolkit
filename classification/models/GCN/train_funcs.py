@@ -147,4 +147,5 @@ def infer(f, test_idxs, net):
     df_results.loc[:, "index"] = test_idxs
     df_results.loc[:, "predicted_label"] = pred_labels
     df_results.to_csv("./data/results.csv", columns=df_results.columns, index=False)
+    logger.info("Done and saved!")
     return df_results

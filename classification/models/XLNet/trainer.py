@@ -27,12 +27,23 @@ def train_and_fit(args):
     net = XLNetForSequenceClassification.from_pretrained('xlnet-base-cased', num_labels=args.num_classes)
     if cuda:
         net.cuda()
-        
+    
+    '''
     ### freeze all layers except for last encoder layer and classifier layer
     logger.info("FREEZING MOST HIDDEN LAYERS...")
     for name, param in net.named_parameters():
         if ("sequence_summary" not in name) and ("logits_proj" not in name) and ("transformer.layer.11" not in name):
             param.requires_grad = False
+    '''
+    logger.info("FREEZING MOST HIDDEN LAYERS...")
+    unfrozen_layers = ["sequence_summary", "logits_proj", "transformer.layer.11", "transformer.layer.10"]
+    for name, param in net.named_parameters():
+        if not any([layer in name for layer in unfrozen_layers]):
+            print("[FROZE]: %s" % name)
+            param.requires_grad = False
+        else:
+            print("[FREE]: %s" % name)
+            param.requires_grad = True
        
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam([{"params":net.transformer.parameters(),"lr": args.lr/10},\

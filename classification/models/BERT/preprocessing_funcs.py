@@ -45,7 +45,7 @@ def preprocess(args):
     df_train = pd.read_csv(args.train_data)
     df_test = pd.read_csv(args.infer_data)
     
-    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
     tokens_length = args.tokens_length # max tokens length
     
     logger.info("Tokenizing data...")

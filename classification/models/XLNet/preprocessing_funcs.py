@@ -51,7 +51,7 @@ def preprocess(args):
     df_train = pd.read_csv(args.train_data)
     df_test = pd.read_csv(args.infer_data)
     
-    tokenizer = XLNetTokenizer.from_pretrained('xlnet-base-cased')
+    tokenizer = XLNetTokenizer.from_pretrained('xlnet-base-cased', do_lower_case=False)
     tokens_length = args.tokens_length # max tokens length
     
     logger.info("Tokenizing data...")

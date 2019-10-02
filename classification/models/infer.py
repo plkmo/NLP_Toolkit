@@ -24,14 +24,16 @@ class infer_from_trained(object):
             from .BERT.BERT import BertForSequenceClassification as net
             from .BERT.train_funcs import load_state
             model_type = 'bert-base-uncased'
+            lower_case = True
             
         elif args.model_no == 2:
             from .XLNet.tokenization_xlnet import XLNetTokenizer as model_tokenizer
             from .XLNet.XLNet import XLNetForSequenceClassification as net
             from .XLNet.train_funcs import load_state
             model_type = 'xlnet-base-cased'
+            lower_case = False
             
-        self.tokenizer = model_tokenizer.from_pretrained(model_type)
+        self.tokenizer = model_tokenizer.from_pretrained(model_type, do_lower_case=lower_case)
         self.tokens_length = args.tokens_length # max tokens length
         
         self.net = net.from_pretrained(model_type, num_labels=args.num_classes)

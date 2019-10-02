@@ -20,7 +20,7 @@ class XLNet_infer(object):
         logger.info("Loading fine-tuned XLNet...")
         self.args = load_pickle("./data/args.pkl")
         self.net = XLNetForSequenceClassification.from_pretrained('xlnet-base-cased', num_labels=self.args.num_classes)
-        self.tokenizer = XLNetTokenizer.from_pretrained('xlnet-base-cased')
+        self.tokenizer = XLNetTokenizer.from_pretrained('xlnet-base-cased', do_lower_case=False)
         logger.info("Done!")
         
     def classify(self, text=None):

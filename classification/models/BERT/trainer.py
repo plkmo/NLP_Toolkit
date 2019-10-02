@@ -27,12 +27,24 @@ def train_and_fit(args):
     net = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=args.num_classes)
     if cuda:
         net.cuda()
-        
+    
+    ''' 
     ### freeze all layers except for last encoder layer and classifier layer
     logger.info("FREEZING MOST HIDDEN LAYERS...")
     for name, param in net.named_parameters():
         if ("classifier" not in name) and ("bert.pooler" not in name) and ("bert.encoder.layer.11" not in name):
             param.requires_grad = False
+    '''
+    
+    logger.info("FREEZING MOST HIDDEN LAYERS...")
+    unfrozen_layers = ["classifier", "bert.pooler", "bert.encoder.layer.11"]
+    for name, param in net.named_parameters():
+        if not any([layer in name for layer in unfrozen_layers]):
+            print("[FROZE]: %s" % name)
+            param.requires_grad = False
+        else:
+            print("[FREE]: %s" % name)
+            param.requires_grad = True
        
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam([{"params":net.bert.parameters(),"lr": 0.0003},\

@@ -4,6 +4,8 @@ Created on Tue Sep 24 17:33:49 2019
 
 @author: plkmo
 """
+import pickle
+import os
 import pandas as pd
 import torch
 from tqdm import tqdm
@@ -14,19 +16,29 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger('__file__')
 
+def load_pickle(filename):
+    completeName = os.path.join("./data/",\
+                                filename)
+    with open(completeName, 'rb') as pkl_file:
+        data = pickle.load(pkl_file)
+    return data
+
 class infer_from_trained(object):
-    def __init__(self, args):
-        self.args = args
+    def __init__(self, args=None):
+        if args is None:
+            self.args = load_pickle("args.pkl")
+        else:
+            self.args = args
         self.cuda = torch.cuda.is_available()
         logger.info("Loading tokenizer and model...")
-        if args.model_no == 1:
+        if self.args.model_no == 1:
             from .BERT.tokenization_bert import BertTokenizer as model_tokenizer
             from .BERT.BERT import BertForSequenceClassification as net
             from .BERT.train_funcs import load_state
             model_type = 'bert-base-uncased'
             lower_case = True
             
-        elif args.model_no == 2:
+        elif self.args.model_no == 2:
             from .XLNet.tokenization_xlnet import XLNetTokenizer as model_tokenizer
             from .XLNet.XLNet import XLNetForSequenceClassification as net
             from .XLNet.train_funcs import load_state
@@ -43,6 +55,7 @@ class infer_from_trained(object):
         logger.info("Done!")
     
     def infer_sentence(self, sentence):
+        self.net.eval()
         sentence = self.tokenizer.tokenize("[CLS] " + sentence)
         sentence = self.tokenizer.convert_tokens_to_ids(sentence[:(self.args.tokens_length-1)] + ["[SEP]"])
         sentence = torch.tensor(sentence).unsqueeze(0)
@@ -62,6 +75,7 @@ class infer_from_trained(object):
         return predicted
     
     def infer_from_input(self):
+        self.net.eval()
         while True:
             user_input = input("Type input sentence (Type \'exit' or \'quit' to quit):\n")
             if user_input in ["exit", "quit"]:

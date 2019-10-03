@@ -32,7 +32,7 @@ class infer_from_trained(object):
         self.vocab = load_pickle("vocab.pkl")
         
         logger.info("NER Vocabulary size: %d" % (len(self.vocab.ner2idx) - 1))
-        net, _, _, _, start_epoch, acc = load_model_and_optimizer(self.args, 10, self.cuda)
+        net, _, _, _, start_epoch, acc = load_model_and_optimizer(args, 10, self.cuda)
         self.net = net
         self.max_len = self.args.tokens_length - 2
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
@@ -40,7 +40,6 @@ class infer_from_trained(object):
         self.sep_id = self.tokenizer.convert_tokens_to_ids(["[SEP]"])
     
     def infer_from_data(self,):
-        self.net.eval()
         train_loader, train_length, test_loader, test_length = load_dataloaders(self.args)
         with torch.no_grad():
             for i, data in enumerate(train_loader):
@@ -74,7 +73,6 @@ class infer_from_trained(object):
                 time.sleep(7)
     
     def infer_from_input(self,):
-        self.net.eval()
         while True:
             sent = input("Type input sentence:\n")
             sent = sent.lower()
@@ -113,7 +111,6 @@ class infer_from_trained(object):
             sents = f.readlines()
         
         logger.info("Tagging...")
-        self.net.eval()
         sents_tags = []
         for sent in tqdm(sents):
             if self.args.model_no == 0:

@@ -136,7 +136,7 @@ def evaluate(output, labels, ignore_idx):
     o = o.cpu().numpy().tolist() if o.is_cuda else o.numpy().tolist()
     return acc, (o, l)
 
-def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args, ignore_idx, idx2ner):
+def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args, ignore_idx, idx2pos):
     acc = 0
     print("Evaluating...")
     out_labels = []; true_labels = []
@@ -170,7 +170,7 @@ def evaluate_results(net, data_loader, cuda, g_mask1, g_mask2, args, ignore_idx,
             #print(outputs.shape); print(labels.shape)
             outputs = outputs.reshape(-1, outputs.size(-1))
             cal_acc, (o, l) = evaluate(outputs, labels, ignore_idx)
-            out_labels.append([idx2ner[i] for i in o]); true_labels.append([idx2ner[i] for i in l])
+            out_labels.append([idx2pos[i] for i in o]); true_labels.append([idx2pos[i] for i in l])
             acc += cal_acc
             
     eval_acc = acc/(i + 1)

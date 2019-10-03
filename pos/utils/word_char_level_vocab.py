@@ -13,28 +13,28 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
 logger = logging.getLogger(__file__)
 
 class vocab_mapper(object):
-    def __init__(self, df_train=None, df_test=None, ner_only=True):
+    def __init__(self, df_train=None, df_test=None, pos_only=True):
         
         if df_train is not None:
             logger.info("Building vocab...")
-            sents = []; ners = []
+            sents = []; poss = []
             for _, row in tqdm(df_train.iterrows(), total=len(df_train)):
-                sent, ner = row[0], row[1]
-                sents.extend(sent); ners.extend(ner)
-            sents = list(set(sents)); ners = list(set(ners))
+                sent, pos = row[0], row[1]
+                sents.extend(sent); poss.extend(pos)
+            sents = list(set(sents)); poss = list(set(poss))
             
             if df_test is not None:
                 for _, row in tqdm(df_test.iterrows(), total=len(df_test)):
-                    sent, ner = row[0], row[1]
-                    sents.extend(sent); ners.extend(ner)
-                sents = list(set(sents)); ners = list(set(ners))
+                    sent, pos = row[0], row[1]
+                    sents.extend(sent); poss.extend(pos)
+                sents = list(set(sents)); poss = list(set(poss))
             
             self.word2idx = {k:v for v, k in enumerate(sents, 0)}
             self.word2idx['<pad>'] = -100
-            self.ner2idx = {k:v for v, k in enumerate(ners, 0)}
-            self.ner2idx.update({'<pad>':-100, 'B-PER':len(self.ner2idx)}) #, '<sos>':1, '<eos>':2})
+            self.pos2idx = {k:v for v, k in enumerate(poss, 0)}
+            self.pos2idx.update({'<pad>':-100,}) #, '<sos>':1, '<eos>':2})
             self.idx2word = {v:k for k,v in self.word2idx.items()}
-            self.idx2ner = {v:k for k, v in self.ner2idx.items()}
+            self.idx2pos = {v:k for k, v in self.pos2idx.items()}
             logger.info("Done!")
         else:
             '''
@@ -49,18 +49,18 @@ class vocab_mapper(object):
                             '<pad>': -9,
                             'B-PER': 0}
             '''
-            self.ner2idx = {"O":0, "B-MISC":1, "I-MISC":2,  "B-PER":3, "I-PER":4, "B-ORG":5, "I-ORG":6, "B-LOC":7, "I-LOC":8,\
+            self.pos2idx = {"O":0, "B-MISC":1, "I-MISC":2,  "B-PER":3, "I-PER":4, "B-ORG":5, "I-ORG":6, "B-LOC":7, "I-LOC":8,\
                             '<pad':-100}
-            self.idx2ner = {v:k for k, v in self.ner2idx.items()}
+            self.idx2ner = {v:k for k, v in self.pos2idx.items()}
     
     def save(self, filename="vocab.pkl"):
         save_as_pickle(filename, self)
         logger.info("Saved vocab!")
     
-    def add_ner(self, ner):
-        self.ner2idx[ner] = len(self.ner2idx)
-        self.idx2ner[len(self.ner2idx)] = ner
-        logger.info("Added %s" % ner)
+    def add_pos(self, pos):
+        self.pos2idx[pos] = len(self.pos2idx)
+        self.idx2pos[len(self.pos2idx)] = pos
+        logger.info("Added %s" % pos)
         self.save()
     
     def add_word(self, word):

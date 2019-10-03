@@ -25,7 +25,7 @@ def train_and_fit(args):
     train_loader, train_length, test_loader, test_length = load_dataloaders(args)
     
     vocab = load_pickle("vocab.pkl")
-    logger.info("NER Vocabulary size: %d" % (len(vocab.ner2idx) - 1))
+    logger.info("POS Vocabulary size: %d" % (len(vocab.pos2idx) - 1))
     
     ignore_idx = CrossEntropyLoss().ignore_index
     
@@ -102,11 +102,11 @@ def train_and_fit(args):
         losses_per_epoch.append(sum(losses_per_batch)/len(losses_per_batch))
         accuracy_per_epoch.append(evaluate_results(net, test_loader if test_loader is not None else train_loader, \
                                                    cuda, None, None, args, ignore_idx,\
-                                                   vocab.idx2ner)['accuracy'])
+                                                   vocab.idx2pos)['accuracy'])
         print("Losses at Epoch %d: %.7f" % (e, losses_per_epoch[-1]))
         print("Accuracy at Epoch %d: %.7f" % (e, accuracy_per_epoch[-1]))
         
-        decode_outputs(outputs[1].view(-1, outputs[1].size(-1)), labels.contiguous().view(-1), vocab.idx2ner, args)
+        decode_outputs(outputs[1].view(-1, outputs[1].size(-1)), labels.contiguous().view(-1), vocab.idx2pos, args)
                 
         if accuracy_per_epoch[-1] > acc:
             acc = accuracy_per_epoch[-1]

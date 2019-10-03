@@ -4,7 +4,6 @@ Created on Sat Sep 14 18:04:45 2019
 
 @author: WT
 """
-from pos.preprocessing_funcs import get_POS_twitter_data
 from pos.trainer import train_and_fit
 from pos.infer import infer_from_trained
 from utils.misc import save_as_pickle, load_pickle
@@ -17,9 +16,9 @@ logger = logging.getLogger('__file__')
 if __name__=="__main__":
     parser = ArgumentParser()
     parser.add_argument("--train_path", type=str, default="./data/pos/twpos-data-v0.3/full_data/combined.txt", help="Path to training data txt file")
-    parser.add_argument("--test_path", type=str, default="./data/ner/conll2003/eng.testa.txt", help="Path to test data txt file (if any)")
-    parser.add_argument("--num_classes", type=int, default=9, help="Number of prediction classes (starts from integer 0)")
-    parser.add_argument("--batch_size", type=int, default=8, help="Batch size")
+    parser.add_argument("--test_path", type=str, default="", help="Path to test data txt file (if any)")
+    parser.add_argument("--num_classes", type=int, default=25, help="Number of prediction classes (starts from integer 0)")
+    parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
     parser.add_argument("--tokens_length", type=int, default=128, help="Max tokens length for BERT")
     parser.add_argument("--max_steps", default=-1, type=int,
                         help="If > 0: set total number of training steps to perform. Override num_train_epochs.")
@@ -40,13 +39,11 @@ if __name__=="__main__":
     parser.add_argument("--infer", type=int, default=1, help="Infer labels from trained model")
     args = parser.parse_args()
     save_as_pickle("args.pkl", args)
-    
-    df = get_POS_twitter_data(args)
-    '''
+        
     if args.train:
         train_and_fit(args)
     
     if args.infer:
         infer_ = infer_from_trained(args)
         infer_.infer_from_input()
-    '''
+    

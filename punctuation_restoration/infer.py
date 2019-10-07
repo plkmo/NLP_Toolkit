@@ -46,8 +46,9 @@ class infer_from_trained(object):
         elif self.args.model_no == 2:
             from .models.py_Transformer import create_masks, create_trg_mask
         
-        self.create_masks = create_masks
-        self.create_trg_mask = create_trg_mask
+        if self.args.model_no != 1:
+            self.create_masks = create_masks
+            self.create_trg_mask = create_trg_mask
         
         if self.args.level == "bpe":
             logger.info("Loading BPE info...")
@@ -121,7 +122,14 @@ class infer_from_trained(object):
                         src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
                         trg2_input = trg2_input.cuda().long(); labels2 = labels2.cuda().long()
                     outputs, outputs2 = self.net(src_input, trg_input, trg2_input, infer=True)
-                    print(outputs, outputs2)
+                    #print(outputs, outputs2)
+                    outputs2 = outputs2.cpu().numpy().tolist() if outputs2.is_cuda else outputs2.cpu().numpy().tolist()
+                    punc = [self.trg2_vocab.idx2punc[i] for i in outputs2[0]]
+                    print(punc)
+                    l = list(labels[:70].cpu().numpy()) if labels.is_cuda else list(labels[:70].numpy())
+                    l = [l] if self.args.level == "bpe" else l
+                    print("Sample Label: ", " ".join(self.vocab.inverse_transform(l)))
+                    time.sleep(10)
     
     def infer_from_input(self,):
         self.net.eval()
@@ -131,35 +139,36 @@ class infer_from_trained(object):
                 if sent in ["quit", "exit"]:
                     break
                 sent = torch.tensor(next(self.vocab.transform([sent]))).unsqueeze(0)
-                trg_input = torch.tensor([self.vocab.word_vocab['__sos']]).unsqueeze(0)
-                trg2_input = torch.tensor([self.idx_mappings['sos']]).unsqueeze(0)
-                src_mask, trg_mask = self.create_masks(sent, trg_input)
-                trg2_mask = self.create_trg_mask(trg2_input, ignore_idx=self.idx_mappings['pad'])
-                if self.cuda:
-                    sent = sent.cuda().long(); trg_input = trg_input.cuda().long(); trg2_input = trg2_input.cuda().long()
-                    src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda(); trg2_mask = trg2_mask.cuda()
-                stepwise_translated_words, final_step_words, stepwise_translated_words2, final_step_words2 = self.net(sent, \
-                                                                                                                             trg_input, \
-                                                                                                                             trg2_input,\
-                                                                                                                             src_mask, \
-                                                                                                                             trg_mask, \
-                                                                                                                             trg2_mask, \
-                                                                                                                             True, \
-                                                                                                                             self.vocab, \
-                                                                                                                             self.trg2_vocab)
-                
-                print("\nStepwise-translated:")
-                print(" ".join(stepwise_translated_words))
-                print()
-                print("\nFinal step translated words: ")
-                print(" ".join(final_step_words))
-                print()
-                print("\nStepwise-translated2:")
-                print(" ".join(stepwise_translated_words2))
-                print()
-                print("\nFinal step translated words2: ")
-                print(" ".join(final_step_words2))
-                print()
+                if self.args.model_no == 0:
+                    trg_input = torch.tensor([self.vocab.word_vocab['__sos']]).unsqueeze(0)
+                    trg2_input = torch.tensor([self.idx_mappings['sos']]).unsqueeze(0)
+                    src_mask, trg_mask = self.create_masks(sent, trg_input)
+                    trg2_mask = self.create_trg_mask(trg2_input, ignore_idx=self.idx_mappings['pad'])
+                    if self.cuda:
+                        sent = sent.cuda().long(); trg_input = trg_input.cuda().long(); trg2_input = trg2_input.cuda().long()
+                        src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda(); trg2_mask = trg2_mask.cuda()
+                    stepwise_translated_words, final_step_words, stepwise_translated_words2, final_step_words2 = self.net(sent, \
+                                                                                                                                 trg_input, \
+                                                                                                                                 trg2_input,\
+                                                                                                                                 src_mask, \
+                                                                                                                                 trg_mask, \
+                                                                                                                                 trg2_mask, \
+                                                                                                                                 True, \
+                                                                                                                                 self.vocab, \
+                                                                                                                                 self.trg2_vocab)
+                    
+                    print("\nStepwise-translated:")
+                    print(" ".join(stepwise_translated_words))
+                    print()
+                    print("\nFinal step translated words: ")
+                    print(" ".join(final_step_words))
+                    print()
+                    print("\nStepwise-translated2:")
+                    print(" ".join(stepwise_translated_words2))
+                    print()
+                    print("\nFinal step translated words2: ")
+                    print(" ".join(final_step_words2))
+                    print()
 
 def infer(args, from_data=False):
     

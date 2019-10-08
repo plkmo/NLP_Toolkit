@@ -49,4 +49,4 @@ if __name__ == "__main__":
         train_and_fit(args)
     if args.infer:
         infer_ = infer_from_trained()
-        infer_.infer_from_input()
+        infer_.infer_from_data()

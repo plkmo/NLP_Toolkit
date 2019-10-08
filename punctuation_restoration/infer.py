@@ -126,9 +126,25 @@ class infer_from_trained(object):
                     outputs2 = outputs2.cpu().numpy().tolist() if outputs2.is_cuda else outputs2.cpu().numpy().tolist()
                     punc = [self.trg2_vocab.idx2punc[i] for i in outputs2[0]]
                     print(punc)
+                    punc = [self.mappings[p] if p in ['!', '?', '.', ','] else p for p in punc]
                     l = list(labels[:70].cpu().numpy()) if labels.is_cuda else list(labels[:70].numpy())
                     l = [l] if self.args.level == "bpe" else l
                     print("Sample Label: ", " ".join(self.vocab.inverse_transform(l)))
+                    
+                    src_input = src_input[src_input != 1]
+                    src_input = src_input.cpu().numpy().tolist() if self.cuda else src_input.numpy().tolist()
+                    counter = 0
+                    for idx, p in enumerate(punc):
+                        if (p == 'word') and (counter < len(src_input)):
+                            punc[idx] = src_input[counter]
+                            counter += 1
+                        elif (p == "eos") or (counter >= len(src_input)):
+                            break
+                        else:
+                            punc[idx] = 5
+                    #print(punc, self.trg2_vocab.punc2idx['word'], idx)
+                    print("Predicted Label: ", " ".join(self.vocab.inverse_transform([punc[:(idx + 1)]])))
+
                     time.sleep(10)
     
     def infer_from_input(self,):

@@ -35,7 +35,7 @@ logger = logging.getLogger(__file__)
 
 class tokener(object):
     def __init__(self, lang):
-        d = {"en":"en_core_web_sm", "fr":"fr_core_news_sm"}
+        d = {"en":"en_core_web_lg", "fr":"fr_core_news_sm"}
         self.lang = lang
         if lang in ['fr', 'en']:
             self.ob = spacy.load(d[lang])
@@ -90,8 +90,8 @@ def tokenize_data(args):
     '''
     tokenizer_fr = tokener(args.trg_lang)
     tokenizer_en = tokener(args.src_lang)
-    df["English"] = df.progress_apply(lambda x: tokenizer_en.tokenize(x["English"]))
-    df["French"] = df.progress_apply(lambda x: tokenizer_fr.tokenize(x["French"]))
+    df["English"] = df.progress_apply(lambda x: tokenizer_en.tokenize(x["English"]), axis=1)
+    df["French"] = df.progress_apply(lambda x: tokenizer_fr.tokenize(x["French"]), axis=1)
     df['eng_len'] = df.progress_apply(lambda x: len(x['English']), axis=1)
     df['fr_len'] = df.progress_apply(lambda x: len(x['French']), axis=1)
     max_len = max(args.max_encoder_len, args.max_decoder_len)

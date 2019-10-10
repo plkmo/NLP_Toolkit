@@ -93,32 +93,13 @@ def train_and_fit(args, pytransformer=False):
             net.save_state(epoch=(e+1), optimizer=optimizer, scheduler=scheduler, best_acc=acc,\
                            path=os.path.join("./data/" ,\
                     "test_model_best_%d.pth.tar" % args.model_no))
-            '''
-            torch.save({
-                    'epoch': e + 1,\
-                    'state_dict': net.state_dict(),\
-                    'best_acc': acc,\
-                    'optimizer' : optimizer.state_dict(),\
-                    'scheduler' : scheduler.state_dict(),\
-                }, os.path.join("./data/" ,\
-                    "test_model_best_%d.pth.tar" % args.model_no))
-            '''
+          
         if (e % 1) == 0:
             save_as_pickle("test_losses_per_epoch_%d.pkl" % args.model_no, losses_per_epoch)
             save_as_pickle("test_accuracy_per_epoch_%d.pkl" % args.model_no, accuracy_per_epoch)
             net.save_state(epoch=(e+1), optimizer=optimizer, scheduler=scheduler, best_acc=acc,\
                            path=os.path.join("./data/" ,\
                     "test_checkpoint_%d.pth.tar" % args.model_no))
-            '''
-            torch.save({
-                    'epoch': e + 1,\
-                    'state_dict': net.state_dict(),\
-                    'best_acc': accuracy_per_epoch[-1],\
-                    'optimizer' : optimizer.state_dict(),\
-                    'scheduler' : scheduler.state_dict(),\
-                }, os.path.join("./data/",\
-                    "test_checkpoint_%d.pth.tar" % args.model_no))
-            '''
     
     logger.info("Finished training")
     fig = plt.figure(figsize=(13,13))

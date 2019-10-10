@@ -1,5 +1,5 @@
 # NLP Toolkit
-Library containing state-of-the-art models for Natural Language Processing tasks 
+Library containing state-of-the-art models for Natural Language Processing tasks  
 *Note this repo is continually being updated (see [To do list](#to-do-list)) 
 
 ## Contents
@@ -16,7 +16,9 @@ Tasks:
 [References](#references)
 
 ## Pre-requisites
-torch==1.2.0 ; spacy==2.1.8 ; torchtext==0.4.0 ; seqeval==0.0.12
+torch==1.2.0 ; spacy==2.1.8 ; torchtext==0.4.0 ; seqeval==0.0.12  
+For chinese support in Translation: jieba==0.39  
+For ASR: librosa==0.7.0 ; soundfile==0.10.2  
 
 ** Pre-trained models (XLNet, BERT, GPT-2) are courtesy of huggingface (https://github.com/huggingface/pytorch-transformers)
 
@@ -135,6 +137,8 @@ summarize.py [-h]
 The goal of machine translation is to translate text from one form of language to another. This library contains the following models to accomplish this:
 1. Transformer
 
+Currently supports translation between: English (en), French (fr), Chinese (zh)
+
 ### Format of dataset files
 A source .txt file with each line containing the text/sentence to be translated, and a target .txt file with each line containing the corresponding translated text/sentence
 
@@ -145,6 +149,8 @@ Run translate.py with arguments below
 translate.py [-h]  
 	[--src_path SRC_PATH]
 	[--trg_path TRG_PATH] 
+	[--src_lang SRC_LANG] 
+	[--trg_lang TRG_LANG] 
 	[--batch_size BATCH_SIZE (default: 50)]
 	[--d_model D_MODEL (default: 512)]
 	[--ff_dim FF_DIM (default: 2048)]

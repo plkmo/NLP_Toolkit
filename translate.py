@@ -18,6 +18,8 @@ if __name__=="__main__":
     parser = ArgumentParser()
     parser.add_argument("--src_path", type=str, default="./data/english.txt", help="Path to source data txt file")
     parser.add_argument("--trg_path", type=str, default="./data/french.txt", help="Path to target data txt file")
+    parser.add_argument("--src_lang", type=str, default="en", help="src language: en (English), fr (French), zh (Chinese)")
+    parser.add_argument("--trg_lang", type=str, default="fr", help="trg language: en (English), fr (French), zh (Chinese)")
     parser.add_argument("--batch_size", type=int, default=50, help="Batch size")
     parser.add_argument("--d_model", type=int, default=512, help="Transformer model dimension")
     parser.add_argument("--ff_dim", type=int, default=2048, help="Transformer feed-forward layer dimension")

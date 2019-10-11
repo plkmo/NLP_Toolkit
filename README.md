@@ -84,6 +84,7 @@ from nlptoolkit.classification.models.infer import infer_from_trained
 config = Config(task='classification') # loads default argument parameters as above
 config.train_data = './data/train.csv' # sets training data path
 config.infer_data = './data/infer.csv' # sets infer data path
+config.model_no = 1 # sets BERT model
 config.lr = 0.007 # change learning rate
 train_and_fit(config) # starts training with configured parameters
 inferer = infer_from_trained(config) # initiate infer object, which loads the model for inference, after training model

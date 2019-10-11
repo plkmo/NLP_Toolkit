@@ -342,7 +342,10 @@ inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt"
 1. Attention Is All You Need, Vaswani et al, https://arxiv.org/abs/1706.03762
 2. Graph Convolutional Networks for Text Classification, Liang Yao et al, https://arxiv.org/abs/1809.05679
 3. Speech-Transformer: A No-Recurrence Sequence-To-Sequence Model For Speech Recognition, Linhao Dong et al, https://ieeexplore.ieee.org/document/8462506
-4. Listen,Attend and Spell, William Chan et al, https://arxiv.org/abs/1508.01211
+4. Listen, Attend and Spell, William Chan et al, https://arxiv.org/abs/1508.01211
+5. BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding, Devlin et al, https://arxiv.org/abs/1810.04805
+6. XLNet: Generalized Autoregressive Pretraining for Language Understanding, Yang et al, https://arxiv.org/abs/1906.08237
+7. Investigating LSTM for punctuation prediction, Xu et al, https://ieeexplore.ieee.org/document/7918492
 
 ---
 

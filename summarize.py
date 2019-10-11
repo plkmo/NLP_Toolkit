@@ -4,9 +4,9 @@ Created on Mon Aug  5 21:56:35 2019
 
 @author: WT
 """
-from utils.misc import save_as_pickle
-from summarization.trainer import train_and_fit
-from summarization.evaluate import infer
+from nlptoolkit.utils.misc import save_as_pickle
+from nlptoolkit.summarization.trainer import train_and_fit
+from nlptoolkit.summarization.evaluate import infer
 from argparse import ArgumentParser
 import logging
 

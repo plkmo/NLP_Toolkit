@@ -4,9 +4,9 @@ Created on Sat Sep 14 18:04:45 2019
 
 @author: WT
 """
-from ner.trainer import train_and_fit
-from ner.infer import infer_from_trained
-from utils.misc import save_as_pickle, load_pickle
+from nlptoolkit.ner.trainer import train_and_fit
+from nlptoolkit.ner.infer import infer_from_trained
+from nlptoolkit.utils.misc import save_as_pickle, load_pickle
 from argparse import ArgumentParser
 import logging
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \

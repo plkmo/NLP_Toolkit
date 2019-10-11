@@ -22,6 +22,14 @@ For ASR: librosa==0.7.0 ; soundfile==0.10.2
 
 ** Pre-trained models (XLNet, BERT, GPT-2) are courtesy of huggingface (https://github.com/huggingface/pytorch-transformers)
 
+## Package Installation
+```bash
+git clone https://github.com/plkmo/NLP_Toolkit.git
+cd NLP_Toolkit
+python setup.py install
+```
+Alternatively, you can just use it as a non-packaged repo after git clone.
+
 ## 1) Classification
 The goal of classification is to segregate documents into appropriate classes based on their text content. Currently, the classification toolkit uses the following models:
 1. Text-based Graph Convolution Networks (GCN)

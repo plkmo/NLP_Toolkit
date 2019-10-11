@@ -5,11 +5,11 @@ Created on Wed Jul 31 14:04:38 2019
 @author: WT
 """
 
-from utils.misc import save_as_pickle
-from classification.models.GCN.trainer import train_and_fit as GCN
-from classification.models.BERT.trainer import train_and_fit as BERT
-from classification.models.XLNet.trainer import train_and_fit as XLNet
-from classification.models.infer import infer_from_trained
+from nlptoolkit.utils.misc import save_as_pickle
+from nlptoolkit.classification.models.GCN.trainer import train_and_fit as GCN
+from nlptoolkit.classification.models.BERT.trainer import train_and_fit as BERT
+from nlptoolkit.classification.models.XLNet.trainer import train_and_fit as XLNet
+from nlptoolkit.classification.models.infer import infer_from_trained
 import logging
 from argparse import ArgumentParser
 

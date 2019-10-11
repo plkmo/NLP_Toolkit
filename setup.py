@@ -1,16 +1,23 @@
+from io import open
 import setuptools
 
 long_description = "NLP toolkit containing state-of-the-art models for various NLP tasks"
+with open("requirements.txt") as f:
+    required = f.read().splitlines()
+
 setuptools.setup(
-    name="nlptoolkit-plkmo",
+    name="nlptoolkit",
     version="0.0.1",
     author="Soh Wee Tee",
     author_email="weeteesoh345@gmail.com",
     description="NLP toolkit",
     long_description=long_description,
     long_description_content_type="text/markdown",
+    keywords="NLP pytorch AI deep learning",
+    licence="Apache",
     url="https://github.com/plkmo/NLP_Toolkit",
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(exclude=["tests","data","results", ".git"]),
+    install_requires=required,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache License",

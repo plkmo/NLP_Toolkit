@@ -4,10 +4,10 @@ Created on Wed Aug 28 16:05:17 2019
 
 @author: tsd
 """
-from punctuation_restoration.preprocessing_funcs import load_dataloaders
-from punctuation_restoration.trainer import train_and_fit
-from punctuation_restoration.infer import infer_from_trained
-from utils.misc import save_as_pickle
+from nlptoolkit.punctuation_restoration.preprocessing_funcs import load_dataloaders
+from nlptoolkit.punctuation_restoration.trainer import train_and_fit
+from nlptoolkit.punctuation_restoration.infer import infer_from_trained
+from nlptoolkit.utils.misc import save_as_pickle
 from argparse import ArgumentParser
 import logging
 

@@ -5,9 +5,9 @@ Created on Mon Aug  5 13:56:49 2019
 @author: WT
 """
 
-from utils.misc import save_as_pickle
-from ASR.trainer import train_and_fit
-from ASR.evaluate import infer
+from nlptoolkit.utils.misc import save_as_pickle
+from nlptoolkit.ASR.trainer import train_and_fit
+from nlptoolkit.ASR.evaluate import infer
 import logging
 from argparse import ArgumentParser
 

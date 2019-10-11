@@ -4,8 +4,8 @@ Created on Sun Aug 18 13:09:24 2019
 
 @author: WT
 """
-from generation.infer import infer_from_pretrained
-from utils.misc import save_as_pickle
+from nlptoolkit.generation.infer import infer_from_pretrained
+from nlptoolkit.utils.misc import save_as_pickle
 from argparse import ArgumentParser
 import logging
 

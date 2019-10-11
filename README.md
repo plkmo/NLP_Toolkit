@@ -1,12 +1,12 @@
 # NLP Toolkit
 Library containing state-of-the-art models for Natural Language Processing tasks  
-The purpose of this toolkit is to allow for **easy training/inference of state-of-the-art models**, for various NLP tasks.
+The purpose of this toolkit is to allow for **easy training/inference of state-of-the-art models**, for various NLP tasks.  
 *Note this repo currently in development. (see [To do list](#to-do-list)) 
 
 ---
 
 ## Contents
-Tasks:  
+**Tasks**:  
 1. [Classification](#1-classification)
 2. [Automatic Speech Recognition](#2-automatic-speech-recognition)
 3. [Text Summarization](#3-text-summarization)
@@ -17,6 +17,8 @@ Tasks:
   
 [Benchmark Results](#benchmark-results)  
 [References](#references)
+
+---
 
 ## Pre-requisites
 torch==1.2.0 ; spacy==2.1.8 ; torchtext==0.4.0 ; seqeval==0.0.12  
@@ -34,6 +36,8 @@ pip install .
 pip uninstall nlptoolkit # to uninstall if required since this repo is still currently in active development
 ```
 Alternatively, you can just use it as a non-packaged repo after git clone.
+
+---
 
 ## 1) Classification
 The goal of classification is to segregate documents into appropriate classes based on their text content. Currently, the classification toolkit uses the following models:
@@ -87,6 +91,8 @@ inferer.infer_from_input()
 inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt")
 ```
 
+---
+
 ## 2) Automatic Speech Recognition
 Automatic Speech Recognition (ASR) aims to convert audio signals into text. This library contains the following models for ASR: 
 1. Speech-Transformer
@@ -126,6 +132,7 @@ speech.py [-h]
 
 ```
 
+---
 
 ## 3) Text Summarization
 Text summarization aims to distil a paragraph chunk into a few sentences that capture the essential information. This library contains the following models for text summarization: 
@@ -161,6 +168,8 @@ summarize.py [-h]
 	[--infer INFER (default: 0 (Infer input sentence labels from 	trained model))]
 
 ```
+
+---
 
 ## 4) Machine Translation
 The goal of machine translation is to translate text from one form of language to another. This library contains the following models to accomplish this:
@@ -198,6 +207,8 @@ translate.py [-h]
 	
 ```
 
+---
+
 ## 5) Natural Language Generation
 Natural Language generation (NLG) aims to generate text based on past context. For instance, a chatbot can generate text replies based on the context of chat history. We currently have the following models for NLG:
 1. Generative Pre-trained Transformer (GPT/GPT-2)
@@ -212,11 +223,15 @@ Run generate.py
 generate.py
 ```
 
+---
+
 ## 6) Punctuation Restoration
-Given unpunctuated (and perhaps un-capitalized) text, punctuation restoration aims to restore the punctuation of the text for easier readability. Applications include punctuating raw transcripts from audio speech data etc.
+Given unpunctuated (and perhaps un-capitalized) text, punctuation restoration aims to restore the punctuation of the text for easier readability. Applications include punctuating raw transcripts from audio speech data etc. Currently supports the following models:
+1. Transformer
+2. Bi-LSTM with attention
 
 ### Format of dataset files
-Currently only supports TED talk transcripts format, whereby punctuated text is annotated by "<transcripts>" (ignore the ") tags. Eg. "<transcript>" "<punctuated text>" "</transcript>". The "<punctuated text>" is preprocessed and then used for training.
+Currently only supports TED talk transcripts format, whereby punctuated text is annotated by \<transcripts\> tags. Eg. \<transcript\> "punctuated text" \</transcript\>. The "punctuated text" is preprocessed and then used for training.
 
 ### Running the model
 Run punctuate.py
@@ -248,8 +263,11 @@ punctuate.py [-h]
 
 ```
 
+---
+
 ## 7) Named Entity Recognition
-In Named entity recognition (NER), the task is to recognise entities such as persons, organisations. Current models for this task: BERT
+In Named entity recognition (NER), the task is to recognise entities such as persons, organisations. Current models for this task: 
+1. BERT
 
 ### Format of dataset files
 
@@ -292,6 +310,8 @@ inferer.infer_from_input()
 inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt")
 ```
 
+---
+
 # Benchmark Results
 
 ## 1) Classification (IMDB dataset : 25000 train, 25000 test data points)
@@ -315,11 +335,15 @@ inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt"
 ![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/conll2003/ner/test_Accuracy_vs_epoch_0.png) 
 
 
+---
+
 # References
 1. Attention Is All You Need, Vaswani et al, https://arxiv.org/abs/1706.03762
 2. Graph Convolutional Networks for Text Classification, Liang Yao et al, https://arxiv.org/abs/1809.05679
 3. Speech-Transformer: A No-Recurrence Sequence-To-Sequence Model For Speech Recognition, Linhao Dong et al, https://ieeexplore.ieee.org/document/8462506
 4. Listen,Attend and Spell, William Chan et al, https://arxiv.org/abs/1508.01211
+
+---
 
 # To do list
 In order of priority:

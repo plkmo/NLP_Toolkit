@@ -27,6 +27,8 @@ For ASR: librosa==0.7.0 ; soundfile==0.10.2
 git clone https://github.com/plkmo/NLP_Toolkit.git
 cd NLP_Toolkit
 python setup.py install
+
+pip uninstall nlptoolkit # to uninstall if required since this repo is still currently in active development
 ```
 Alternatively, you can just use it as a non-packaged repo after git clone.
 
@@ -37,9 +39,9 @@ The goal of classification is to segregate documents into appropriate classes ba
 3. XLNet
 
 ### Format of datasets files
-The training data (default: train.csv) should be formatted into two columns “text” and “label” respectively, with rows being the documents index. “text” contains the raw text and “label” contains the corresponding label (integers 0, 1, 2… depending on the number of classes)
+The training data (default: train.csv) should be formatted into two columns 'text' and 'label' respectively, with rows being the documents index. 'text' contains the raw text and 'label' contains the corresponding label (integers 0, 1, 2... depending on the number of classes)
 
-The infer data (default: infer.csv) should be formatted into at least one column “text” being the raw text and rows being the documents index. Optional column “label” can be added and --train_test_split argument set to 1 to use infer.csv as the test set for model verification.
+The infer data (default: infer.csv) should be formatted into at least one column 'text' being the raw text and rows being the documents index. Optional column 'label' can be added and --train_test_split argument set to 1 to use infer.csv as the test set for model verification.
 
 ### Running the model
 Run classify.py with arguments below.
@@ -66,6 +68,22 @@ classify.py [-h]
 ```
 The script outputs a results.csv file containing the indexes of the documents in infer.csv and their corresponding predicted labels.
 
+Or if used as a package:
+```bash
+from nlptoolkit.utils.config import Config
+from nlptoolkit.classification.models.BERT.trainer import train_and_fit
+from nlptoolkit.classification.models.infer import infer_from_trained
+
+config = Config(task='classification') # loads default argument parameters as above
+config.train_data = './data/train.csv' # sets training data path
+config.infer_data = './data/infer.csv' # sets infer data path
+config.lr = 0.007 # change learning rate
+train_and_fit(config) # starts training with configured parameters
+inferer = infer_from_trained(config) # initiate infer object, which loads the model for inference, after training model
+inferer.infer_from_input()
+inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt")
+```
+
 ## 2) Automatic Speech Recognition
 Automatic Speech Recognition (ASR) aims to convert audio signals into text. This library contains the following models for ASR: 
 1. Speech-Transformer
@@ -82,7 +100,7 @@ Run speech.py with arguments below
 ```bash
 speech.py [-h] 
 	[--folder FOLDER (default: train-clean-5")] 
-	[--level LEVEL (default: “word")]   
+	[--level LEVEL (default: word")]   
 	[--use_lg_mels USE_LG_MELS (default: 1)]
 	[--use_conv USE_CONV (default: 1)]
 	[--n_mels N_MELS (default: 80)]
@@ -120,7 +138,7 @@ Run summarize.py with arguments below
 ```bash
 summarize.py [-h] 
 	[--data_path DATA_PATH] 
-	[--level LEVEL (default: “bpe")]   
+	[--level LEVEL (default: bpe")]   
 	[--bpe_word_ratio BPE_WORD_RATIO (default: 0.7)]
 	[--bpe_vocab_size BPE_VOCAB_SIZE (default: 7000)]
 	[--max_features_length MAX_FEATURES_LENGTH (default: 200)]
@@ -195,7 +213,7 @@ generate.py
 Given unpunctuated (and perhaps un-capitalized) text, punctuation restoration aims to restore the punctuation of the text for easier readability. Applications include punctuating raw transcripts from audio speech data etc.
 
 ### Format of dataset files
-Currently only supports TED talk transcripts format, whereby punctuated text is annotated by <transcripts> tags. Eg. <transcript> <punctuated text> </transcript>. The <punctuated text> is then used for training.
+Currently only supports TED talk transcripts format, whereby punctuated text is annotated by "<transcripts>" (ignore the ") tags. Eg. "<transcript>" "<punctuated text>" "</transcript>". The "<punctuated text>" is preprocessed and then used for training.
 
 ### Running the model
 Run punctuate.py
@@ -203,7 +221,7 @@ Run punctuate.py
 ```bash
 punctuate.py [-h] 
 	[--data_path DATA_PATH] 
-       [--level LEVEL (default: “bpe")]   
+	[--level LEVEL (default: bpe")]   
 	[--bpe_word_ratio BPE_WORD_RATIO (default: 0.7)]
 	[--bpe_vocab_size BPE_VOCAB_SIZE (default: 7000)]
 	[--batch_size BATCH_SIZE (default: 32)]
@@ -239,16 +257,41 @@ Run ner.py
 ner.py [-h] 
 	[--train_path TRAIN_PATH] 
 	[--test_path TEST_PATH]
+	[--num_classes NUM_CLASSES]
+	[--batch_size BATCH_SIZE]
+	[--tokens_length TOKENS_LENGTH]
+	[--max_steps MAX_STEPS]
+	[--warmup_steps WARMUP_STEPS]
+	[--weight_decay WEIGHT_DECAY]
+	[--adam_epsilon ADAM_EPSILON]
+	[--gradient_acc_steps GRADIENT_ACC_STEPS]
+	[--num_epochs NUM_EPOCHS]
+	[--lr LR]
+	[--model_no MODEL_NO]
+	[--model_type MODEL_TYPE]
 	[--train TRAIN (default:1)]  
 	[--evaluate EVALUATE (default:0)]
-
-
 ```
 
+Or if used as a package:
+```bash
+from nlptoolkit.utils.config import Config
+from nlptoolkit.ner.trainer import train_and_fit
+from nlptoolkit.ner.infer import infer_from_trained
+
+config = Config(task='ner') # loads default argument parameters as above
+config.train_path = './data/ner/conll2003/eng.train.txt' # sets training data path
+config.test_path = './data/ner/conll2003/eng.testa.txt' # sets test data path
+config.lr = 0.007 # change learning rate
+train_and_fit(config) # starts training with configured parameters
+inferer = infer_from_trained(config) # initiate infer object, which loads the model for inference, after training model
+inferer.infer_from_input()
+inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt")
+```
 
 # Benchmark Results
 
-## 1) Classification (IMDB dataset – 25000 train, 25000 test data points)
+## 1) Classification (IMDB dataset : 25000 train, 25000 test data points)
 
 ### Fine-tuned XLNet English Model (12-layer, 768-hidden, 12-heads, 110M parameters)  
 ![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/imdb/classification/loss_vs_epoch_2.png) 
@@ -276,6 +319,7 @@ ner.py [-h]
 4. Listen,Attend and Spell, William Chan et al, https://arxiv.org/abs/1508.01211
 
 # To do list
+- Include package usage info for translation, ASR, pos, summarization, punctuation_restoration, generation
 - Include benchmark results for all tasks
 - Include more models for punctuation restoration, translation, NER
 - Include demo for trained models for ASR, punctuation restoration, NER, summarization, translation, classification

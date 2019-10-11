@@ -1,6 +1,9 @@
 # NLP Toolkit
 Library containing state-of-the-art models for Natural Language Processing tasks  
-*Note this repo is continually being updated (see [To do list](#to-do-list)) 
+The purpose of this toolkit is to allow for **easy training/inference of state-of-the-art models**, for various NLP tasks.
+*Note this repo currently in development. (see [To do list](#to-do-list)) 
+
+---
 
 ## Contents
 Tasks:  
@@ -26,7 +29,7 @@ For ASR: librosa==0.7.0 ; soundfile==0.10.2
 ```bash
 git clone https://github.com/plkmo/NLP_Toolkit.git
 cd NLP_Toolkit
-python setup.py install
+pip install .
 
 pip uninstall nlptoolkit # to uninstall if required since this repo is still currently in active development
 ```
@@ -69,7 +72,7 @@ classify.py [-h]
 The script outputs a results.csv file containing the indexes of the documents in infer.csv and their corresponding predicted labels.
 
 Or if used as a package:
-```bash
+```python
 from nlptoolkit.utils.config import Config
 from nlptoolkit.classification.models.BERT.trainer import train_and_fit
 from nlptoolkit.classification.models.infer import infer_from_trained
@@ -274,7 +277,7 @@ ner.py [-h]
 ```
 
 Or if used as a package:
-```bash
+```python
 from nlptoolkit.utils.config import Config
 from nlptoolkit.ner.trainer import train_and_fit
 from nlptoolkit.ner.infer import infer_from_trained
@@ -319,8 +322,9 @@ inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt"
 4. Listen,Attend and Spell, William Chan et al, https://arxiv.org/abs/1508.01211
 
 # To do list
-- Include package usage info for translation, ASR, pos, summarization, punctuation_restoration, generation
-- Include benchmark results for all tasks
-- Include more models for punctuation restoration, translation, NER
-- Include demo for trained models for ASR, punctuation restoration, NER, summarization, translation, classification
+In order of priority:
+- [ ] Include package usage info for ~~classification~~, ASR, summarization, translation, generation, punctuation_restoration, ~~NER~~, POS
+- [ ] Include benchmark results for  ~~classification~~, ASR, summarization, translation, generation, punctuation_restoration, ~~NER~~, POS
+- [ ] Include pre-trained models + demo based on benchmark datasets for classification, ASR, summarization, translation, generation, punctuation_restoration, NER, POS
+- [ ] Include more models for punctuation restoration, translation, NER
 

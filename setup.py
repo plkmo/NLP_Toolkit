@@ -16,12 +16,11 @@ setuptools.setup(
     keywords="NLP pytorch AI deep learning",
     licence="Apache",
     url="https://github.com/plkmo/NLP_Toolkit",
-    packages=setuptools.find_packages(include=["nlptoolkit"],\
-                                      exclude=["*.data", "data", "data.*", "*.data.*", "data*",\
-                                               "*results",\
-                                               "results", "results*",\
-                                               ".git"]),
+    packages=setuptools.find_packages(exclude=["data"\
+                                               "results",\
+                                               ]),
     install_requires=required,
+    include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache License",

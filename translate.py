@@ -5,7 +5,7 @@ Created on Tue Aug  6 14:31:51 2019
 @author: WT
 """
 from nlptoolkit.translation.trainer import train_and_fit
-from nlptoolkit.translation.evaluate import infer, evaluate_corpus_bleu
+from nlptoolkit.translation.infer import infer, evaluate_corpus_bleu
 from nlptoolkit.utils.misc import save_as_pickle
 from argparse import ArgumentParser
 import logging

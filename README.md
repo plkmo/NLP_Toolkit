@@ -34,7 +34,7 @@ git clone https://github.com/plkmo/NLP_Toolkit.git
 cd NLP_Toolkit
 pip install .
 
-\# to uninstall if required to re-install after updates since this repo is still currently in active development
+# to uninstall if required to re-install after, updates since this repo is still currently in active development
 pip uninstall nlptoolkit 
 ```
 Alternatively, you can just use it as a non-packaged repo after git clone.
@@ -383,7 +383,7 @@ inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt"
 
 # To do list
 In order of priority:
-- [ ] Include package usage info for ~~classification~~, ASR, summarization, ~~translation~~, generation, punctuation_restoration, ~~NER~~, POS
+- [ ] Include package usage info for ~~classification~~, ASR, summarization, ~~translation~~, ~~generation~~, punctuation_restoration, ~~NER~~, POS
 - [ ] Include benchmark results for  ~~classification~~, ASR, summarization, translation, generation, punctuation_restoration, ~~NER~~, POS
 - [ ] Include pre-trained models + demo based on benchmark datasets for classification, ASR, summarization, translation, generation, punctuation_restoration, NER, POS
 - [ ] Include more models for punctuation restoration, translation, NER

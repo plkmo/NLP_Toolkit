@@ -24,6 +24,7 @@ The purpose of this toolkit is to allow for **easy training/inference of state-o
 torch==1.2.0 ; spacy==2.1.8 ; torchtext==0.4.0 ; seqeval==0.0.12  
 For chinese support in Translation: jieba==0.39  
 For ASR: librosa==0.7.0 ; soundfile==0.10.2  
+For more details, see requirements.txt
 
 ** Pre-trained models (XLNet, BERT, GPT-2) are courtesy of huggingface (https://github.com/huggingface/pytorch-transformers)
 
@@ -33,7 +34,8 @@ git clone https://github.com/plkmo/NLP_Toolkit.git
 cd NLP_Toolkit
 pip install .
 
-pip uninstall nlptoolkit # to uninstall if required since this repo is still currently in active development
+\# to uninstall if required to re-install after updates since this repo is still currently in active development
+pip uninstall nlptoolkit 
 ```
 Alternatively, you can just use it as a non-packaged repo after git clone.
 
@@ -84,8 +86,10 @@ from nlptoolkit.classification.models.infer import infer_from_trained
 config = Config(task='classification') # loads default argument parameters as above
 config.train_data = './data/train.csv' # sets training data path
 config.infer_data = './data/infer.csv' # sets infer data path
+config.num_classes = 5 # sets number of prediction classes
+config.batch_size = 32
 config.model_no = 1 # sets BERT model
-config.lr = 0.007 # change learning rate
+config.lr = 0.001 # change learning rate
 train_and_fit(config) # starts training with configured parameters
 inferer = infer_from_trained(config) # initiate infer object, which loads the model for inference, after training model
 inferer.infer_from_input()
@@ -188,8 +192,8 @@ Run translate.py with arguments below
 translate.py [-h]  
 	[--src_path SRC_PATH]
 	[--trg_path TRG_PATH] 
-	[--src_lang SRC_LANG] 
-	[--trg_lang TRG_LANG] 
+	[--src_lang SRC_LANG (en, fr, zh)] 
+	[--trg_lang TRG_LANG (en, fr, zh)] 
 	[--batch_size BATCH_SIZE (default: 50)]
 	[--d_model D_MODEL (default: 512)]
 	[--ff_dim FF_DIM (default: 2048)]
@@ -208,6 +212,25 @@ translate.py [-h]
 	
 ```
 
+Or if used as a package:
+```python
+from nlptoolkit.utils.config import Config
+from nlptoolkit.translation.trainer import train_and_fit
+from nlptoolkit.translation.infer import infer_from_trained
+
+config = Config(task='translation') # loads default argument parameters as above
+config.src_path = './data/translation/eng_zh/news-commentary-v13.zh-en.en' # sets source language data path
+config.trg_path = './data/translation/eng_zh/news-commentary-v13.zh-en.zh' # sets target language data path
+config.src_lang = 'en' # sets source language
+config.trg_lang = 'zh' # sets target language
+config.batch_size = 16
+config.lr = 0.0001 # change learning rate
+train_and_fit(config) # starts training with configured parameters
+inferer = infer_from_trained(config) # initiate infer object, which loads the model for inference, after training model
+inferer.infer_from_input()
+inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt")
+```
+
 ---
 
 ## 5) Natural Language Generation
@@ -224,6 +247,12 @@ Run generate.py
 generate.py
 ```
 
+Or if used as a package:
+```python
+from nlptoolkit.generation.infer import infer_from_pretrained
+
+output = infer_from_pretrained(input_sent=None, tokens_len=100, top_k_beam=1)
+```
 ---
 
 ## 6) Punctuation Restoration
@@ -304,7 +333,10 @@ from nlptoolkit.ner.infer import infer_from_trained
 config = Config(task='ner') # loads default argument parameters as above
 config.train_path = './data/ner/conll2003/eng.train.txt' # sets training data path
 config.test_path = './data/ner/conll2003/eng.testa.txt' # sets test data path
-config.lr = 0.007 # change learning rate
+config.num_classes = 9 # sets number of NER classes
+config.batch_size = 8
+config.lr = 5e-5 # change learning rate
+config.model_no = 0 # sets model to BERT
 train_and_fit(config) # starts training with configured parameters
 inferer = infer_from_trained(config) # initiate infer object, which loads the model for inference, after training model
 inferer.infer_from_input()
@@ -351,7 +383,7 @@ inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt"
 
 # To do list
 In order of priority:
-- [ ] Include package usage info for ~~classification~~, ASR, summarization, translation, generation, punctuation_restoration, ~~NER~~, POS
+- [ ] Include package usage info for ~~classification~~, ASR, summarization, ~~translation~~, generation, punctuation_restoration, ~~NER~~, POS
 - [ ] Include benchmark results for  ~~classification~~, ASR, summarization, translation, generation, punctuation_restoration, ~~NER~~, POS
 - [ ] Include pre-trained models + demo based on benchmark datasets for classification, ASR, summarization, translation, generation, punctuation_restoration, NER, POS
 - [ ] Include more models for punctuation restoration, translation, NER

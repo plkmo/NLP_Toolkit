@@ -100,7 +100,7 @@ class infer_from_trained(object):
         trg_init = FR.vocab.stoi["<sos>"]
         self.trg_init = Variable(torch.LongTensor([trg_init])).unsqueeze(0)
     
-    def infer_sencence(self, sent):
+    def infer_sentence(self, sent):
         sent = self.tokenizer_en.tokenize(sent).split()
         sent = [self.EN.vocab.stoi[tok] for tok in sent]
         sent = Variable(torch.LongTensor(sent)).unsqueeze(0)

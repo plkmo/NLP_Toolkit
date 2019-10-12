@@ -138,12 +138,14 @@ class infer_from_trained(object):
                         if (p == 'word') and (counter < len(src_input)):
                             punc[idx] = src_input[counter]
                             counter += 1
-                        elif (p == "eos") or (counter >= len(src_input)):
+                        elif (p == "eos"):
                             break
-                        else:
+                        elif (counter >= len(src_input)) and (p in ['word', 'sos']):
                             punc[idx] = 5
+                            break
+
                     #print(punc, self.trg2_vocab.punc2idx['word'], idx)
-                    print("Predicted Label: ", " ".join(self.vocab.inverse_transform([punc[:(idx + 1)]])))
+                    print("Predicted Label: ", " ".join(self.vocab.inverse_transform([punc[:idx]])))
 
                     time.sleep(10)
     
@@ -185,6 +187,36 @@ class infer_from_trained(object):
                     print("\nFinal step translated words2: ")
                     print(" ".join(final_step_words2))
                     print()
+                    
+                elif self.args.model_no == 1:
+                    sent = torch.nn.functional.pad(sent,[0, (self.args.max_encoder_len - sent.shape[1])], value=1)
+                    trg_input = torch.tensor([self.vocab.word_vocab['__sos']]).unsqueeze(0)
+                    trg2_input = torch.tensor([self.idx_mappings['sos']]).unsqueeze(0)
+                    if self.cuda:
+                        sent = sent.cuda().long(); trg_input = trg_input.cuda().long()
+                        trg2_input = trg2_input.cuda().long()
+                    outputs, outputs2 = self.net(sent, trg_input, trg2_input, infer=True)
+                    #print(outputs, outputs2)
+                    outputs2 = outputs2.cpu().numpy().tolist() if outputs2.is_cuda else outputs2.cpu().numpy().tolist()
+                    punc = [self.trg2_vocab.idx2punc[i] for i in outputs2[0]]
+                    print(punc)
+                    punc = [self.mappings[p] if p in ['!', '?', '.', ','] else p for p in punc]
+                    
+                    sent = sent[sent != 1]
+                    sent = sent.cpu().numpy().tolist() if self.cuda else sent.numpy().tolist()
+                    counter = 0
+                    for idx, p in enumerate(punc):
+                        if (p == 'word') and (counter < len(sent)):
+                            punc[idx] = sent[counter]
+                            counter += 1
+                        elif (p == "eos"):
+                            break
+                        elif (counter >= len(sent)) and (p in ['word', 'sos']):
+                            punc[idx] = 5
+                            break
+
+                    #print(punc, self.trg2_vocab.punc2idx['word'], idx)
+                    print("Predicted Label: ", " ".join(self.vocab.inverse_transform([punc[:idx]])))
 
 def infer(args, from_data=False):
     

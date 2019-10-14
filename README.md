@@ -52,6 +52,8 @@ The training data (default: train.csv) should be formatted into two columns 'tex
 
 The infer data (default: infer.csv) should be formatted into at least one column 'text' being the raw text and rows being the documents index. Optional column 'label' can be added and --train_test_split argument set to 1 to use infer.csv as the test set for model verification.
 
+IMDB datasets for sentiment classification available [here.](https://drive.google.com/drive/folders/1a4tw3UsbwQViIgw08kwWn0jvtLOSnKZb?usp=sharing)
+
 ### Running the model
 Run classify.py with arguments below.
 
@@ -86,16 +88,35 @@ from nlptoolkit.classification.models.infer import infer_from_trained
 config = Config(task='classification') # loads default argument parameters as above
 config.train_data = './data/train.csv' # sets training data path
 config.infer_data = './data/infer.csv' # sets infer data path
-config.num_classes = 5 # sets number of prediction classes
+config.num_classes = 2 # sets number of prediction classes
 config.batch_size = 32
 config.model_no = 1 # sets BERT model
 config.lr = 0.001 # change learning rate
 train_and_fit(config) # starts training with configured parameters
 inferer = infer_from_trained(config) # initiate infer object, which loads the model for inference, after training model
-inferer.infer_from_input()
+inferer.infer_from_input() # infer from user console input
 inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt")
 ```
 
+```python
+inferer.infer_from_input()
+```
+Sample output:
+```bash
+Type input sentence (Type 'exit' or 'quit' to quit):
+This is a good movie.
+Predicted class: 1
+
+Type input sentence (Type 'exit' or 'quit' to quit):
+This is a bad movie.
+Predicted class: 0
+
+```
+
+### Pre-trained models
+Download and zip contents of downloaded folder into ./data/ folder.
+1. [BERT for IMDB sentiment analysis](https://drive.google.com/drive/folders/1JHOabZE4U4sfcnttIQsHcu9XNEEJwk0X?usp=sharing) (includes preprocessed data, vocab, and saved results files)
+2. [XLNet for IMDB sentiment analysis](https://drive.google.com/drive/folders/1lk0N6DdgeEoVhoaCrC0vysL7GBJe9sAX?usp=sharing) (includes preprocessed data, vocab, and saved results files)
 ---
 
 ## 2) Automatic Speech Recognition
@@ -227,7 +248,7 @@ config.batch_size = 16
 config.lr = 0.0001 # change learning rate
 train_and_fit(config) # starts training with configured parameters
 inferer = infer_from_trained(config) # initiate infer object, which loads the model for inference, after training model
-inferer.infer_from_input()
+inferer.infer_from_input() # infer from user console input
 inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt")
 ```
 
@@ -257,11 +278,13 @@ output = infer_from_pretrained(input_sent=None, tokens_len=100, top_k_beam=1)
 
 ## 6) Punctuation Restoration
 Given unpunctuated (and perhaps un-capitalized) text, punctuation restoration aims to restore the punctuation of the text for easier readability. Applications include punctuating raw transcripts from audio speech data etc. Currently supports the following models:
-1. Transformer
-2. Bi-LSTM with attention
+1. Transformer (PuncTransformer)
+2. Bi-LSTM with attention (PuncLSTM)
 
 ### Format of dataset files
 Currently only supports TED talk transcripts format, whereby punctuated text is annotated by \<transcripts\> tags. Eg. \<transcript\> "punctuated text" \</transcript\>. The "punctuated text" is preprocessed and then used for training.
+
+TED talks dataset can be downloaded [here.](https://drive.google.com/file/d/1fJpl-fF5bcAKbtZbTygipUSZYyJdYU11/view?usp=sharing)
 
 ### Running the model
 Run punctuate.py
@@ -293,6 +316,40 @@ punctuate.py [-h]
 
 ```
 
+Or, if used as a package,
+```python
+from nlptoolkit.utils.config import Config
+from nlptoolkit.punctuation_restoration.trainer import train_and_fit
+from nlptoolkit.punctuation_restoration.infer import infer_from_trained
+
+config = Config(task='punctuation_restoration') # loads default argument parameters as above
+config.data_path = "./data/train.tags.en-fr.en"' # sets training data path
+config.batch_size = 32
+config.lr = 5e-5 # change learning rate
+config.model_no = 1 # sets model to PuncLSTM
+train_and_fit(config) # starts training with configured parameters
+inferer = infer_from_trained(config) # initiate infer object, which loads the model for inference, after training model
+inferer.infer_from_input() # infer from user console input
+inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt") # infer from input file
+```
+
+```python
+inferer.infer_from_input()
+```
+Sample output:
+```bash
+Input sentence to punctuate:
+hi how are you
+Predicted Label:  Hi. How are you?
+
+Input sentence to punctuate:
+this is good thank you very much
+Predicted Label:  This is good. Thank you very much.
+```
+
+### Pre-trained models
+Download and zip contents of downloaded folder into ./data/ folder.
+1. [PuncLSTM](https://drive.google.com/drive/folders/1ftDQYj3wv0t9MVtAVod5RIDMrY-NhZ82?usp=sharing) (includes preprocessed data, vocab, and saved results files)
 ---
 
 ## 7) Named Entity Recognition
@@ -339,7 +396,7 @@ config.lr = 5e-5 # change learning rate
 config.model_no = 0 # sets model to BERT
 train_and_fit(config) # starts training with configured parameters
 inferer = infer_from_trained(config) # initiate infer object, which loads the model for inference, after training model
-inferer.infer_from_input()
+inferer.infer_from_input() # infer from user console input
 inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt")
 ```
 
@@ -383,8 +440,8 @@ inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt"
 
 # To do list
 In order of priority:
-- [ ] Include package usage info for ~~classification~~, ASR, summarization, ~~translation~~, ~~generation~~, punctuation_restoration, ~~NER~~, POS
+- [ ] Include package usage info for ~~classification~~, ASR, summarization, ~~translation~~, ~~generation~~, ~~punctuation_restoration~~, ~~NER~~, POS
 - [ ] Include benchmark results for  ~~classification~~, ASR, summarization, translation, generation, punctuation_restoration, ~~NER~~, POS
-- [ ] Include pre-trained models + demo based on benchmark datasets for classification, ASR, summarization, translation, generation, punctuation_restoration, NER, POS
+- [ ] Include pre-trained models + demo based on benchmark datasets for ~~classification~~, ASR, summarization, translation, generation, punctuation_restoration, NER, POS
 - [ ] Include more models for punctuation restoration, translation, NER
 

@@ -4,7 +4,6 @@ Created on Wed Aug 28 16:05:17 2019
 
 @author: tsd
 """
-from nlptoolkit.punctuation_restoration.preprocessing_funcs import load_dataloaders
 from nlptoolkit.punctuation_restoration.trainer import train_and_fit
 from nlptoolkit.punctuation_restoration.infer import infer_from_trained
 from nlptoolkit.utils.misc import save_as_pickle
@@ -44,9 +43,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     save_as_pickle("args.pkl", args)
     
-    #df, train_loader, train_length, max_features_len, max_output_len = load_dataloaders(args)
     if args.train:
         train_and_fit(args)
     if args.infer:
-        infer_ = infer_from_trained()
-        infer_.infer_from_data()
+        inferer = infer_from_trained()
+        inferer.infer_from_data()

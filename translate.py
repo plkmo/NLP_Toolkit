@@ -35,7 +35,7 @@ if __name__=="__main__":
     
     parser.add_argument("--train", type=int, default=1, help="Train model on dataset")
     parser.add_argument("--evaluate", type=int, default=0, help="Evaluate the trained model on dataset")
-    parser.add_argument("--infer", type=int, default=1, help="Infer input sentences")
+    parser.add_argument("--infer", type=int, default=0, help="Infer input sentences")
     args = parser.parse_args()
     
     save_as_pickle("args.pkl", args)

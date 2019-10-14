@@ -4,6 +4,7 @@ Created on Mon Sep  2 12:26:35 2019
 
 @author: tsd
 """
+import re
 import pandas as pd
 import torch
 from .preprocessing_funcs import load_dataloaders
@@ -31,6 +32,32 @@ class trg2_vocab_obj(object):
         map2['pad'] = len(map2)
         self.punc2idx = map2
         self.idx2punc = {v:k for k,v in map2.items()}
+
+def find(s, ch=[".", "!", "?"]):
+    return [i for i, ltr in enumerate(s) if ltr in ch]
+
+def corrector_module(corrected, sent=None, cap_abbrev=True):
+    corrected = corrected[0].upper() + corrected[1:]
+    corrected = re.sub(r" +([\.\?!,])", r"\1", corrected) # corrected = re.sub(" +[,]", ",", corrected)
+    corrected = re.sub("' +", "'", corrected) # remove extra spaces from ' s
+    idxs = find(corrected)
+    for idx in idxs:
+        if (idx + 3) < len(corrected):
+            corrected = corrected[:idx + 2] + corrected[(idx + 2)].upper() + corrected[(idx + 3):]
+            
+    if cap_abbrev == True:
+        abbrevs = ["ntu", "nus", "smrt", "sutd", "sim", "smu", "i2r", "astar", "imda", "hdb", "edb", "lta", "cna",\
+                   "suss"]
+        corrected = corrected.split()
+        corrected1 = []
+        for word in corrected:
+            if word.lower().strip("!?.,") in abbrevs:
+                corrected1.append(word.upper())
+            else:
+                corrected1.append(word)
+        assert len(corrected) == len(corrected1)
+        corrected = " ".join(corrected1)
+    return corrected
 
 class infer_from_trained(object):
     def __init__(self, args=None):
@@ -85,16 +112,12 @@ class infer_from_trained(object):
             
                 if self.args.model_no == 0:
                     src_input, trg_input, trg2_input = data[0], data[1][:, :-1], data[2][:, :-1]
-                    #labels = data[1][:,1:].contiguous().view(-1)
-                    #labels2 = data[2][:,1:].contiguous().view(-1)
                     src_mask, trg_mask = self.create_masks(src_input, trg_input)
                     trg2_mask = self.create_trg_mask(trg2_input, ignore_idx=self.idx_mappings['pad'])
                     if self.cuda:
-                        src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); #labels = labels.cuda().long()
+                        src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long();
                         src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda(); trg2_mask = trg2_mask.cuda()
-                        trg2_input = trg2_input.cuda().long(); #labels2 = labels2.cuda().long()
-                    # self, src, trg, trg2, src_mask, trg_mask=None, trg_mask2=None, infer=False, trg_vocab_obj=None, \
-                    #trg2_vocab_obj=None
+                        trg2_input = trg2_input.cuda().long(); 
                     stepwise_translated_words, final_step_words, stepwise_translated_words2, final_step_words2 = self.net(src_input, \
                                                                                                                      trg_input[:,0].unsqueeze(0), \
                                                                                                                      trg2_input[:,0].unsqueeze(0),\
@@ -126,7 +149,6 @@ class infer_from_trained(object):
                         src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
                         trg2_input = trg2_input.cuda().long(); labels2 = labels2.cuda().long()
                     outputs, outputs2 = self.net(src_input, trg_input, trg2_input, infer=True)
-                    #print(outputs, outputs2)
                     outputs2 = outputs2.cpu().numpy().tolist() if outputs2.is_cuda else outputs2.cpu().numpy().tolist()
                     punc = [self.trg2_vocab.idx2punc[i] for i in outputs2[0]]
                     print(punc)
@@ -173,20 +195,27 @@ class infer_from_trained(object):
                                                                                                                          self.trg2_vocab)
             
             step_ = " ".join(stepwise_translated_words)
-            final_2 = " ".join(final_step_words2)
-            print("\nStepwise-translated:")
-            print(step_)
-            print()
-            print("\nFinal step translated words: ")
-            print(" ".join(final_step_words))
-            print()
-            print("\nStepwise-translated2:")
-            print(" ".join(stepwise_translated_words2))
-            print()
-            print("\nFinal step translated words2: ")
-            print(final_2)
-            print()
-            predicted = step_
+            final_ = " ".join(final_step_words)
+            if not (step_ == '') or not (final_ == ''):
+                step_ = corrector_module(step_)
+                final_ = corrector_module(final_)
+                final_2 = " ".join(final_step_words2)
+                print("\nStepwise-translated:")
+                print(step_)
+                print()
+                print("\nFinal step translated words: ")
+                print(final_)
+                print()
+                print("\nStepwise-translated2:")
+                print(" ".join(stepwise_translated_words2))
+                print()
+                print("\nFinal step translated words2: ")
+                print(final_2)
+                print()
+                predicted = step_
+            else:
+                print("None, please try another sentence.")
+                predicted = "None"
             
         elif self.args.model_no == 1:
             sent = torch.nn.functional.pad(sent,[0, (self.args.max_encoder_len - sent.shape[1])], value=1)
@@ -198,7 +227,7 @@ class infer_from_trained(object):
             outputs, outputs2 = self.net(sent, trg_input, trg2_input, infer=True)
             outputs2 = outputs2.cpu().numpy().tolist() if outputs2.is_cuda else outputs2.cpu().numpy().tolist()
             punc = [self.trg2_vocab.idx2punc[i] for i in outputs2[0]]
-            print(punc)
+            #print(punc)
             punc = [self.mappings[p] if p in ['!', '?', '.', ','] else p for p in punc]
             
             sent = sent[sent != 1]
@@ -215,6 +244,7 @@ class infer_from_trained(object):
                     break
             
             predicted = " ".join(self.vocab.inverse_transform([punc[:idx]]))
+            predicted = corrector_module(predicted)
             print("Predicted Label: ", predicted)
         return predicted
     

@@ -150,6 +150,7 @@ speech.py [-h]
 	[--num NUM (default: 6)]
 	[--n_heads N_HEADS(default: 4)]
 	[--batch_size BATCH_SIZE (default: 30)]
+	[--fp16 FP16 (default:1)]  
 	[--num_epochs NUM_EPOCHS (default: 8000)] 
 	[--lr LR default=0.003]    
 	[--gradient_acc_steps GRADIENT_ACC_STEPS (default: 4)]
@@ -187,7 +188,8 @@ summarize.py [-h]
 	[--n_heads N_HEADS(default: 4)]
 	[--LAS_embed_dim LAS_EMBED_DIM (default: 128)]
 	[--LAS_hidden_size LAS_HIDDEN_SIZE (default: 128)]
-	[--batch_size BATCH_SIZE (default: 30)]
+	[--batch_size BATCH_SIZE (default: 32)]  
+	[--fp16 FP16 (default: 1)]  
 	[--num_epochs NUM_EPOCHS (default: 8000)] 
 	[--lr LR default=0.003]    
 	[--gradient_acc_steps GRADIENT_ACC_STEPS (default: 4)]
@@ -197,6 +199,23 @@ summarize.py [-h]
 	[--train TRAIN (default:1)]  
 	[--infer INFER (default: 0 (Infer input sentence labels from 	trained model))]
 
+```
+
+Or if used as a package:
+```python
+from nlptoolkit.utils.config import Config
+from nlptoolkit.summarization.trainer import train_and_fit
+from nlptoolkit.summarization.infer import infer_from_trained
+
+config = Config(task='summarization') # loads default argument parameters as above
+config.data_path = "./data/cnn_stories/cnn/stories/"
+config.batch_size = 32
+config.lr = 0.0001 # change learning rate
+config.model_no = 0 # set model as Transformer
+train_and_fit(config) # starts training with configured parameters
+inferer = infer_from_trained(config) # initiate infer object, which loads the model for inference, after training model
+inferer.infer_from_input() # infer from user console input
+inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt")
 ```
 
 ---

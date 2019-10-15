@@ -48,7 +48,7 @@ def load_model_and_optimizer(args, src_vocab, trg_vocab, cuda, amp=None, pytrans
         optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
     scheduler = CosineWithRestarts(optimizer, T_max=args.T_max)
     
-    if (args.fp16) and (not loaded_opt):
+    if (args.fp16) and (not loaded_opt) and (amp is not None):
         logger.info("Using fp16...")
         net, optimizer = amp.initialize(net, optimizer, opt_level='O2')
         scheduler = CosineWithRestarts(optimizer, T_max=args.T_max)

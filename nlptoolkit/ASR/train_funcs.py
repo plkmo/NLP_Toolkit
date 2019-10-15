@@ -17,7 +17,7 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger(__file__)
 
-def load_model_and_optimizer(args, vocab, max_features_length, max_seq_length, cuda, pyTransformer=False):
+def load_model_and_optimizer(args, vocab, max_features_length, max_seq_length, cuda, amp=None, pyTransformer=False):
     
     if pyTransformer:
         from .models.Transformer.py_Transformer import pyTransformer as SpeechTransformer, \
@@ -45,16 +45,23 @@ def load_model_and_optimizer(args, vocab, max_features_length, max_seq_length, c
             nn.init.xavier_uniform_(p)
             
     criterion = nn.CrossEntropyLoss(ignore_index=1) # ignore padding tokens
-    optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
+    
+    net, optimizer, start_epoch, acc, loaded_opt = load_state(net, cuda, args, load_best=False, \
+                                                              amp=amp)
+    
+    if cuda and (not loaded_opt):
+        net.cuda()
+        
+    if (not loaded_opt):
+        optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
     scheduler = CosineWithRestarts(optimizer, T_max=args.T_max)
     
-    model = SpeechTransformer if (args.model_no == 0) else LAS
-    model, loaded_optimizer, loaded_scheduler, start_epoch, acc = load_state(model, args, load_best=False, load_scheduler=False)
+    if (args.fp16) and (not loaded_opt) and (amp is not None):
+        logger.info("Using fp16...")
+        net, optimizer = amp.initialize(net, optimizer, opt_level='O2')
+        scheduler = CosineWithRestarts(optimizer, T_max=args.T_max)
 
-    if start_epoch != 0:
-        net = model; optimizer = loaded_optimizer; scheduler = loaded_scheduler
-    if cuda:
-        net.cuda()
+    logger.info("Done setting up model, optimizer and scheduler.")
 
     if args.model_no == 0:
         '''
@@ -79,13 +86,13 @@ def load_model_and_optimizer(args, vocab, max_features_length, max_seq_length, c
     
     return net, criterion, optimizer, scheduler, start_epoch, acc, g_mask1, g_mask2
 
-def load_state(net, args, load_best=False, load_scheduler=False):
+def load_state(net, cuda, args, load_best=False, amp=None):
     """ Loads saved model and optimizer states if exists """
+    loaded_opt = False
     base_path = "./data/"
     checkpoint_path = os.path.join(base_path,"test_checkpoint_%d.pth.tar" % args.model_no)
     best_path = os.path.join(base_path,"test_model_best_%d.pth.tar" % args.model_no)
     start_epoch, best_pred, checkpoint = 0, 0, None
-    optimizer, scheduler = None, None
     if (load_best == True) and os.path.isfile(best_path):
         checkpoint = torch.load(best_path)
         logger.info("Loaded best model.")
@@ -96,16 +103,15 @@ def load_state(net, args, load_best=False, load_scheduler=False):
         start_epoch = checkpoint['epoch']
         best_pred = checkpoint['best_acc']
         if load_best:
-            net = net.load_model(best_path)
+            net, optimizer = net.load_model(best_path, args, cuda, amp)
         else:
-            net = net.load_model(checkpoint_path)
-        optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
-        scheduler = CosineWithRestarts(optimizer, T_max=args.T_max)
-        if load_scheduler:
-            optimizer.load_state_dict(checkpoint['optimizer'])
-            scheduler.load_state_dict(checkpoint['scheduler'])
-        logger.info("Loaded model and optimizer.")    
-    return net, optimizer, scheduler, start_epoch, best_pred
+            net, optimizer = net.load_model(checkpoint_path, args, cuda, amp)
+
+        logger.info("Loaded model and optimizer.")
+        loaded_opt = True
+    else:
+        optimizer = None
+    return net, optimizer, start_epoch, best_pred, loaded_opt
 
 def load_results(model_no=0):
     """ Loads saved results if exists """

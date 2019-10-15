@@ -88,6 +88,7 @@ class Config(object):
             self.LAS_embed_dim = 512
             self.LAS_hidden_size = 512
             self.batch_size = 32
+            self.fp16 = 1
             self.num_epochs = 500
             self.lr = 0.0003
             self.gradient_acc_steps = 2
@@ -149,7 +150,8 @@ class Config(object):
             self.ff_dim = 128
             self.num = 6
             self.n_heads = 4
-            self.batch_size = 30
+            self.batch_size = 32
+            self.fp16 = 1
             self.num_epochs = 9000
             self.lr = 0.0003
             self.gradient_acc_steps = 4

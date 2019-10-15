@@ -7,7 +7,7 @@ Created on Mon Aug  5 13:56:49 2019
 
 from nlptoolkit.utils.misc import save_as_pickle
 from nlptoolkit.ASR.trainer import train_and_fit
-from nlptoolkit.ASR.evaluate import infer
+from nlptoolkit.ASR.infer import infer
 import logging
 from argparse import ArgumentParser
 
@@ -31,6 +31,7 @@ if __name__ == "__main__":
     parser.add_argument("--num", type=int, default=6, help="Number of layers")
     parser.add_argument("--n_heads", type=int, default=4, help="Number of attention heads")
     parser.add_argument("--batch_size", type=int, default=30, help="Batch size")
+    parser.add_argument("--fp16", type=int, default=1, help="1: use mixed precision ; 0: use floating point 32")
     parser.add_argument("--num_epochs", type=int, default=9000, help="No of epochs")
     parser.add_argument("--lr", type=float, default=0.0003, help="learning rate")
     parser.add_argument("--gradient_acc_steps", type=int, default=4, help="Number of steps of gradient accumulation")

@@ -17,6 +17,7 @@ from tqdm import tqdm
 import time
 import logging
 
+tqdm.pandas(desc="prog_bar")
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger('__file__')

@@ -6,7 +6,7 @@ Created on Mon Aug  5 21:56:35 2019
 """
 from nlptoolkit.utils.misc import save_as_pickle
 from nlptoolkit.summarization.trainer import train_and_fit
-from nlptoolkit.summarization.evaluate import infer
+from nlptoolkit.summarization.infer import infer_from_trained
 from argparse import ArgumentParser
 import logging
 
@@ -29,6 +29,7 @@ if __name__ == "__main__":
     parser.add_argument("--LAS_embed_dim", type=int, default=128, help="LAS Embedding dimension")
     parser.add_argument("--LAS_hidden_size", type=int, default=128, help="LAS listener hidden_size")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
+    parser.add_argument("--fp16", type=int, default=1, help="1: use mixed precision ; 0: use floating point 32")
     parser.add_argument("--num_epochs", type=int, default=8000, help="No of epochs")
     parser.add_argument("--lr", type=float, default=0.0003, help="learning rate")
     parser.add_argument("--gradient_acc_steps", type=int, default=2, help="Number of steps of gradient accumulation")
@@ -44,4 +45,5 @@ if __name__ == "__main__":
     if args.train:
         train_and_fit(args)
     if args.infer:
-        infer(args, from_data=True)
+        inferer = infer_from_trained(args)
+        inferer.infer_from_data()

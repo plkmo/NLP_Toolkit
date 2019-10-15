@@ -24,6 +24,33 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger('__file__')
 
+class infer_from_trained(object):
+    def __init__(self, args=None):
+        if args is None:
+            self.args = load_pickle("args.pkl")
+        else:
+            self.args = args
+        self.cuda = torch.cuda.is_available()
+        self.args.batch_size = 1
+    
+    def infer_sentence(self, sent):
+        return
+    
+    def infer_from_input(self):
+        self.net.eval()
+        while True:
+            user_input = input("Type input sentence (Type \'exit' or \'quit' to quit):\n")
+            if user_input in ["exit", "quit"]:
+                break
+            predicted = self.infer_sentence(user_input)
+        return predicted
+    
+    def infer_from_file(self, in_file="./data/input.txt", out_file="./data/output.txt"):
+        df = pd.read_csv(in_file, header=None, names=["sents"])
+        df['labels'] = df.progress_apply(lambda x: self.infer_sentence(x['sents']), axis=1)
+        df.to_csv(out_file, index=False)
+        logger.info("Done and saved as %s!" % out_file)
+        return
 
 def infer(file_path=None, speaker=None, pyTransformer=False):
     if pyTransformer:

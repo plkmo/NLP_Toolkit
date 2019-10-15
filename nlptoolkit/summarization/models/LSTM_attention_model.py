@@ -7,6 +7,7 @@ Created on Fri Jul 12 16:58:24 2019
 
 import torch
 import torch.nn as nn
+import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
 
@@ -168,7 +169,7 @@ class LAS(nn.Module):
         return x
     
     @classmethod
-    def load_model(cls, path):
+    def load_model(cls, path, args, cuda=True, amp=None):
         checkpoint = torch.load(path)
         model = cls(vocab_size=checkpoint['vocab_size'],\
                     listener_embed_size=checkpoint['listener_embed_size'], \
@@ -177,10 +178,22 @@ class LAS(nn.Module):
                     max_label_len=checkpoint['max_label_len'])
         model.listener.flatten_parameters()
         #model.speller.flatten_parameters()
+        if cuda:
+                model.cuda()
+        
+        if amp is not None:
+            optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
+            model, optimizer = amp.initialize(model, optimizer, opt_level='O2')
+            amp.load_state_dict(checkpoint['amp'])
+            #optimizer.load_state_dict(checkpoint['optimizer']) # dynamic loss scaling spikes if we load this! waiting for fix from nvidia apex
+            print("Loaded amp state dict!")
+        else:
+            optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
+            optimizer.load_state_dict(checkpoint['optimizer'])
         model.load_state_dict(checkpoint['state_dict'])
-        return model
+        return model, optimizer
     
-    def save_state(self, epoch, optimizer, scheduler, best_acc, path):
+    def save_state(self, epoch, optimizer, scheduler, best_acc, path, amp=None):
         state = {
                     'epoch': epoch + 1,\
                     'state_dict': self.state_dict(),\
@@ -191,7 +204,8 @@ class LAS(nn.Module):
                     'listener_embed_size' : self.listener_embed_size,\
                     'listener_hidden_size': self.listener_hidden_size,\
                     'output_class_dim': self.output_class_dim,\
-                    'max_label_len': self.max_label_len
+                    'max_label_len': self.max_label_len,\
+                    'amp': amp.state_dict()
                 }
         torch.save(state, path)
         

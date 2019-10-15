@@ -7,6 +7,7 @@ Created on Mon Jul  1 17:09:15 2019
 
 import torch
 import torch.nn as nn
+import torch.optim as optim
 from torch.autograd import Variable
 import numpy as np
 import math
@@ -321,7 +322,7 @@ class SummaryTransformer(nn.Module):
             #return o
     
     @classmethod
-    def load_model(cls, path):
+    def load_model(cls, path, args, cuda=True, amp=None):
         checkpoint = torch.load(path)
         model = cls(src_vocab=checkpoint["src_vocab"], \
                     trg_vocab=checkpoint["trg_vocab"], \
@@ -332,10 +333,22 @@ class SummaryTransformer(nn.Module):
                     max_encoder_len=checkpoint["max_encoder_len"], \
                     max_decoder_len=checkpoint["max_decoder_len"], \
                     use_conv=True)
+        if cuda:
+                model.cuda()
+        
+        if amp is not None:
+            optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
+            model, optimizer = amp.initialize(model, optimizer, opt_level='O2')
+            amp.load_state_dict(checkpoint['amp'])
+            #optimizer.load_state_dict(checkpoint['optimizer']) # dynamic loss scaling spikes if we load this! waiting for fix from nvidia apex
+            print("Loaded amp state dict!")
+        else:
+            optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
+            optimizer.load_state_dict(checkpoint['optimizer'])
         model.load_state_dict(checkpoint['state_dict'])
-        return model
+        return model, optimizer
     
-    def save_state(self, epoch, optimizer, scheduler, best_acc, path):
+    def save_state(self, epoch, optimizer, scheduler, best_acc, path, amp=None):
         state = {
                     'epoch': epoch + 1,\
                     'state_dict': self.state_dict(),\
@@ -349,6 +362,7 @@ class SummaryTransformer(nn.Module):
                     'num': self.num,\
                     'n_heads': self.n_heads,\
                     'max_encoder_len': self.max_encoder_len,\
-                    'max_decoder_len': self.max_decoder_len,
+                    'max_decoder_len': self.max_decoder_len,\
+                    'amp': amp.state_dict()
                 }
         torch.save(state, path)

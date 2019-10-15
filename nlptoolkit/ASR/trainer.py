@@ -31,6 +31,11 @@ def train_and_fit(args, pyTransformer=False):
     print("Max sequence length: %d" % max_seq_length)
     vocab = load_pickle("vocab.pkl")
     
+    if args.fp16:    
+        from apex import amp
+    else:
+        amp = None
+    
     logger.info("Loading model and optimizers...")
     cuda = torch.cuda.is_available()
     net, criterion, optimizer, scheduler, start_epoch, acc, g_mask1, g_mask2 = load_model_and_optimizer(args, vocab, \
@@ -38,7 +43,9 @@ def train_and_fit(args, pyTransformer=False):
                                                                                                         max_seq_length, cuda,\
                                                                                                         pyTransformer)
     losses_per_epoch, accuracy_per_epoch = load_results(model_no=args.model_no)    
-    batch_update_steps = 2
+    batch_update_steps = int(train_length/(args.batch_size*10))
+    
+    optimizer.zero_grad()
     logger.info("Starting training process...")
     for e in range(start_epoch, args.num_epochs):
         #l_rate = lrate(e + 1, d_model=32, k=10, warmup_n=25000)
@@ -65,9 +72,18 @@ def train_and_fit(args, pyTransformer=False):
             outputs = outputs.view(-1, outputs.size(-1))
             loss = criterion(outputs, labels);
             loss = loss/args.gradient_acc_steps
-            loss.backward()
-            if pyTransformer:
-                clip_grad_norm_(net.parameters(), args.max_norm)
+            
+            if args.fp16:
+                with amp.scale_loss(loss, optimizer) as scaled_loss:
+                    scaled_loss.backward()
+            else:
+                loss.backward()
+            
+            if args.fp16:
+                grad_norm = torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), args.max_norm)
+            else:
+                grad_norm = clip_grad_norm_(net.parameters(), args.max_norm)
+                
             if (i % args.gradient_acc_steps) == 0:
                 optimizer.step()
                 optimizer.zero_grad()

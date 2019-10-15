@@ -22,6 +22,7 @@ The purpose of this toolkit is to allow for **easy training/inference of state-o
 
 ## Pre-requisites
 torch==1.2.0 ; spacy==2.1.8 ; torchtext==0.4.0 ; seqeval==0.0.12  
+For mixed precision training (-fp16=1), apex must be installed: [apex==0.1](https://github.com/NVIDIA/apex)
 For chinese support in Translation: jieba==0.39  
 For ASR: librosa==0.7.0 ; soundfile==0.10.2  
 For more details, see requirements.txt
@@ -34,7 +35,8 @@ git clone https://github.com/plkmo/NLP_Toolkit.git
 cd NLP_Toolkit
 pip install .
 
-# to uninstall if required to re-install after, updates since this repo is still currently in active development
+# to uninstall if required to re-install after updates,
+# since this repo is still currently in active development
 pip uninstall nlptoolkit 
 ```
 Alternatively, you can just use it as a non-packaged repo after git clone.
@@ -52,7 +54,7 @@ The training data (default: train.csv) should be formatted into two columns 'tex
 
 The infer data (default: infer.csv) should be formatted into at least one column 'text' being the raw text and rows being the documents index. Optional column 'label' can be added and --train_test_split argument set to 1 to use infer.csv as the test set for model verification.
 
-IMDB datasets for sentiment classification available [here.](https://drive.google.com/drive/folders/1a4tw3UsbwQViIgw08kwWn0jvtLOSnKZb?usp=sharing)
+- IMDB datasets for sentiment classification available [here.](https://drive.google.com/drive/folders/1a4tw3UsbwQViIgw08kwWn0jvtLOSnKZb?usp=sharing)
 
 ### Running the model
 Run classify.py with arguments below.
@@ -152,6 +154,7 @@ speech.py [-h]
 	[--lr LR default=0.003]    
 	[--gradient_acc_steps GRADIENT_ACC_STEPS (default: 4)]
 	[--max_norm MAX_NORM (default: 1)] 
+	[--T_max T_MAX (default: 5000)]  
 	[--model_no MODEL_NO (default: 0 (0: Transformer, 1: LAS))]  
 	[--train TRAIN (default:1)]  
 	[--infer INFER (default: 0 (Infer input sentence labels from 	trained model))]
@@ -189,6 +192,7 @@ summarize.py [-h]
 	[--lr LR default=0.003]    
 	[--gradient_acc_steps GRADIENT_ACC_STEPS (default: 4)]
 	[--max_norm MAX_NORM (default: 1)] 
+	[--T_max T_MAX (default: 5000)]  
 	[--model_no MODEL_NO (default: 0 (0: Transformer, 1: LAS))]  
 	[--train TRAIN (default:1)]  
 	[--infer INFER (default: 0 (Infer input sentence labels from 	trained model))]
@@ -222,10 +226,12 @@ translate.py [-h]
 	[--n_heads N_HEADS(default: 8)]
 	[--max_encoder_len MAX_ENCODER_LEN (default: 80)]
 	[--max_decoder_len MAX_DECODER_LEN (default: 80)]	
+	[--fp16 FP_16 (default: 1)]
 	[--num_epochs NUM_EPOCHS (default: 500)] 
 	[--lr LR default=0.0001]    
 	[--gradient_acc_steps GRADIENT_ACC_STEPS (default: 1)]
 	[--max_norm MAX_NORM (default: 1)] 
+	[--T_max T_MAX (default: 5000)] 
 	[--model_no MODEL_NO (default: 0 (0: Transformer))]  
 	[--train TRAIN (default:1)]  
 	[--evaluate EVALUATE (default:0)]
@@ -284,7 +290,7 @@ Given unpunctuated (and perhaps un-capitalized) text, punctuation restoration ai
 ### Format of dataset files
 Currently only supports TED talk transcripts format, whereby punctuated text is annotated by \<transcripts\> tags. Eg. \<transcript\> "punctuated text" \</transcript\>. The "punctuated text" is preprocessed and then used for training.
 
-TED talks dataset can be downloaded [here.](https://drive.google.com/file/d/1fJpl-fF5bcAKbtZbTygipUSZYyJdYU11/view?usp=sharing)
+- TED talks dataset can be downloaded [here.](https://drive.google.com/file/d/1fJpl-fF5bcAKbtZbTygipUSZYyJdYU11/view?usp=sharing)
 
 ### Running the model
 Run punctuate.py

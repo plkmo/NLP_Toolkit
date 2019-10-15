@@ -68,14 +68,14 @@ def load_state(net, args, load_best=False, load_scheduler=False):
         else:
             net = net.load_model(checkpoint_path)
         optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
-        scheduler = CosineWithRestarts(optimizer, T_max=300)
+        scheduler = CosineWithRestarts(optimizer, T_max=args.T_max)
         if load_scheduler:
             optimizer.load_state_dict(checkpoint['optimizer'])
             scheduler.load_state_dict(checkpoint['scheduler'])
         logger.info("Loaded model and optimizer.")    
     else:
         optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
-        scheduler = CosineWithRestarts(optimizer, T_max=300)
+        scheduler = CosineWithRestarts(optimizer, T_max=args.T_max)
     return net, optimizer, scheduler, start_epoch, best_pred
 
 def load_results(model_no=0):

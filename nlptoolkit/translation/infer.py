@@ -46,8 +46,12 @@ def evaluate_corpus_bleu(args, early_stopping=True, stop_no=1000):
     trg_vocab = len(FR.vocab)
     
     cuda = torch.cuda.is_available()
+    if args.fp16:    
+        from apex import amp
+    else:
+        amp = None
     net, _, _, _, _, _ = load_model_and_optimizer(args, src_vocab, \
-                                                  trg_vocab, cuda)
+                                                  trg_vocab, cuda, amp=amp)
     
     net.eval()
     trg_init = FR.vocab.stoi["<sos>"]
@@ -92,9 +96,14 @@ class infer_from_trained(object):
         self.train_length = train_length
         self.src_vocab = len(EN.vocab)
         self.trg_vocab = len(FR.vocab)
-    
+        
+        if self.args.fp16:    
+            from apex import amp
+        else:
+            amp = None
+        self.amp = amp
         net, _, _, _, _, _ = load_model_and_optimizer(self.args, self.src_vocab, \
-                                                      self.trg_vocab, self.cuda)
+                                                      self.trg_vocab, self.cuda, amp=amp)
         self.net = net
         self.net.eval()
         trg_init = FR.vocab.stoi["<sos>"]
@@ -115,28 +124,6 @@ class infer_from_trained(object):
             stepwise_translated_words, final_step_words = self.net(sent, trg, src_mask, None, \
                                                               infer=True, trg_vocab_obj=self.FR)
             
-            '''
-            e_out = net.encoder(sent, src_mask) # encoder output for english sentence
-            translated_word = []; translated_word_idxs = []
-            for i in range(2, 80):
-                trg_mask = create_trg_mask(trg, cuda=cuda)
-                if cuda:
-                    trg = trg.cuda(); trg_mask = trg_mask.cuda()
-                outputs = net.fc1(net.decoder(trg, e_out, src_mask, trg_mask))
-                out_idxs = torch.softmax(outputs, dim=2).max(2)[1]
-                trg = torch.cat((trg, out_idxs[:,-1:]), dim=1)
-                if cuda:
-                    out_idxs = out_idxs.cpu().numpy()
-                else:
-                    out_idxs = out_idxs.numpy()
-                translated_word_idxs.append(out_idxs.tolist()[0][-1])
-                if translated_word_idxs[-1] == FR.vocab.stoi["<eos>"]:
-                    break
-                translated_word.append(FR.vocab.itos[translated_word_idxs[-1]])
-            
-        print(" ".join(translated_word))
-        print(" ".join(FR.vocab.itos[i] for i in out_idxs[0][:-1]))
-        '''
         stepwise_translated = " ".join(stepwise_translated_words)
         final_translated = " ".join(final_step_words)
         print("Stepwise-translated:")
@@ -169,28 +156,13 @@ def infer(args, from_data=False):
     trg_vocab = len(FR.vocab)
     
     cuda = torch.cuda.is_available()
+    if args.fp16:    
+        from apex import amp
+    else:
+        amp = None
     net, _, _, _, _, _ = load_model_and_optimizer(args, src_vocab, \
-                                                  trg_vocab, cuda)
-    '''
-    ### Load model and vocab
-    FR = torchtext.data.Field(tokenize=dum_tokenizer, lower=True, init_token="<sos>", eos_token="<eos>",\
-                              batch_first=True)
-    EN = torchtext.data.Field(tokenize=dum_tokenizer, lower=True, batch_first=True)
-    train = torchtext.data.TabularDataset(os.path.join("./data/", "df.csv"), format="csv", \
-                                             fields=[("EN", EN), ("FR", FR)])
-    FR.build_vocab(train)
-    EN.build_vocab(train)
-    src_vocab = len(EN.vocab)
-    trg_vocab = len(FR.vocab)
+                                                  trg_vocab, cuda, amp=amp)
     
-    cuda = torch.cuda.is_available()
-    net = Transformer(src_vocab=src_vocab, trg_vocab=trg_vocab, d_model=512, num=6, n_heads=8)
-    optimizer = optim.Adam(net.parameters(), lr=0.001, betas=(0.9, 0.98), eps=1e-9)
-    scheduler = CosineWithRestarts(optimizer, T_max=10)
-    if cuda:
-        net.cuda()
-    start_epoch, acc = load_state(net, optimizer, scheduler, model_no=0, load_best=False)
-    '''
     net.eval()
     trg_init = FR.vocab.stoi["<sos>"]
     trg_init = Variable(torch.LongTensor([trg_init])).unsqueeze(0)

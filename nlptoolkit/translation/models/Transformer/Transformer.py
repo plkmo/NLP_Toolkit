@@ -7,6 +7,7 @@ Created on Tue Jun 11 22:22:31 2019
 
 import torch
 import torch.nn as nn
+import torch.optim as optim
 from torch.autograd import Variable
 import numpy as np
 import math
@@ -56,7 +57,7 @@ def Attention(q, k, v, dh, mask=None, dropout=None):
     scores = torch.matmul(q, k.transpose(-2,-1))/math.sqrt(dh)
     if mask is not None:
         mask = mask.unsqueeze(1); #print("Mask", mask.shape); print("scores", scores.shape)
-        scores = scores.masked_fill(mask == 0, -1e9)
+        scores = scores.masked_fill(mask == 0, -5e4)
     
     scores = torch.softmax(scores, dim=-1)
     if dropout is not None:
@@ -234,8 +235,8 @@ class Transformer(nn.Module):
             final_step_words = [trg_vocab_obj.vocab.itos[i] for i in out_idxs[0][:-1]]
             return stepwise_translated_words, final_step_words
     
-    @classmethod # src_vocab, trg_vocab, d_model, num, n_heads
-    def load_model(cls, path):
+    @classmethod
+    def load_model(cls, path, args, cuda=True, amp=None):
         checkpoint = torch.load(path)
         model = cls(src_vocab=checkpoint["src_vocab"], \
                     trg_vocab=checkpoint["trg_vocab"], \
@@ -246,10 +247,23 @@ class Transformer(nn.Module):
                     max_encoder_len=checkpoint["max_encoder_len"], \
                     max_decoder_len=checkpoint["max_decoder_len"], \
                     )
+        
+        if cuda:
+                model.cuda()
+        
+        if amp is not None:
+            optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
+            model, optimizer = amp.initialize(model, optimizer, opt_level='O2')
+            amp.load_state_dict(checkpoint['amp'])
+            #optimizer.load_state_dict(checkpoint['optimizer']) # dynamic loss scaling spikes if we load this! waiting for fix from nvidia apex
+            print("Loaded amp state dict!")
+        else:
+            optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
+            optimizer.load_state_dict(checkpoint['optimizer'])
         model.load_state_dict(checkpoint['state_dict'])
-        return model
+        return model, optimizer
     
-    def save_state(self, epoch, optimizer, scheduler, best_acc, path):
+    def save_state(self, epoch, optimizer, scheduler, best_acc, path, amp=None):
         state = {
                     'epoch': epoch + 1,\
                     'state_dict': self.state_dict(),\
@@ -263,7 +277,8 @@ class Transformer(nn.Module):
                     'num': self.num,\
                     'n_heads': self.n_heads,\
                     'max_encoder_len': self.max_encoder_len,\
-                    'max_decoder_len': self.max_decoder_len,
+                    'max_decoder_len': self.max_decoder_len,\
+                    'amp': amp.state_dict()
                 }
         torch.save(state, path)
         

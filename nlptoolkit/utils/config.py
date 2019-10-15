@@ -39,10 +39,12 @@ class Config(object):
             self.n_heads = 8
             self.max_encoder_len = 200
             self.max_decoder_len = 200
+            self.fp16 = 1
             self.num_epochs = 500
             self.lr = 0.0001
             self.gradient_acc_steps = 2
             self.max_norm = 1.0
+            self.T_max = 5000
             self.model_no = 0
             self.train = 1
             self.evaluate = 0
@@ -90,6 +92,7 @@ class Config(object):
             self.lr = 0.0003
             self.gradient_acc_steps = 2
             self.max_norm = 1.0
+            self.T_max = 5000
             self.model_no = 0
             self.train = 1
             self.infer = 0
@@ -151,6 +154,7 @@ class Config(object):
             self.lr = 0.0003
             self.gradient_acc_steps = 4
             self.max_norm = 1.0
+            self.T_max = 5000
             self.model_no = 0
             self.train = 1
             self.infer = 0

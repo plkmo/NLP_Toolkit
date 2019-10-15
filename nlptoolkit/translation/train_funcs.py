@@ -11,8 +11,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from .utils import load_pickle, CosineWithRestarts
-#from .models.Transformer.Transformer import Transformer, create_masks
-#from .models.Transformer.py_Transformer import pyTransformer as Transformer, create_masks
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
@@ -21,7 +19,7 @@ logger = logging.getLogger('__file__')
 def dum_tokenizer(sent):
     return sent.split()
 
-def load_model_and_optimizer(args, src_vocab, trg_vocab, cuda, pytransformer=False):
+def load_model_and_optimizer(args, src_vocab, trg_vocab, cuda, amp=None, pytransformer=False):
     '''Loads the model based on provided arguments and parameters'''
     logger.info("Initializing model...")
     
@@ -39,28 +37,33 @@ def load_model_and_optimizer(args, src_vocab, trg_vocab, cuda, pytransformer=Fal
             nn.init.xavier_uniform_(p)
             
     criterion = nn.CrossEntropyLoss(reduction="mean", ignore_index=1)
-    optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
     #scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10,20,30,40,50,100,200], gamma=0.7)
-    scheduler = CosineWithRestarts(optimizer, T_max=330)
+    net, optimizer, start_epoch, acc, loaded_opt = load_state(net, cuda, args, load_best=False, \
+                                                              amp=amp)
     
-    model = Transformer
-    model, loaded_optimizer, loaded_scheduler, start_epoch, acc = load_state(model, args, load_best=False, load_scheduler=False)
-
-    if start_epoch != 0:
-        net = model; optimizer = loaded_optimizer; scheduler = loaded_scheduler
-    if cuda:
+    if cuda and (not loaded_opt):
         net.cuda()
+        
+    if (not loaded_opt):
+        optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
+    scheduler = CosineWithRestarts(optimizer, T_max=args.T_max)
+    
+    if (args.fp16) and (not loaded_opt):
+        logger.info("Using fp16...")
+        net, optimizer = amp.initialize(net, optimizer, opt_level='O2')
+        scheduler = CosineWithRestarts(optimizer, T_max=args.T_max)
+
     logger.info("Done setting up model, optimizer and scheduler.")
    
     return net, criterion, optimizer, scheduler, start_epoch, acc
 
-def load_state(net, args, load_best=False, load_scheduler=False):
+def load_state(net, cuda, args, load_best=False, amp=None):
     """ Loads saved model and optimizer states if exists """
+    loaded_opt = False
     base_path = "./data/"
     checkpoint_path = os.path.join(base_path,"test_checkpoint_%d.pth.tar" % args.model_no)
     best_path = os.path.join(base_path,"test_model_best_%d.pth.tar" % args.model_no)
     start_epoch, best_pred, checkpoint = 0, 0, None
-    optimizer, scheduler = None, None
     if (load_best == True) and os.path.isfile(best_path):
         checkpoint = torch.load(best_path)
         logger.info("Loaded best model.")
@@ -71,16 +74,15 @@ def load_state(net, args, load_best=False, load_scheduler=False):
         start_epoch = checkpoint['epoch']
         best_pred = checkpoint['best_acc']
         if load_best:
-            net = net.load_model(best_path)
+            net, optimizer = net.load_model(best_path, args, cuda, amp)
         else:
-            net = net.load_model(checkpoint_path)
-        optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
-        scheduler = CosineWithRestarts(optimizer, T_max=350)
-        if load_scheduler:
-            optimizer.load_state_dict(checkpoint['optimizer'])
-            scheduler.load_state_dict(checkpoint['scheduler'])
-        logger.info("Loaded model and optimizer.")    
-    return net, optimizer, scheduler, start_epoch, best_pred
+            net, optimizer = net.load_model(checkpoint_path, args, cuda, amp)
+
+        logger.info("Loaded model and optimizer.")
+        loaded_opt = True
+    else:
+        optimizer = None
+    return net, optimizer, start_epoch, best_pred, loaded_opt
 
 def load_results(model_no=0):
     """ Loads saved results if exists """

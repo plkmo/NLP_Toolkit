@@ -7,7 +7,6 @@ Created on Tue Aug  6 14:26:00 2019
 import os
 import torch
 from torch.nn.utils import clip_grad_norm_
-#from .models.Transformer.Transformer import create_masks
 from .train_funcs import load_model_and_optimizer, load_results, evaluate_results, decode_outputs
 from .preprocessing_funcs import load_dataloaders
 from .utils import save_as_pickle
@@ -24,7 +23,12 @@ def train_and_fit(args, pytransformer=False):
         from .models.Transformer.py_Transformer import create_masks
     else:
         from .models.Transformer.Transformer import create_masks
-        
+    
+    if args.fp16:    
+        from apex import amp
+    else:
+        amp = None
+    
     train_iter, FR, EN, train_length = load_dataloaders(args)
     src_vocab = len(EN.vocab)
     trg_vocab = len(FR.vocab)
@@ -32,30 +36,15 @@ def train_and_fit(args, pytransformer=False):
     cuda = torch.cuda.is_available()
     net, criterion, optimizer, scheduler, start_epoch, acc = load_model_and_optimizer(args, src_vocab, \
                                                                                       trg_vocab, cuda,\
+                                                                                      amp,\
                                                                                       pytransformer)
-    '''
-    net = Transformer(src_vocab=src_vocab, trg_vocab=trg_vocab, d_model=args.d_model, ff_dim=args.ff_dim,\
-                      num=args.num, n_heads=args.n_heads, max_encoder_len=args.max_encoder_len,\
-                      max_decoder_len=args.max_decoder_len)
-    
-    for p in net.parameters():
-        if p.dim() > 1:
-            nn.init.xavier_uniform_(p)
-            
-    criterion = nn.CrossEntropyLoss(reduction="mean", ignore_index=1)
-    optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
-    #scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10,20,30,40,50,100,200], gamma=0.7)
-    scheduler = CosineWithRestarts(optimizer, T_max=330)
-    if cuda:
-        net.cuda()
-    start_epoch, acc = load_state(net, optimizer, scheduler, args.model_no, load_best=False)
-    '''
     
     losses_per_epoch, accuracy_per_epoch = load_results(model_no=args.model_no)
     
     logger.info("Starting training process...")
     batch_update = int(train_length/(args.batch_size*10))
     
+    optimizer.zero_grad()
     for e in range(start_epoch, args.num_epochs):
         net.train()
         losses_per_batch = []; total_loss = 0.0
@@ -71,8 +60,18 @@ def train_and_fit(args, pytransformer=False):
             
             loss = criterion(outputs, labels)
             loss = loss/args.gradient_acc_steps
-            loss.backward(); #break;break
-            #clip_grad_norm_(net.parameters(), args.max_norm)
+            if args.fp16:
+                with amp.scale_loss(loss, optimizer) as scaled_loss:
+                    scaled_loss.backward()
+            else:
+                loss.backward()
+            
+            
+            if args.fp16:
+                grad_norm = torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), args.max_norm)
+            else:
+                grad_norm = clip_grad_norm_(net.parameters(), args.max_norm)
+             
             if (i % args.gradient_acc_steps) == 0:
                 optimizer.step()
                 optimizer.zero_grad()
@@ -92,14 +91,16 @@ def train_and_fit(args, pytransformer=False):
             acc = accuracy_per_epoch[-1]
             net.save_state(epoch=(e+1), optimizer=optimizer, scheduler=scheduler, best_acc=acc,\
                            path=os.path.join("./data/" ,\
-                    "test_model_best_%d.pth.tar" % args.model_no))
+                    "test_model_best_%d.pth.tar" % args.model_no),\
+                    amp=amp)
           
         if (e % 1) == 0:
             save_as_pickle("test_losses_per_epoch_%d.pkl" % args.model_no, losses_per_epoch)
             save_as_pickle("test_accuracy_per_epoch_%d.pkl" % args.model_no, accuracy_per_epoch)
             net.save_state(epoch=(e+1), optimizer=optimizer, scheduler=scheduler, best_acc=acc,\
                            path=os.path.join("./data/" ,\
-                    "test_checkpoint_%d.pth.tar" % args.model_no))
+                    "test_checkpoint_%d.pth.tar" % args.model_no),\
+                    amp=amp)
     
     logger.info("Finished training")
     fig = plt.figure(figsize=(13,13))

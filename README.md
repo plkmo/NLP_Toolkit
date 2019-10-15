@@ -22,7 +22,7 @@ The purpose of this toolkit is to allow for **easy training/inference of state-o
 
 ## Pre-requisites
 torch==1.2.0 ; spacy==2.1.8 ; torchtext==0.4.0 ; seqeval==0.0.12  
-For mixed precision training (-fp16=1), apex must be installed: [apex==0.1](https://github.com/NVIDIA/apex)
+For mixed precision training (-fp16=1), apex must be installed: [apex==0.1](https://github.com/NVIDIA/apex)  
 For chinese support in Translation: jieba==0.39  
 For ASR: librosa==0.7.0 ; soundfile==0.10.2  
 For more details, see requirements.txt

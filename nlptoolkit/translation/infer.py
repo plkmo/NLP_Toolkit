@@ -10,6 +10,7 @@ import torch
 import pandas as pd
 from torch.autograd import Variable
 from nltk.translate import bleu_score
+from torchnlp.metrics import get_moses_multi_bleu
 from .models.Transformer.Transformer import create_masks
 from .train_funcs import load_model_and_optimizer
 from .preprocessing_funcs import tokener, load_dataloaders
@@ -32,12 +33,15 @@ def load_pickle(filename):
 def dum_tokenizer(sent):
     return sent.split()
 
-def calculate_bleu(src, trg, corpus_level=False, weights=(0.25, 0.25, 0.25, 0.25)):
+def calculate_bleu(src, trg, corpus_level=False, weights=(0.25, 0.25, 0.25, 0.25), use_torchnlp=True):
     # src = [[sent words1], [sent words2], ...], trg = [sent words]
-    if not corpus_level:
-        score = bleu_score.sentence_bleu(src, trg, weights=weights)
+    if not use_torchnlp:
+        if not corpus_level:
+            score = bleu_score.sentence_bleu(src, trg, weights=weights)
+        else:
+            score = bleu_score.corpus_bleu(src, trg, weights=weights)
     else:
-        score = bleu_score.corpus_bleu(src, trg, weights=weights)
+        score = get_moses_multi_bleu(src, trg, lowercase=True)
     return score
 
 def evaluate_corpus_bleu(args, early_stopping=True, stop_no=1000):

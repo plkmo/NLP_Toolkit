@@ -73,7 +73,7 @@ def train_and_fit(args):
                     src_input = src_input.cuda().long(); labels = labels.cuda().long()
                     src_mask = src_mask.cuda(); token_type=token_type.cuda()
                 outputs = net(src_input, attention_mask=src_mask, token_type_ids=token_type, labels=labels)
-                #outputs = outputs[0]; #print(outputs[0,0,:])
+                #outputs = outputs[0];
                 loss = outputs[0]
                 
             elif args.model_no == 1:
@@ -83,9 +83,6 @@ def train_and_fit(args):
                     src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long(); labels = labels.cuda().long()
                 outputs = net(src_input, trg_input)
             
-            #print(outputs.shape); print(labels.shape)
-            #outputs = outputs.view(-1, outputs.size(-1))
-            #loss = criterion(outputs, labels);
             loss = loss/args.gradient_acc_steps
             loss.backward();
             clip_grad_norm_(net.parameters(), args.max_norm)

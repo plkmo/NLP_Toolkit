@@ -29,10 +29,10 @@ if __name__=="__main__":
     parser.add_argument("--max_decoder_len", type=int, default=200, help="Max trg length")
     parser.add_argument("--fp16", type=int, default=1, help="1: use mixed precision ; 0: use floating point 32")
     parser.add_argument("--num_epochs", type=int, default=500, help="No of epochs")
-    parser.add_argument("--lr", type=float, default=0.00005, help="learning rate")
+    parser.add_argument("--lr", type=float, default=0.00007, help="learning rate")
     parser.add_argument("--gradient_acc_steps", type=int, default=3, help="Number of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
-    parser.add_argument("--T_max", type=int, default=5000, help="number of iterations before LR restart")
+    parser.add_argument("--T_max", type=int, default=7000, help="number of iterations before LR restart")
     parser.add_argument("--model_no", type=int, default=0, help="Model ID (0: Transformer)")
     
     parser.add_argument("--train", type=int, default=1, help="Train model on dataset")

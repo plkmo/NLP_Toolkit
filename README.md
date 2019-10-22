@@ -382,6 +382,21 @@ In Named entity recognition (NER), the task is to recognise entities such as per
 1. BERT
 
 ### Format of dataset files
+Dataset format for both train & test follows the Conll2003 dataset format. Specifically, each row in the .txt file follows the following format:
+```bash
+EU NNP I-NP I-ORG
+rejects VBZ I-VP O
+German JJ I-NP I-MISC
+call NN I-NP O
+to TO I-VP O
+boycott VB I-VP O
+British JJ I-NP I-MISC
+lamb NN I-NP O
+. . O O
+```
+Here, the first column represents the word within the sentence, second column represents the parts-of-speech tag (not used), third column represents the tree chunk tag (not used), the fourth column is the NER tag. Only the first and fourth columns are used for this task and the rest are ignored. (A placeholder is still required for the second and third columns)
+
+- Conll2003 dataset can be downloaded [here.](https://drive.google.com/drive/folders/1LAwi1TKTTfnG5ZPcbBPdyrreyxzAsjpi?usp=sharing)
 
 ### Running the model
 Run ner.py
@@ -425,6 +440,34 @@ inferer.infer_from_input() # infer from user console input
 inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt")
 ```
 
+```python
+inferer.infer_from_input()
+```
+Sample output:
+```bash
+Type input sentence: ('quit' or 'exit' to terminate)
+John took a flight from Singapore to China, but stopped by Japan along the way.
+Words --- Tags:
+john (I-PER) 
+took (O) 
+a (O) 
+flight (O) 
+from (O) 
+singapore (I-LOC) 
+to (O) 
+china, (I-LOC) 
+but (O) 
+stopped (O) 
+by (O) 
+japan (I-LOC) 
+along (O) 
+the (O) 
+way. (O) 
+```
+
+### Pre-trained models
+Download and zip contents of downloaded folder into ./data/ folder.
+1. [BERT](https://drive.google.com/drive/folders/1-srmwPo23MGfmc7x80Ojb4_4sPCFeGNo?usp=sharing) (includes preprocessed data, vocab, and saved results files)
 ---
 
 # Benchmark Results
@@ -441,6 +484,13 @@ inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt"
 
 ![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/imdb/classification/accuracy_vs_epoch_1.png) 
 
+## 6) Punctuation Restoration (TED dataset)
+
+### Punc-LSTM (Embedding dim=512, LSTM hidden size=512)
+![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/TED_punctuation/test_loss_vs_epoch_1.png) 
+
+![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/TED_punctuation/test_Accuracy_vs_epoch_1.png) 
+
 ## 7) Named Entity Recognition (Conll2003 dataset)
 
 ### Fine-tuned BERT English Model (uncased, 12-layer, 768-hidden, 12-heads, 110M parameters)  
@@ -448,7 +498,6 @@ inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt"
 ![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/conll2003/ner/test_loss_vs_epoch_0.png) 
 
 ![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/conll2003/ner/test_Accuracy_vs_epoch_0.png) 
-
 
 ---
 
@@ -460,13 +509,14 @@ inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt"
 5. BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding, Devlin et al, https://arxiv.org/abs/1810.04805
 6. XLNet: Generalized Autoregressive Pretraining for Language Understanding, Yang et al, https://arxiv.org/abs/1906.08237
 7. Investigating LSTM for punctuation prediction, Xu et al, https://ieeexplore.ieee.org/document/7918492
+8. HuggingFace's Transformers: State-of-the-art Natural Language Processing, Thomas Wolf et al, https://arxiv.org/abs/1910.03771
 
 ---
 
 # To do list
 In order of priority:
 - [ ] Include package usage info for ~~classification~~, ASR, summarization, ~~translation~~, ~~generation~~, ~~punctuation_restoration~~, ~~NER~~, POS
-- [ ] Include benchmark results for  ~~classification~~, ASR, summarization, translation, generation, punctuation_restoration, ~~NER~~, POS
+- [ ] Include benchmark results for  ~~classification~~, ASR, summarization, translation, generation, ~~punctuation_restoration~~, ~~NER~~, POS
 - [ ] Include pre-trained models + demo based on benchmark datasets for ~~classification~~, ASR, summarization, translation, generation, punctuation_restoration, NER, POS
 - [ ] Include more models for punctuation restoration, translation, NER
 

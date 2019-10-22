@@ -30,10 +30,10 @@ if __name__=="__main__":
                         help="Epsilon for Adam optimizer.")
     parser.add_argument("--gradient_acc_steps", type=int, default=1, help="No. of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
-    parser.add_argument("--num_epochs", type=int, default=7, help="No of epochs")
+    parser.add_argument("--num_epochs", type=int, default=9, help="No of epochs")
     parser.add_argument("--lr", type=float, default=5e-5, help="learning rate")
     parser.add_argument("--model_no", type=int, default=0, help="Model ID: (0: BERT)")
-    parser.add_argument("--model_type", type=str, default='bert', help="Model ID: (0: BERT)")
+    parser.add_argument("--model_type", type=str, default='bert-base-uncased', help="Model type")
     
     parser.add_argument("--train", type=int, default=0, help="Train model on dataset")
     parser.add_argument("--infer", type=int, default=1, help="Infer labels from trained model")
@@ -44,5 +44,5 @@ if __name__=="__main__":
         train_and_fit(args)
     
     if args.infer:
-        infer_ = infer_from_trained(args)
-        infer_.infer_from_input()
+        inferer = infer_from_trained(args)
+        inferer.infer_from_input()

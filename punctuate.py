@@ -29,7 +29,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_decoder_len", type=int, default=80, help="Max trg length")
     parser.add_argument("--LAS_embed_dim", type=int, default=512, help="PuncLSTM Embedding dimension")
     parser.add_argument("--LAS_hidden_size", type=int, default=512, help="PuncLSTM listener hidden_size")
-    parser.add_argument("--num_epochs", type=int, default=500, help="No of epochs")
+    parser.add_argument("--num_epochs", type=int, default=127, help="No of epochs")
     parser.add_argument("--lr", type=float, default=0.00003, help="learning rate")
     parser.add_argument("--gradient_acc_steps", type=int, default=2, help="Number of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
@@ -38,8 +38,8 @@ if __name__ == "__main__":
                         1: PuncLSTM\n\
                         2: pyTransformer")
     
-    parser.add_argument("--train", type=int, default=0, help="Train model on dataset")
-    parser.add_argument("--infer", type=int, default=1, help="Infer input sentence labels from trained model")
+    parser.add_argument("--train", type=int, default=1, help="Train model on dataset")
+    parser.add_argument("--infer", type=int, default=0, help="Infer input sentence labels from trained model")
     args = parser.parse_args()
     save_as_pickle("args.pkl", args)
     

@@ -76,13 +76,12 @@ class infer_from_trained(object):
     def infer_from_input(self,):
         self.net.eval()
         while True:
-            sent = input("Type input sentence:\n")
+            sent = input("Type input sentence: (\'quit\' or \'exit\' to terminate)\n")
             sent = sent.lower()
             if sent in ["quit", "exit"]:
                 break
-            
+            words = sent.split()
             if self.args.model_no == 0:
-                words = self.tokenizer.tokenize(sent)
                 sent = torch.tensor(self.cls_id + self.tokenizer.encode(sent) + self.sep_id).unsqueeze(0)
                 sent_mask = (sent != 0).long()
                 token_type = torch.zeros((sent.shape[0], sent.shape[1]), dtype=torch.long)
@@ -98,13 +97,13 @@ class infer_from_trained(object):
                 pointer = 0; ner_tags = []
                 for word in words:
                     ner_tags.append(decoded[pointer])
-                    pointer += len(self.tokenizer.encode(word)) 
+                    pointer += len(self.tokenizer.tokenize(word))
                 
                 assert len(ner_tags) == len(words)
                 
                 print("Words --- Tags:")
                 for word, tag in zip(words, ner_tags):
-                    print("%s (%s): " % (word, tag))
+                    print("%s (%s) " % (word, tag))
     
     def infer_from_file(self, in_file, out_file):
         
@@ -202,7 +201,7 @@ def infer(args, from_data=False):
         cls_id = tokenizer.convert_tokens_to_ids(["[CLS]"])
         sep_id = tokenizer.convert_tokens_to_ids(["[SEP]"])
         while True:
-            sent = input("Type input sentence:\n")
+            sent = input("Type input sentence: (\'quit\' or \'exit\' to terminate)\n")
             sent = sent.lower()
             if sent in ["quit", "exit"]:
                 break
@@ -230,4 +229,4 @@ def infer(args, from_data=False):
                 
                 print("Words --- Tags:")
                 for word, tag in zip(words, ner_tags):
-                    print("%s (%s): " % (word, tag))
+                    print("%s (%s) " % (word, tag))

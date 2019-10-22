@@ -160,3 +160,6 @@ class Config(object):
             self.model_no = 0
             self.train = 1
             self.infer = 0
+        
+        elif task == 'generation':
+            self.model_no = 0

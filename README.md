@@ -281,23 +281,43 @@ inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt"
 
 ## 5) Natural Language Generation
 Natural Language generation (NLG) aims to generate text based on past context. For instance, a chatbot can generate text replies based on the context of chat history. We currently have the following models for NLG:
-1. Generative Pre-trained Transformer (GPT/GPT-2)
+1. Generative Pre-trained Transformer 2 (GPT 2)
+2. Conditional Transformer Language Model (CTRL)
 
 ### Format of dataset files
-1. Generate free text from GPT/GPT-2 pre-trained models
+1. Generate free text from GPT 2 pre-trained models
+2. Generate conditional free text from CTRL pre-trained model
 
 ### Running the model
 Run generate.py
 
 ```bash
-generate.py
+generate.py [-h]  
+	[--model_no MODEL_NO (0: GPT 2 ; 1: CTRL)]
 ```
 
 Or if used as a package:
 ```python
-from nlptoolkit.generation.infer import infer_from_pretrained
+from nlptoolkit.utils.config import Config
+from nlptoolkit.generation.infer import infer_from_trained
 
-output = infer_from_pretrained(input_sent=None, tokens_len=100, top_k_beam=1)
+config = Config(task='generation') # loads default argument parameters as above
+config.model_no = 0 # sets model to GPT 2
+inferer = infer_from_trained(config, tokens_len=100, top_k_beam=3)
+inferer.infer_from_input() # infer from user console input
+inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt")
+```
+
+```python
+inferer.infer_from_input()
+```
+Sample output:
+```bash
+Type your input sentence: 
+I would
+10/22/2019 02:46:16 PM [INFO]: Generating...
+ have liked it to have a more "classic-style" feel to it and be more "real-world" looking, but it was just so fun and I loved the idea of having the characters interact in a real way with each others' faces and voices, and the fact it was all done with a lot less CGI than most anime, I thought it was a pretty great addition and I hope it continues to get more attention from the anime industry. I think the anime community is starting to see
+
 ```
 ---
 
@@ -517,6 +537,6 @@ Download and zip contents of downloaded folder into ./data/ folder.
 In order of priority:
 - [ ] Include package usage info for ~~classification~~, ASR, summarization, ~~translation~~, ~~generation~~, ~~punctuation_restoration~~, ~~NER~~, POS
 - [ ] Include benchmark results for  ~~classification~~, ASR, summarization, translation, generation, ~~punctuation_restoration~~, ~~NER~~, POS
-- [ ] Include pre-trained models + demo based on benchmark datasets for ~~classification~~, ASR, summarization, translation, generation, punctuation_restoration, NER, POS
+- [ ] Include pre-trained models + demo based on benchmark datasets for ~~classification~~, ASR, summarization, translation, ~~generation~~, punctuation_restoration, NER, POS
 - [ ] Include more models for punctuation restoration, translation, NER
 

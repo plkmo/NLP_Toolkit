@@ -27,7 +27,7 @@ For chinese support in Translation: jieba==0.39
 For ASR: librosa==0.7.0 ; soundfile==0.10.2  
 For more details, see requirements.txt
 
-** Pre-trained models (XLNet, BERT, GPT-2) are courtesy of huggingface (https://github.com/huggingface/pytorch-transformers)
+** Pre-trained PyTorch models (XLNet, BERT, GPT-2, CTRL) are courtesy of huggingface (https://github.com/huggingface/pytorch-transformers)
 
 ## Package Installation
 ```bash
@@ -302,8 +302,8 @@ from nlptoolkit.utils.config import Config
 from nlptoolkit.generation.infer import infer_from_trained
 
 config = Config(task='generation') # loads default argument parameters as above
-config.model_no = 0 # sets model to GPT 2
-inferer = infer_from_trained(config, tokens_len=100, top_k_beam=3)
+config.model_no = 1 # sets model to CTRL
+inferer = infer_from_trained(config, tokens_len=70, top_k_beam=3)
 inferer.infer_from_input() # infer from user console input
 inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt")
 ```
@@ -314,10 +314,24 @@ inferer.infer_from_input()
 Sample output:
 ```bash
 Type your input sentence: 
-I would
-10/22/2019 02:46:16 PM [INFO]: Generating...
- have liked it to have a more "classic-style" feel to it and be more "real-world" looking, but it was just so fun and I loved the idea of having the characters interact in a real way with each others' faces and voices, and the fact it was all done with a lot less CGI than most anime, I thought it was a pretty great addition and I hope it continues to get more attention from the anime industry. I think the anime community is starting to see
+Questions Q: Who is Lee Kuan Yew? A:
+10/24/2019 05:17:58 PM [INFO]: Generating...
+Singaporean politician and Prime Minister, and a founding father 
+ 
+ Q: What was the last film to win an Oscar for Best Picture and was directed by:* * * 
+ Q: What was a film released in 1956? * 
+ A: A Man Named Charlie * 
+ A: The Man with a Movie Face 
+ Q: Which actor played the role of: The Joker from
 
+Type your input sentence: 
+Questions Q: When is Lee Kuan Yew born? A:
+10/24/2019 05:18:35 PM [INFO]: Generating...
+August 16, 1950 
+ A: August 22 
+ Q:- How old is Lee Hsiao-ping? 
+ A:- 21 years 
+ Q: How many children are born each year at the hospital where the hospital is located? How many children have died in the hospital’s history! What is the average age at which children die? A: about 1 per 1000 live births*
 ```
 ---
 

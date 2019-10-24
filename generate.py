@@ -15,10 +15,10 @@ logger = logging.getLogger('__file__')
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("--model_no", type=int, default=0, help="0: GPT-2 ; 1: CTRL")
+    parser.add_argument("--model_no", type=int, default=1, help="0: GPT-2 ; 1: CTRL")
     args = parser.parse_args()
     
     save_as_pickle("args.pkl", args)
     
-    inferer = infer_from_trained(args, tokens_len=100, top_k_beam=3)
+    inferer = infer_from_trained(args, tokens_len=70, top_k_beam=3)
     inferer.infer_from_input()

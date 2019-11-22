@@ -14,6 +14,7 @@ The purpose of this toolkit is to allow for **easy training/inference of state-o
 5. [Natural Language Generation](#5-natural-language-generation)
 6. [Punctuation Restoration](#6-punctuation-restoration)  
 7. [Named Entity Recognition](#7-named-entity-recognition)
+8. [Part of Speech Tagging](#8-POS-Tagging)
   
 [Benchmark Results](#benchmark-results)  
 [References](#references)
@@ -504,6 +505,89 @@ Download and zip contents of downloaded folder into ./data/ folder.
 1. [BERT](https://drive.google.com/drive/folders/1-srmwPo23MGfmc7x80Ojb4_4sPCFeGNo?usp=sharing) (includes preprocessed data, vocab, and saved results files)
 ---
 
+## 8) POS Tagging
+In Parts-of-speech tagging, each word in a sentence is assigned a tag that indicates its grammatical role. Current models for this task: 
+1. BERT
+
+### Format of dataset files
+Dataset format for both train & test follows the Conll2003 dataset format. Specifically, each row in the .txt file follows the following format:
+```bash
+EU NNP I-NP I-ORG
+rejects VBZ I-VP O
+German JJ I-NP I-MISC
+call NN I-NP O
+to TO I-VP O
+boycott VB I-VP O
+British JJ I-NP I-MISC
+lamb NN I-NP O
+. . O O
+```
+Here, the first column represents the word within the sentence, second column represents the parts-of-speech tag, third column represents the tree chunk tag (not used), the fourth column is the NER tag (not used). Only the first and second columns are used for this task and the rest are ignored. (A placeholder is still required for the third and fourth columns)
+
+- Conll2003 dataset can be downloaded [here.](https://drive.google.com/drive/folders/1LAwi1TKTTfnG5ZPcbBPdyrreyxzAsjpi?usp=sharing)
+
+### Running the model
+Run pos.py
+
+```bash
+pos.py [-h] 
+	[--train_path TRAIN_PATH] 
+	[--test_path TEST_PATH]
+	[--num_classes NUM_CLASSES]
+	[--batch_size BATCH_SIZE]
+	[--tokens_length TOKENS_LENGTH]
+	[--max_steps MAX_STEPS]
+	[--warmup_steps WARMUP_STEPS]
+	[--weight_decay WEIGHT_DECAY]
+	[--adam_epsilon ADAM_EPSILON]
+	[--gradient_acc_steps GRADIENT_ACC_STEPS]
+	[--num_epochs NUM_EPOCHS]
+	[--lr LR]
+	[--model_no MODEL_NO]
+	[--model_type MODEL_TYPE]
+	[--train TRAIN (default:1)]  
+	[--infer INFER (default:1)]
+```
+
+Or if used as a package:
+```python
+from nlptoolkit.utils.config import Config
+from nlptoolkit.pos.trainer import train_and_fit
+from nlptoolkit.pos.infer import infer_from_trained
+
+config = Config(task='pos') # loads default argument parameters as above
+config.train_path = './data/pos/conll2003/eng.train.txt' # sets training data path
+config.test_path = './data/pos/conll2003/eng.testa.txt' # sets test data path
+config.num_classes = 45 # sets number of NER classes
+config.batch_size = 16
+config.lr = 5e-5 # change learning rate
+config.model_no = 0 # sets model to BERT
+train_and_fit(config) # starts training with configured parameters
+inferer = infer_from_trained(config) # initiate infer object, which loads the model for inference, after training model
+inferer.infer_from_input() # infer from user console input
+inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt")
+```
+
+```python
+inferer.infer_from_input()
+```
+Sample output:
+```bash
+Type input sentence: ('quit' or 'exit' to terminate)
+I like to eat chicken.
+Words --- Tags:
+i (PRP)
+like (VB)
+to (TO)
+eat (VB)
+chicken. (NN)
+```
+
+### Pre-trained models
+Download and zip contents of downloaded folder into ./data/ folder.
+1. [BERT](https://drive.google.com/drive/folders/1OKaYp4N9nB9MEi-304vouuEAWyWlvjWT?usp=sharing) (includes preprocessed data, vocab, and saved results files)
+---
+
 # Benchmark Results
 
 ## 1) Classification (IMDB dataset : 25000 train, 25000 test data points)
@@ -533,6 +617,13 @@ Download and zip contents of downloaded folder into ./data/ folder.
 
 ![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/conll2003/ner/test_Accuracy_vs_epoch_0.png) 
 
+## 8) POS Tagging (Conll2003 dataset)
+
+### Fine-tuned BERT English Model (uncased, 12-layer, 768-hidden, 12-heads, 110M parameters)  
+![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/conll2003/pos/test_loss_vs_epoch_0.png) 
+
+![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/conll2003/pos/test_Accuracy_vs_epoch_0.png) 
+
 ---
 
 # References
@@ -549,8 +640,8 @@ Download and zip contents of downloaded folder into ./data/ folder.
 
 # To do list
 In order of priority:
-- [ ] Include package usage info for ~~classification~~, ASR, summarization, ~~translation~~, ~~generation~~, ~~punctuation_restoration~~, ~~NER~~, POS
-- [ ] Include benchmark results for  ~~classification~~, ASR, summarization, translation, generation, ~~punctuation_restoration~~, ~~NER~~, POS
-- [ ] Include pre-trained models + demo based on benchmark datasets for ~~classification~~, ASR, summarization, translation, ~~generation~~, punctuation_restoration, NER, POS
-- [ ] Include more models for punctuation restoration, translation, NER
+- [ ] Include package usage info for ~~classification~~, ASR, summarization, ~~translation~~, ~~generation~~, ~~punctuation_restoration~~, ~~NER~~, ~~POS~~
+- [ ] Include benchmark results for  ~~classification~~, ASR, summarization, translation, generation, ~~punctuation_restoration~~, ~~NER~~, ~~POS~~
+- [ ] Include pre-trained models + demo based on benchmark datasets for ~~classification~~, ASR, summarization, translation, ~~generation~~, punctuation_restoration, ~~NER~~, ~~POS~~
+- [ ] Include more models for punctuation restoration, translation, NER, POS
 

@@ -74,7 +74,7 @@ class infer_from_trained(object):
     
     def infer_from_input(self,):
         while True:
-            sent = input("Type input sentence:\n")
+            sent = input("Type input sentence: ('quit' or 'exit' to terminate)\n")
             sent = sent.lower()
             if sent in ["quit", "exit"]:
                 break
@@ -103,7 +103,7 @@ class infer_from_trained(object):
                 
                 print("Words --- Tags:")
                 for word, tag in zip(words, ner_tags):
-                    print("%s (%s): " % (word, tag))
+                    print("%s (%s)" % (word, tag))
     
     def infer_from_file(self, in_file, out_file):
         

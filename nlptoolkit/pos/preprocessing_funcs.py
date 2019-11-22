@@ -74,14 +74,20 @@ def get_POS_conll2003_data(args, load_extracted=True):
             if len(line) == 4:
                 word, pos, btag, ner = line
                 if word != '-DOCSTART-':
-                    sent.append(word.lower()); sent_ner.append(re.sub("\n", "", ner))
+                    sent.append(word.lower()); sent_ner.append(re.sub("\n", "", pos))
             else:
                 sents.append(sent); ners.append(sent_ner)
                 sent, sent_ner = [], []
         assert len(sents) == len(ners)
-        df_train = pd.DataFrame(data={"sents":sents, "ners":ners})
-        df_train['length'] = df_train.progress_apply(lambda x: len(x['ners']), axis=1)
+        df_train = pd.DataFrame(data={"sents":sents, "poss":ners})
+        df_train['length'] = df_train.progress_apply(lambda x: len(x['poss']), axis=1)
         df_train = df_train[df_train['length'] != 0]
+        ## to find num_classes
+        num_pos = []
+        for p in df_train['poss']:
+            num_pos.extend(p)
+        num_classes = len(list(set(num_pos)))
+        logger.info("Number of unique POS tags found: %d" % num_classes)
         
         if test_path is not None:
             with open(test_path, "r", encoding="utf8") as f:
@@ -93,16 +99,15 @@ def get_POS_conll2003_data(args, load_extracted=True):
                 if len(line) == 4:
                     word, pos, btag, ner = line
                     if word != '-DOCSTART-':
-                        sent.append(word.lower()); sent_ner.append(re.sub("\n", "", ner))
+                        sent.append(word.lower()); sent_ner.append(re.sub("\n", "", pos))
                 else:
                     sents.append(sent); ners.append(sent_ner)
                     sent, sent_ner = [], []
             assert len(sents) == len(ners)
-            df_test = pd.DataFrame(data={"sents":sents, "ners":ners})
-            df_test['length'] = df_test.progress_apply(lambda x: len(x['ners']), axis=1)
+            df_test = pd.DataFrame(data={"sents":sents, "poss":ners})
+            df_test['length'] = df_test.progress_apply(lambda x: len(x['poss']), axis=1)
             df_test = df_test[df_test['length'] != 0]
-            
-        
+                
     return df_train, df_test
 
 def get_POS_twitter_data(args, load_extracted=True):
@@ -230,7 +235,8 @@ def pos_preprocess(args, df_train, df_test=None, include_cls=True):
 
 def preprocess_data(args):
     if not os.path.isfile("./data/df_train.pkl"):
-        df_train, df_test = get_POS_twitter_data(args, load_extracted=False)
+        #df_train, df_test = get_POS_twitter_data(args, load_extracted=False)
+        df_train, df_test = get_POS_conll2003_data(args, load_extracted=False)
         vocab, tokenizer, df_train, df_test = pos_preprocess(args, df_train, df_test)
     else:
         df_train = load_pickle("df_train.pkl")

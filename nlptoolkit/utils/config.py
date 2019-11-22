@@ -118,22 +118,22 @@ class Config(object):
             self.infer = 1
         
         elif task == 'pos':
-            self.train_path = "./data/pos/twpos-data-v0.3/full_data/combined.txt"
+            self.train_path = "./data/ner/conll2003/eng.train.txt"
             self.test_path = "./data/ner/conll2003/eng.testa.txt"
-            self.num_classes = 9
-            self.batch_size = 8
-            self.tokens_length = 128
+            self.num_classes = 45
+            self.batch_size = 16
+            self.tokens_length = 100
             self.max_steps = -1
             self.warmup_steps = 0
             self.weight_decay = 0.0
             self.adam_epsilon = 1e-8
-            self.gradient_acc_steps = 1
+            self.gradient_acc_steps = 2
             self.max_norm = 1.0
             self.num_epochs = 7
             self.lr = 5e-5
             self.model_no = 0
             self.model_type = 'bert'
-            self.train = 0
+            self.train = 1
             self.infer = 1
         
         elif task == 'ASR':

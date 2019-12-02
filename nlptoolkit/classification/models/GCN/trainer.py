@@ -83,6 +83,7 @@ def train_and_fit(args):
                     'scheduler' : scheduler.state_dict(),\
                 }, os.path.join("./data/",\
                     "test_checkpoint_%d.pth.tar" % args.model_no))
+        scheduler.step()
     
     logger.info("Finished training!")
     evaluation_trained = np.array(evaluation_trained); evaluation_untrained = np.array(evaluation_untrained)

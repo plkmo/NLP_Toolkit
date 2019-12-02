@@ -49,7 +49,7 @@ def train_and_fit(args):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam([{"params":net.bert.parameters(),"lr": 0.0003},\
                              {"params":net.classifier.parameters(), "lr": args.lr}])
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20,40,80,120,150,180,200], gamma=0.8)
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2,4,8,12,15,18,20], gamma=0.8)
     
     start_epoch, best_pred = load_state(net, optimizer, scheduler, args, load_best=False)    
     losses_per_epoch, accuracy_per_epoch = load_results(args)
@@ -71,13 +71,15 @@ def train_and_fit(args):
             if (i % args.gradient_acc_steps) == 0:
                 optimizer.step()
                 optimizer.zero_grad()
-                scheduler.step()
+                
             total_loss += loss.item()
             if (i % update_size) == (update_size - 1):    # print every 100 mini-batches of size = batch_size
                 losses_per_batch.append(args.gradient_acc_steps*total_loss/update_size)
                 print('[Epoch: %d, %5d/ %d points] total loss per batch: %.3f' %
                       (epoch + 1, (i + 1)*args.batch_size, train_len, losses_per_batch[-1]))
                 total_loss = 0.0
+        
+        scheduler.step()
         losses_per_epoch.append(sum(losses_per_batch)/len(losses_per_batch))
         if args.train_test_split == 1:
             accuracy_per_epoch.append(model_eval(net, test_loader, cuda=cuda))

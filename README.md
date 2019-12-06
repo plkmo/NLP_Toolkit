@@ -29,6 +29,7 @@ For ASR: librosa==0.7.0 ; soundfile==0.10.2
 For more details, see requirements.txt
 
 ** Pre-trained PyTorch models (XLNet, BERT, GPT-2, CTRL) are courtesy of huggingface (https://github.com/huggingface/pytorch-transformers)
+** GAT model adapted from https://github.com/Diego999/pyGAT
 
 ## Package Installation
 ```bash
@@ -49,6 +50,7 @@ The goal of classification is to segregate documents into appropriate classes ba
 1. Text-based Graph Convolution Networks (GCN)
 2. Bidirectional Encoder Representations from Transformers (BERT)
 3. XLNet
+4. Graph Attention Network (GAT)
 
 ### Format of datasets files
 The training data (default: train.csv) should be formatted into two columns 'text' and 'label' respectively, with rows being the documents index. 'text' contains the raw text and 'label' contains the corresponding label (integers 0, 1, 2... depending on the number of classes)
@@ -67,6 +69,8 @@ classify.py [-h]
 	[--max_vocab_len MAX_VOCAB_LEN (default: 7000)]  
 	[--hidden_size_1 HIDDEN_SIZE_1 (default: 330)]
 	[--hidden_size_2 HIDDEN_SIZE_2 (default: 130)]
+	[--hidden HIDDEN (default: 8)]
+	[--nb_heads NB_HEADS (default: 8)]
 	[--tokens_length TOKENS_LENGTH (default: 200)] 
 	[--num_classes NUM_CLASSES (default: 2)]
 	[--train_test_split TRAIN_TEST_SPLIT (default: 0)]
@@ -76,9 +80,10 @@ classify.py [-h]
 	[--max_norm MAX_NORM (default: 1)] 
 	[--num_epochs NUM_EPOCHS (default: 1700)] 
 	[--lr LR default=0.0031]
-	[--model_no MODEL_NO (default: 0 (0: Graph Convolution Network 	(GCN), 1: BERT, 2: XLNet))] 
+	[--use_cuda USE_CUDA]
+	[--model_no MODEL_NO (default: 0 (0: GCN, 1: BERT, 2: XLNet, 3: GAT))] 
 	[--train TRAIN (default:1)]  
-	[--infer INFER (default: 0 (Infer input sentence labels from 	trained model))]
+	[--infer INFER (default: 0 (Infer input sentence labels from trained model))]
 ```
 The script outputs a results.csv file containing the indexes of the documents in infer.csv and their corresponding predicted labels.
 
@@ -635,6 +640,7 @@ Download and zip contents of downloaded folder into ./data/ folder.
 6. XLNet: Generalized Autoregressive Pretraining for Language Understanding, Yang et al, https://arxiv.org/abs/1906.08237
 7. Investigating LSTM for punctuation prediction, Xu et al, https://ieeexplore.ieee.org/document/7918492
 8. HuggingFace's Transformers: State-of-the-art Natural Language Processing, Thomas Wolf et al, https://arxiv.org/abs/1910.03771
+9. Graph Attention Networks, Petar et al, https://arxiv.org/pdf/1710.10903.pdf
 
 ---
 

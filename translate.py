@@ -27,8 +27,8 @@ if __name__=="__main__":
     parser.add_argument("--n_heads", type=int, default=8, help="Number of attention heads")
     parser.add_argument("--max_encoder_len", type=int, default=200, help="Max src length")
     parser.add_argument("--max_decoder_len", type=int, default=200, help="Max trg length")
-    parser.add_argument("--fp16", type=int, default=1, help="1: use mixed precision ; 0: use floating point 32")
-    parser.add_argument("--num_epochs", type=int, default=500, help="No of epochs")
+    parser.add_argument("--fp16", type=int, default=0, help="1: use mixed precision ; 0: use floating point 32")
+    parser.add_argument("--num_epochs", type=int, default=280, help="No of epochs")
     parser.add_argument("--lr", type=float, default=0.00007, help="learning rate")
     parser.add_argument("--gradient_acc_steps", type=int, default=3, help="Number of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
@@ -36,8 +36,8 @@ if __name__=="__main__":
     parser.add_argument("--model_no", type=int, default=0, help="Model ID (0: Transformer)")
     
     parser.add_argument("--train", type=int, default=1, help="Train model on dataset")
-    parser.add_argument("--evaluate", type=int, default=0, help="Evaluate the trained model on dataset")
-    parser.add_argument("--infer", type=int, default=0, help="Infer input sentences")
+    parser.add_argument("--evaluate", type=int, default=1, help="Evaluate the trained model on dataset")
+    parser.add_argument("--infer", type=int, default=1, help="Infer input sentences")
     args = parser.parse_args()
     
     save_as_pickle("args.pkl", args)

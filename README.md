@@ -283,6 +283,25 @@ inferer.infer_from_input() # infer from user console input
 inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt")
 ```
 
+```python
+inferer.infer_from_input()
+```
+Sample output:
+```bash
+Type input sentence (Type 'exit' or 'quit' to quit):
+The reason is simple.
+Stepwise-translated:
+， 这 也 是 一件 容易 的 。
+
+Final step translated words: 
+同样 至少 就是 是 最 容易 的 事情
+
+```
+
+### Pre-trained models
+Download and zip contents of downloaded folder into ./data/ folder.
+1. [Transformer for English-Chinese translation](https://drive.google.com/drive/folders/1CupeNiEpfzhGo1YcLl-rrIemkdemvXyw?usp=sharing) (includes preprocessed data, vocab, and saved results files)
+
 ---
 
 ## 5) Natural Language Generation
@@ -606,6 +625,12 @@ Download and zip contents of downloaded folder into ./data/ folder.
 ![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/imdb/classification/loss_vs_epoch_1.png) 
 
 ![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/imdb/classification/accuracy_vs_epoch_1.png) 
+
+## 4) Machine Translation (English-Chinese: 206K pair sentences)
+### Transformer (12-layer, 768-hidden, 12-heads, 110M parameters)  
+![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/translation/en-zh/test_loss_vs_epoch_0.png) 
+
+![](https://github.com/plkmo/NLP_Toolkit/blob/master/results/translation/en-zh/test_accuracy_vs_epoch_0.png) 
 
 ## 6) Punctuation Restoration (TED dataset)
 

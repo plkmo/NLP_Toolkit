@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 class tokener(object):
     def __init__(self, lang="en"):
-        d = {"en":"en_core_web_sm", "fr":"fr_core_news_sm"}
+        d = {"en":"en_core_web_lg", "fr":"fr_core_news_sm"}
         self.ob = spacy.load(d[lang])
     
     def tokenize(self, sent):

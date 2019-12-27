@@ -40,18 +40,18 @@ def clean_and_tokenize_text(text, table, tokenizer, clean_only=False):
             text = [w for w in text if not any(char.isdigit() for char in w)]
         return text
 
-def get_CNN_data(args, load_extracted=True):
+def get_data(args, load_extracted=True):
     """
-    Extracts CNN dataset, saves then
+    Extracts CNN and/or dailymain dataset, saves then
     returns dataframe containing body (main text) and highlights (summarized text)
     table: table containing symbols to remove from text
     tokenizer: tokenizer to tokenize text into word tokens
     """
-    path = args.data_path
+    path = args.data_path1
     tokenizer_en = tokener()
     table = str.maketrans("", "", '"#$%&\'()*+-/:;<=>@[\\]^_`{|}~')
     if load_extracted:
-        df = load_pickle("df_unencoded_CNN.pkl")
+        df = load_pickle("df_unencoded.pkl")
     else:
         logger.info("Extracting CNN stories...")
         df = pd.DataFrame(index=[i for i in range(len(os.listdir(path)))], columns=["body", "highlights"])
@@ -66,8 +66,28 @@ def get_CNN_data(args, load_extracted=True):
             body = text[:re.search("@highlight", text).span(0)[0]]
             df.iloc[idx]["body"] = body
             df.iloc[idx]["highlights"] = highlights
-        save_as_pickle("df_unencoded_CNN.pkl", df)
+            
+        if len(args.data_path2) > 2:
+            path = args.data_path2
+            logger.info("Extracting dailymail stories...")
+            df1 = pd.DataFrame(index=[i for i in range(len(os.listdir(path)))], columns=["body", "highlights"])
+            for idx, file in tqdm(enumerate(os.listdir(path)), total=len(os.listdir(path))):
+                with open(os.path.join(path, file), encoding="utf8") as csv_file:
+                    csv_reader = csv.reader(csv_file)
+                    text = ""
+                    for row in csv_reader:
+                        text += "".join(t for t in row)
+                highlights = re.search("@highlight(.*)", text).group(1)
+                highlights = highlights.replace("@highlight", ". ")
+                body = text[:re.search("@highlight", text).span(0)[0]]
+                df1.iloc[idx]["body"] = body
+                df1.iloc[idx]["highlights"] = highlights
+            df = pd.concat([df, df1], ignore_index=True)
+            del df1
         
+        save_as_pickle("df_unencoded.pkl", df)
+    logger.info("Dataset length: %d" % len(df))    
+    
     if (args.level == "word") or (args.level == "char"):
         logger.info("Tokenizing and cleaning extracted text...")
         df.loc[:, "body"] = df.apply(lambda x: clean_and_tokenize_text(x["body"], table, tokenizer_en), axis=1)
@@ -85,7 +105,7 @@ def get_CNN_data(args, load_extracted=True):
         df.loc[:, "body"] = df.apply(lambda x: v.convert_w2idx(x["body"]), axis=1)
         df.loc[:, "highlights"] = df.apply(lambda x: v.convert_w2idx(x["highlights"]), axis=1)
         df.loc[:, "highlights"] = df.apply(lambda x: pad_sos_eos(x["highlights"], 0, 2), axis=1)
-        save_as_pickle("df_encoded_CNN.pkl", df)
+        save_as_pickle("df_encoded.pkl", df)
         save_as_pickle("vocab.pkl", v)
         
     elif args.level == "bpe":
@@ -116,7 +136,7 @@ def get_CNN_data(args, load_extracted=True):
         df.loc[:, "highlights"] = df.apply(lambda x: pad_sos_eos(x["highlights"], encoder.word_vocab["__sos"], encoder.word_vocab["__eos"]),\
                                               axis=1)
         
-        save_as_pickle("df_encoded_CNN.pkl", df)
+        save_as_pickle("df_encoded.pkl", df)
         encoder.save("./data/vocab.pkl")
     return df
 
@@ -165,14 +185,14 @@ def load_dataloaders(args):
     """Load processed data if exist, else do preprocessing and loads it.  Feeds preprocessed data into dataloader, 
     returns dataloader """
     logger.info("Loading dataloaders...")
-    p_path = os.path.join("./data/", "df_unencoded_CNN.pkl")
-    train_path = os.path.join("./data/", "df_encoded_CNN.pkl")
+    p_path = os.path.join("./data/", "df_unencoded.pkl")
+    train_path = os.path.join("./data/", "df_encoded.pkl")
     if (not os.path.isfile(p_path)) and (not os.path.isfile(train_path)):
-        df = get_CNN_data(args, load_extracted=False)
+        df = get_data(args, load_extracted=False)
     elif os.path.isfile(p_path) and (not os.path.isfile(train_path)):
-        df = get_CNN_data(args, load_extracted=True)
+        df = get_data(args, load_extracted=True)
     elif os.path.isfile(train_path):
-        df = load_pickle("df_encoded_CNN.pkl")
+        df = load_pickle("df_encoded.pkl")
     
     trainset = text_dataset(df, args)
     max_features_length = trainset.max_x_len

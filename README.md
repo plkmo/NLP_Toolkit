@@ -176,7 +176,19 @@ Text summarization aims to distil a paragraph chunk into a few sentences that ca
 2. Seq2Seq (LAS architecture)
 
 ### Format of dataset files
-One .csv file for each text/summary pair. Within the text/summary .csv file, text is followed by summary, with summary points annotated by @highlights (summary) 
+One .csv file for each text/summary pair. Within the text/summary .csv file, text is followed by summary, with summary points annotated by @highlights (summary)
+Eg. example.csv
+```bash
+Main text here
+@highlight
+
+Summary 1
+
+@highlight
+
+Summary 2
+
+```
 
 ### Running the model
 Run summarize.py with arguments below

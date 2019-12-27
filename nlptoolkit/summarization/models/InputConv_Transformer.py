@@ -95,7 +95,7 @@ def Attention(q, k, v, dh, mask=None, g_mask=None, dropout=None):
     scores = torch.matmul(q, k.transpose(-2,-1))/math.sqrt(dh)
     if mask is not None:
         mask = mask.unsqueeze(1); #print("Mask", mask.shape); print("scores", scores.shape)
-        scores = scores.masked_fill(mask == 0, -1e9)
+        scores = scores.masked_fill(mask == 0, -5e4)
     
     if g_mask is not None:
         scores = scores + g_mask

@@ -47,6 +47,8 @@ def train_and_fit(args):
     losses_per_epoch, accuracy_per_epoch = load_results(model_no=args.model_no)
     
     batch_update_steps = int(train_length/(args.batch_size*10))
+    
+    logger.info("Number of training data points: %d" % train_length)
     logger.info("Starting training process...")
     optimizer.zero_grad()
     for e in range(start_epoch, args.num_epochs):

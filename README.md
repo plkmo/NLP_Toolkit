@@ -28,7 +28,7 @@ For chinese support in Translation: jieba==0.39
 For ASR: librosa==0.7.0 ; soundfile==0.10.2  
 For more details, see requirements.txt
 
-** Pre-trained PyTorch models (XLNet, BERT, GPT-2, CTRL) are courtesy of huggingface (https://github.com/huggingface/pytorch-transformers)
+** Pre-trained PyTorch models (XLNet, BERT, GPT-2, CTRL) are courtesy of huggingface (https://github.com/huggingface/pytorch-transformers)  
 ** GAT model adapted from https://github.com/Diego999/pyGAT
 
 ## Package Installation

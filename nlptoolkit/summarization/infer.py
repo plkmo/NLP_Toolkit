@@ -10,7 +10,9 @@ from torch.autograd import Variable
 from .preprocessing_funcs import load_dataloaders
 from .models.InputConv_Transformer import create_masks
 from .train_funcs import load_model_and_optimizer
+from .preprocessing_funcs import clean_and_tokenize_text
 from .utils.bpe_vocab import Encoder
+from .utils.word_char_level_vocab import tokener
 from .utils.misc_utils import load_pickle
 from tqdm import tqdm
 import time
@@ -31,6 +33,8 @@ class infer_from_trained(object):
         self.args.batch_size = 1
         
         logger.info("Loading tokenizer and model...")
+        self.tokenizer_en = tokener()
+        self.table = str.maketrans("", "", '"#$%&\'()*+-/:;<=>@[\\]^_`{|}~')
         try:
             train_loader, train_length, max_features_length, max_seq_len = load_dataloaders(self.args)
             self.train_loader = train_loader
@@ -122,7 +126,45 @@ class infer_from_trained(object):
             print("No data to infer!")
             
     def infer_sentence(self, sent):
-        return
+        if (self.args.level == "word") or (self.args.level == "char"):
+            sent = clean_and_tokenize_text(sent, self.table, self.tokenizer_en)
+            sent = self.vocab.convert_w2idx(sent)
+        elif self.args.level == "bpe":
+            sent = clean_and_tokenize_text(sent, self.table, self.tokenizer_en, clean_only=True)
+            sent = next(self.vocab.transform([sent]))
+        sent = torch.tensor(sent)
+        
+        with torch.no_grad():
+            if self.args.model_no == 0:
+                src_input, trg_input = sent, self.trg_init
+                src_mask, trg_mask = create_masks(src_input, trg_input)
+                if self.cuda:
+                    src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long()
+                    src_mask = src_mask.cuda(); trg_mask = trg_mask.cuda()
+                outputs = self.net(src_input, trg_input[:,0].unsqueeze(0), src_mask, trg_mask, infer=True)
+                
+            elif self.args.model_no == 1:
+                src_input, trg_input = sent, self.trg_init
+                if self.cuda:
+                    src_input = src_input.cuda().long(); trg_input = trg_input.cuda().long()
+                outputs = self.net(src_input, trg_input[:,0].unsqueeze(0), infer=True)
+        
+        if (self.args.level == "word") or (self.args.level == "char"):
+            vocab_decoder = self.vocab.convert_idx2w
+        elif self.args.level == "bpe":
+            vocab_decoder = self.vocab.inverse_transform
+        
+        if self.cuda:
+            o = outputs[0].cpu().numpy().tolist()
+        else:
+            o = outputs[0].numpy().tolist()
+            
+        if self.args.level == "bpe":
+            o = [o]
+        
+        out_sent = " ".join(vocab_decoder(o))
+        print("Sample Output: ", out_sent)
+        return out_sent
     
     def infer_from_input(self):
         self.net.eval()

@@ -205,7 +205,7 @@ class LAS(nn.Module):
                     'listener_hidden_size': self.listener_hidden_size,\
                     'output_class_dim': self.output_class_dim,\
                     'max_label_len': self.max_label_len,\
-                    'amp': amp.state_dict()
+                    'amp': amp.state_dict() if amp != None else None
                 }
         torch.save(state, path)
         

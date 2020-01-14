@@ -194,10 +194,20 @@ def load_dataloaders(args):
     elif os.path.isfile(train_path):
         df = load_pickle("df_encoded.pkl")
     
-    trainset = text_dataset(df, args)
+    # Train-Test split
+    msk = np.random.rand(len(df)) < args.train_test_ratio
+    trainset = df[msk]
+    testset = df[~msk]
+    
+    trainset = text_dataset(trainset, args)
     max_features_length = trainset.max_x_len
     max_seq_len = trainset.max_y_len
     train_length = len(trainset)
     train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True,\
                               num_workers=0, collate_fn=Pad_Sequence(), pin_memory=False)
-    return train_loader, train_length, max_features_length, max_seq_len
+    
+    testset = text_dataset(testset, args)
+    test_length = len(testset)
+    test_loader = DataLoader(testset, batch_size=args.batch_size, shuffle=True,\
+                              num_workers=0, collate_fn=Pad_Sequence(), pin_memory=False)
+    return train_loader, train_length, max_features_length, max_seq_len, test_loader, test_length

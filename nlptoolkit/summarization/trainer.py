@@ -23,7 +23,7 @@ def train_and_fit(args):
     
     cuda = torch.cuda.is_available()
     
-    train_loader, train_length, max_features_length, max_seq_len = load_dataloaders(args)
+    train_loader, train_length, max_features_length, max_seq_len, test_loader, test_length = load_dataloaders(args)
     
     if (args.level == "word") or (args.level == "char"):
         vocab = load_pickle("vocab.pkl")
@@ -34,6 +34,8 @@ def train_and_fit(args):
         
     logger.info("Max features length = %d %ss" % (max_features_length, args.level))
     logger.info("Vocabulary size: %d" % vocab_size)
+    logger.info("Training data points: %d" % train_length)
+    logger.info("Test data points: %d" % test_length)
     
     logger.info("Loading model and optimizers...")
     
@@ -98,9 +100,9 @@ def train_and_fit(args):
                       (e, (i + 1)*args.batch_size, train_length, losses_per_batch[-1]))
                 total_loss = 0.0
         losses_per_epoch.append(sum(losses_per_batch)/len(losses_per_batch))
-        accuracy_per_epoch.append(evaluate_results(net, train_loader, cuda, None, None, args))
-        print("Losses at Epoch %d: %.7f" % (e, losses_per_epoch[-1]))
-        print("Accuracy at Epoch %d: %.7f" % (e, accuracy_per_epoch[-1]))
+        accuracy_per_epoch.append(evaluate_results(net, test_loader, cuda, None, None, args))
+        print("Training Losses at Epoch %d: %.7f" % (e, losses_per_epoch[-1]))
+        print("Test Accuracy at Epoch %d: %.7f" % (e, accuracy_per_epoch[-1]))
         
         if (args.level == "word") or (args.level == "char"):
             decode_outputs(outputs, labels, vocab.convert_idx2w, args)
@@ -126,7 +128,7 @@ def train_and_fit(args):
     ax.scatter([i for i in range(len(losses_per_epoch))], losses_per_epoch)
     ax.set_xlabel("Epoch", fontsize=15)
     ax.set_ylabel("Loss", fontsize=15)
-    ax.set_title("Loss vs Epoch", fontsize=20)
+    ax.set_title("Training Loss vs Epoch", fontsize=20)
     plt.savefig(os.path.join("./data/",\
                              "test_loss_vs_epoch_%d.png" % args.model_no))
     
@@ -134,7 +136,7 @@ def train_and_fit(args):
     ax = fig.add_subplot(111)
     ax.scatter([i for i in range(len(accuracy_per_epoch))], accuracy_per_epoch)
     ax.set_xlabel("Epoch", fontsize=15)
-    ax.set_ylabel("Accuracy", fontsize=15)
-    ax.set_title("Accuracy vs Epoch", fontsize=20)
+    ax.set_ylabel("Test Accuracy", fontsize=15)
+    ax.set_title("Test Accuracy vs Epoch", fontsize=20)
     plt.savefig(os.path.join("./data/",\
                              "test_Accuracy_vs_epoch_%d.png" % args.model_no))

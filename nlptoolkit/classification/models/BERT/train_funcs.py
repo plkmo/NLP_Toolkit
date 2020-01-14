@@ -37,7 +37,7 @@ def load_dataloaders(args):
         test_set = sentiments(df_test, tokens_length=args.tokens_length, labels=False)
     test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=0, pin_memory=False)
     del df_train, df_test
-    return train_loader, test_loader, len(train_set)
+    return train_loader, test_loader, len(train_set), len(test_set)
 
 class sentiments(Dataset):
     def __init__(self, df, tokens_length=300, labels=True):

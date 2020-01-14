@@ -22,7 +22,9 @@ logger = logging.getLogger(__file__)
 def train_and_fit(args):
     cuda = torch.cuda.is_available()
     
-    train_loader, test_loader, train_len = load_dataloaders(args)
+    train_loader, test_loader, train_len, test_len = load_dataloaders(args)
+    logger.info("Training data points: %d" % train_len)
+    logger.info("Test data points: %d" % test_len)
     
     net = XLNetForSequenceClassification.from_pretrained('xlnet-base-cased', num_labels=args.num_classes)
     if cuda:

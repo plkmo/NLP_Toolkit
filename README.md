@@ -1,7 +1,7 @@
 # NLP Toolkit
 Library containing state-of-the-art models for Natural Language Processing tasks  
 The purpose of this toolkit is to allow for **easy training/inference of state-of-the-art models**, for various NLP tasks.  
-*Note this repo currently in development. (see [To do list](#to-do-list)) 
+*See [To do list](#to-do-list)) 
 
 ---
 
@@ -15,6 +15,7 @@ The purpose of this toolkit is to allow for **easy training/inference of state-o
 6. [Punctuation Restoration](#6-punctuation-restoration)  
 7. [Named Entity Recognition](#7-named-entity-recognition)
 8. [Part of Speech Tagging](#8-POS-Tagging)
+9. [Style Transfer](#9-Style-Transfer)
   
 [Benchmark Results](#benchmark-results)  
 [References](#references)
@@ -26,10 +27,12 @@ torch==1.2.0 ; spacy==2.1.8 ; torchtext==0.4.0 ; seqeval==0.0.12 ; pytorch-nlp==
 For mixed precision training (-fp16=1), apex must be installed: [apex==0.1](https://github.com/NVIDIA/apex)  
 For chinese support in Translation: jieba==0.39  
 For ASR: librosa==0.7.0 ; soundfile==0.10.2  
+For Style Transfer: fasttext == 0.8.3 ; kenlm (for evaluation only)  
 For more details, see requirements.txt
 
 ** Pre-trained PyTorch models (XLNet, BERT, GPT-2, CTRL) are courtesy of huggingface (https://github.com/huggingface/pytorch-transformers)  
-** GAT model adapted from https://github.com/Diego999/pyGAT
+** GAT model adapted from https://github.com/Diego999/pyGAT  
+** Style-Transformer training codes adapted from https://github.com/fastnlp/style-transformer  
 
 ## Package Installation
 ```bash
@@ -624,6 +627,48 @@ Download and zip contents of downloaded folder into ./data/ folder.
 1. [BERT](https://drive.google.com/drive/folders/1OKaYp4N9nB9MEi-304vouuEAWyWlvjWT?usp=sharing) (includes preprocessed data, vocab, and saved results files)
 ---
 
+## 9) Style Transfer
+In style transfer, the task is to convert the style of a sentence into another style, while preserving the content. Current models for this task: 
+1. Style Transformer
+
+### Format of dataset files
+The training dataset for one style (eg. negative) should be stored in train.neg, while that for the other style (eg. positive) should be stored in train.pos. Within each file, we should have sentences (separated by newline) of the corresponding style, tokenized by spaces.
+
+### Running the model
+Run style_transfer.py
+
+```bash
+style_transfer.py [-h] 
+	[--data_path DATA_PATH] 
+	[--num_classes NUM_CLASSES]
+	[--max_features_length MAX_FEATURES_LENGTH]
+	[--d_model D_MODEL]
+	[--num NUM]
+	[--n_heads N_HEADS]
+	[--batch_size BATCH_SIZE]
+	[--lr_F LR_F]
+	[--lr_D LR_D]
+	[--num_iters NUM_ITERS]
+	[--save_iters SAVE_ITERS]
+	[--train TRAIN (default:1)]  
+	[--infer INFER (default:1)]
+	[--checkpoint_Fpath CHECKPOINT_FPATH]
+	[--checkpoint_Dpath CHECKPOINT_DPATH]
+```
+
+Inference after training (see style_transfer.py),
+```python
+inferer.infer_sentence(sent='The food here is really good.', target_style=0)
+```
+Sample output:
+```bash
+the food here is really limited .
+```
+### Pre-trained models & example dataset
+Download and zip contents of downloaded folder into ./data/ folder.
+1. [Style Transformer](https://drive.google.com/drive/folders/114C1SxBmVpCFxicuSt5gdGi8w4UWNEk6?usp=sharing) (includes dataset & pretrained model)
+---
+
 # Benchmark Results
 
 ## 1) Classification (IMDB dataset : 25000 train, 25000 test data points)
@@ -678,6 +723,7 @@ Download and zip contents of downloaded folder into ./data/ folder.
 7. Investigating LSTM for punctuation prediction, Xu et al, https://ieeexplore.ieee.org/document/7918492
 8. HuggingFace's Transformers: State-of-the-art Natural Language Processing, Thomas Wolf et al, https://arxiv.org/abs/1910.03771
 9. Graph Attention Networks, Petar et al, https://arxiv.org/pdf/1710.10903.pdf
+10. Style Transformer: Unpaired Text Style Transfer without Disentangled Latent Representation, Ning et al, https://arxiv.org/abs/1905.05621
 
 ---
 
@@ -687,4 +733,5 @@ In order of priority:
 - [ ] Include benchmark results for  ~~classification~~, ASR, summarization, translation, generation, ~~punctuation_restoration~~, ~~NER~~, ~~POS~~
 - [ ] Include pre-trained models + demo based on benchmark datasets for ~~classification~~, ASR, summarization, translation, ~~generation~~, punctuation_restoration, ~~NER~~, ~~POS~~
 - [ ] Include more models for punctuation restoration, translation, NER, POS
+- [ ] Clean up style transfer
 

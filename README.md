@@ -1,7 +1,7 @@
 # NLP Toolkit
 Library containing state-of-the-art models for Natural Language Processing tasks  
 The purpose of this toolkit is to allow for **easy training/inference of state-of-the-art models**, for various NLP tasks.  
-*See [To do list](#to-do-list)) 
+*See [To do list](#to-do-list) 
 
 ---
 
@@ -15,7 +15,7 @@ The purpose of this toolkit is to allow for **easy training/inference of state-o
 6. [Punctuation Restoration](#6-punctuation-restoration)  
 7. [Named Entity Recognition](#7-named-entity-recognition)
 8. [Part of Speech Tagging](#8-POS-Tagging)
-9. [Style Transfer](#9-Style-Transfer)
+9. [Unsupervised Style Transfer](#9-Unsupervised-Style-Transfer)
   
 [Benchmark Results](#benchmark-results)  
 [References](#references)
@@ -27,7 +27,7 @@ torch==1.2.0 ; spacy==2.1.8 ; torchtext==0.4.0 ; seqeval==0.0.12 ; pytorch-nlp==
 For mixed precision training (-fp16=1), apex must be installed: [apex==0.1](https://github.com/NVIDIA/apex)  
 For chinese support in Translation: jieba==0.39  
 For ASR: librosa==0.7.0 ; soundfile==0.10.2  
-For Style Transfer: fasttext == 0.8.3 ; kenlm (for evaluation only)  
+For Unsupervised Style Transfer: fasttext == 0.8.3 ; kenlm (for evaluation only)  
 For more details, see requirements.txt
 
 ** Pre-trained PyTorch models (XLNet, BERT, GPT-2, CTRL) are courtesy of huggingface (https://github.com/huggingface/pytorch-transformers)  
@@ -627,8 +627,8 @@ Download and zip contents of downloaded folder into ./data/ folder.
 1. [BERT](https://drive.google.com/drive/folders/1OKaYp4N9nB9MEi-304vouuEAWyWlvjWT?usp=sharing) (includes preprocessed data, vocab, and saved results files)
 ---
 
-## 9) Style Transfer
-In style transfer, the task is to convert the style of a sentence into another style, while preserving the content. Current models for this task: 
+## 9) Unsupervised Style Transfer
+In unsupervised style transfer, the task is to convert the style of a sentence into another style, while preserving the content. The datasets used are of non-parallel nature, hence the task is unsupervised. Current models for this task: 
 1. Style Transformer
 
 ### Format of dataset files

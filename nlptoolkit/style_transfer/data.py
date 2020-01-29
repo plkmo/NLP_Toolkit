@@ -1,9 +1,15 @@
 import time
 import numpy as np
+import re
 import torchtext
 from torchtext import data
 
 from .utils import tensor2text
+import logging
+
+logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
+                    datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
+logger = logging.getLogger('__file__')
 
 class DatasetIterator(object):
     def __init__(self, pos_iter, neg_iter):
@@ -20,6 +26,23 @@ def load_dataset(config, train_pos='train.pos', train_neg='train.neg',
                  test_pos='test.pos', test_neg='test.neg'):
 
     root = config.data_path
+    
+    roots = re.split(', +', root)
+    if len(roots) > 1:
+        logger.info("Combining datasets...")
+        files = {'train.pos':[], 'train.neg':[], 'dev.pos':[], \
+                 'dev.neg':[], 'test.pos':[], 'test.neg':[]}
+        for dir_path in roots:
+            for file in files.keys():
+                with open(dir_path + file, 'r', encoding='utf8') as f:
+                    files[file].extend(f.readlines())
+        
+        for file, sents in files.items():
+            with open('./data/style_transfer/%s' % file, 'w', encoding='utf8') as f:
+                for sent in sents:
+                    f.write('%s' % sent)
+        root = './data/style_transfer/'
+    
     TEXT = data.Field(batch_first=True, eos_token='<eos>')
     
     dataset_fn = lambda name: data.TabularDataset(

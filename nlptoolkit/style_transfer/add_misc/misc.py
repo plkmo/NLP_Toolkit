@@ -8,6 +8,7 @@ Created on Sun Jan 19 09:22:51 2020
 import os
 import pickle
 import torch
+import matplotlib.pyplot as plt
 
 class Config():
     data_path = './data/yelp/'
@@ -61,18 +62,39 @@ class Config():
         self.num_layers = args.num
         self.num_iters = args.num_iters
         self.checkpoint_Fpath = args.checkpoint_Fpath
-        self.checkpoint_Fpath = args.checkpoint_Fpath
+        self.checkpoint_Dpath = args.checkpoint_Dpath
         self.eval_steps = args.save_iters
+        self.checkpoint_config = args.checkpoint_config
+        self.gradient_acc_steps = args.gradient_acc_steps
+        self.F_pretrain_iter = self.F_pretrain_iter*self.gradient_acc_steps
+        self.train_from_checkpoint = args.train_from_checkpoint
 
-def load_pickle(filename):
-    completeName = os.path.join("./data/",\
-                                filename)
+def load_pickle(filename, base=False):
+    if base:
+        completeName = filename
+    else:
+        completeName = os.path.join("./data/",\
+                                    filename)
     with open(completeName, 'rb') as pkl_file:
         data = pickle.load(pkl_file)
     return data
 
-def save_as_pickle(filename, data):
-    completeName = os.path.join("./data/",\
-                                filename)
+def save_as_pickle(filename, data, base=False):
+    if base:
+        completeName = filename
+    else:
+        completeName = os.path.join("./data/",\
+                                    filename)
     with open(completeName, 'wb') as output:
         pickle.dump(data, output)
+        
+def plot_save(y_data, xlabel='Epoch', ylabel='Loss',\
+              savepath='./data/style_transfer/results.png'):
+    fig = plt.figure(figsize=(13,13))
+    ax = fig.add_subplot(111)
+    ax.scatter([i for i in range(len(y_data))], y_data)
+    ax.set_xlabel(xlabel, fontsize=18)
+    ax.set_ylabel(ylabel, fontsize=18)
+    ax.set_title("%s vs %s" % (ylabel, xlabel), fontsize=25)
+    plt.savefig(savepath)
+    return

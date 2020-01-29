@@ -647,13 +647,16 @@ style_transfer.py [-h]
 	[--n_heads N_HEADS]
 	[--batch_size BATCH_SIZE]
 	[--lr_F LR_F]
-	[--lr_D LR_D]
+	[--lr_D LR_D]  
+	[--gradient_acc_steps GRADIENT_ACC_STEPS]  
 	[--num_iters NUM_ITERS]
 	[--save_iters SAVE_ITERS]
 	[--train TRAIN (default:1)]  
 	[--infer INFER (default:1)]
+	[--train_from_checkpoint TRAIN_FROM_CHECKPOINT]  
 	[--checkpoint_Fpath CHECKPOINT_FPATH]
 	[--checkpoint_Dpath CHECKPOINT_DPATH]
+	[--checkpoint_config CHECKPOINT_CONFIG]
 ```
 
 Inference after training (see style_transfer.py),
@@ -662,7 +665,7 @@ inferer.infer_sentence(sent='The food here is really good.', target_style=0)
 ```
 Sample output:
 ```bash
-the food here is really limited .
+the food here is really unclean .
 ```
 ### Pre-trained models & example dataset
 Download and zip contents of downloaded folder into ./data/ folder.

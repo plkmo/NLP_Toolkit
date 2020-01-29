@@ -5,6 +5,7 @@ import numpy as np
 from torch import nn, optim
 #from tensorboardX import SummaryWriter
 from torch.nn.utils import clip_grad_norm_
+from .add_misc.misc import save_as_pickle, load_pickle, plot_save
 
 from .evaluator import Evaluator
 from .utils import tensor2text, calc_ppl, idx2onehot, add_noise, word_drop
@@ -39,7 +40,7 @@ def batch_preprocess(batch, pad_idx, eos_idx, reverse=False):
     return tokens, lengths, styles
         
 
-def d_step(config, vocab, model_F, model_D, optimizer_D, batch, temperature):
+def d_step(config, vocab, model_F, model_D, optimizer_D, batch, temperature, idx):
     model_F.eval()
     pad_idx = vocab.stoi['<pad>']
     eos_idx = vocab.stoi['<eos>']
@@ -114,16 +115,19 @@ def d_step(config, vocab, model_F, model_D, optimizer_D, batch, temperature):
     adv_loss = adv_loss.sum() / batch_size
     loss = adv_loss
     
-    optimizer_D.zero_grad()
+    if (idx % config.gradient_acc_steps) == 0:
+        optimizer_D.zero_grad()
+    loss = loss/config.gradient_acc_steps
     loss.backward()
     clip_grad_norm_(model_D.parameters(), 5)
-    optimizer_D.step()
+    if (idx % config.gradient_acc_steps) == 0:
+        optimizer_D.step()
 
     model_F.train()
 
-    return adv_loss.item()
+    return loss.item()
 
-def f_step(config, vocab, model_F, model_D, optimizer_F, batch, temperature, drop_decay,
+def f_step(config, vocab, model_F, model_D, optimizer_F, batch, temperature, drop_decay, idx,
            cyc_rec_enable=True):
     model_D.eval()
     
@@ -137,9 +141,10 @@ def f_step(config, vocab, model_F, model_D, optimizer_F, batch, temperature, dro
     rev_styles = 1 - raw_styles
     batch_size = inp_tokens.size(0)
     token_mask = (inp_tokens != pad_idx).float()
-
-    optimizer_F.zero_grad()
-
+    
+    if (idx % config.gradient_acc_steps) == 0:
+        optimizer_F.zero_grad()
+        
     # self reconstruction loss
 
     noise_inp_tokens = word_drop(
@@ -164,12 +169,14 @@ def f_step(config, vocab, model_F, model_D, optimizer_F, batch, temperature, dro
     slf_rec_loss = slf_rec_loss.sum() / batch_size
     slf_rec_loss *= config.slf_factor
     
+    slf_rec_loss = (slf_rec_loss/config.gradient_acc_steps)
     slf_rec_loss.backward()
 
     # cycle consistency loss
 
     if not cyc_rec_enable:
-        optimizer_F.step()
+        if (idx % config.gradient_acc_steps) == 0:
+            optimizer_F.step()
         model_D.train()
         return slf_rec_loss.item(), 0, 0
     
@@ -210,19 +217,23 @@ def f_step(config, vocab, model_F, model_D, optimizer_F, batch, temperature, dro
     adv_loss = loss_fn(adv_log_porbs, adv_labels)
     adv_loss = adv_loss.sum() / batch_size
     adv_loss *= config.adv_factor
-        
+     
+    cyc_rec_loss = cyc_rec_loss/config.gradient_acc_steps
+    adv_loss = adv_loss/config.gradient_acc_steps
     (cyc_rec_loss + adv_loss).backward()
         
     # update parameters
     
     clip_grad_norm_(model_F.parameters(), 5)
-    optimizer_F.step()
+    
+    if (idx % config.gradient_acc_steps) == 0:
+        optimizer_F.step()
 
     model_D.train()
 
     return slf_rec_loss.item(), cyc_rec_loss.item(), adv_loss.item()
 
-def train(config, vocab, model_F, model_D, train_iters, dev_iters, test_iters):
+def train(config, vocab, model_F, model_D, train_iters, dev_iters, test_iters, start_idx=0):
     optimizer_F = optim.Adam(model_F.parameters(), lr=config.lr_F, weight_decay=config.L2)
     optimizer_D = optim.Adam(model_D.parameters(), lr=config.lr_D, weight_decay=config.L2)
 
@@ -232,29 +243,38 @@ def train(config, vocab, model_F, model_D, train_iters, dev_iters, test_iters):
     his_f_adv_loss = []
     
     #writer = SummaryWriter(config.log_dir)
-    global_step = 0
+    global_step = start_idx
     model_F.train()
     model_D.train()
-
-    config.save_folder = config.save_path + '/' + str(time.strftime('%b%d%H%M%S', time.localtime()))
-    os.makedirs(config.save_folder)
-    os.makedirs(config.save_folder + '/ckpts')
-    print('Save Path:', config.save_folder)
-
-    print('Model F pretraining......')
-    for i, batch in enumerate(train_iters):
-        if i >= config.F_pretrain_iter:
-            break
-        slf_loss, cyc_loss, _ = f_step(config, vocab, model_F, model_D, optimizer_F, batch, 1.0, 1.0, False)
-        his_f_slf_loss.append(slf_loss)
-        his_f_cyc_loss.append(cyc_loss)
-
-        if (i + 1) % 10 == 0:
-            avrg_f_slf_loss = np.mean(his_f_slf_loss)
-            avrg_f_cyc_loss = np.mean(his_f_cyc_loss)
-            his_f_slf_loss = []
-            his_f_cyc_loss = []
-            print('[iter: {}] slf_loss:{:.4f}, rec_loss:{:.4f}'.format(i + 1, avrg_f_slf_loss, avrg_f_cyc_loss))
+    
+    if global_step == 0:
+        config.save_folder = config.save_path + '/' + str(time.strftime('%b%d%H%M%S', time.localtime()))
+        os.makedirs(config.save_folder)
+        os.makedirs(config.save_folder + '/ckpts')
+        save_as_pickle(config.save_folder + '/config.pkl', config, base=True)
+        print('Save Path:', config.save_folder)
+    
+    if global_step == 0:
+        print('Model F pretraining......')
+        slf_loss_c, cyc_loss_c = 0, 0
+        for i, batch in enumerate(train_iters):
+            if i >= config.F_pretrain_iter:
+                break
+            slf_loss, cyc_loss, _ = f_step(config, vocab, model_F, model_D, optimizer_F, batch, 1.0, 1.0, False)
+            slf_loss_c += slf_loss
+            cyc_loss_c += cyc_loss
+            
+            if (i % config.gradient_acc_steps) == 0:
+                his_f_slf_loss.append(slf_loss_c)
+                his_f_cyc_loss.append(cyc_loss_c)
+                slf_loss_c, cyc_loss_c = 0, 0
+    
+            if (i + 1) % 10 == 0:
+                avrg_f_slf_loss = np.mean(his_f_slf_loss)
+                avrg_f_cyc_loss = np.mean(his_f_cyc_loss)
+                his_f_slf_loss = []
+                his_f_cyc_loss = []
+                print('[iter: {}] slf_loss:{:.4f}, rec_loss:{:.4f}'.format(i + 1, avrg_f_slf_loss, avrg_f_cyc_loss))
 
     
     print('Training start......')
@@ -270,27 +290,55 @@ def train(config, vocab, model_F, model_D, train_iters, dev_iters, test_iters):
                 k = (step - s_a) / (s_b - s_a)
                 temperature = (1 - k) * t_a + k * t_b
                 return temperature
+            
     batch_iters = iter(train_iters)
+    if global_step == 0:
+        avrg_d_adv_loss_l, avrg_f_slf_loss_l, avrg_f_cyc_loss_l, avrg_f_adv_loss_l = [], [], [], []
+    else:
+        if os.path.isfile(config.save_folder + '/avrg_d_adv_loss_l.pkl') and \
+            os.path.isfile(config.save_folder + '/avrg_f_slf_loss_l.pkl') and \
+            os.path.isfile(config.save_folder + '/avrg_f_cyc_loss_l.pkl') and \
+            os.path.isfile(config.save_folder + '/avrg_f_adv_loss_l.pkl'):
+            avrg_d_adv_loss_l = load_pickle(config.save_folder + '/avrg_d_adv_loss_l.pkl', base=True)
+            avrg_f_slf_loss_l = load_pickle(config.save_folder + '/avrg_f_slf_loss_l.pkl', base=True)
+            avrg_f_cyc_loss_l = load_pickle(config.save_folder + '/avrg_f_cyc_loss_l.pkl', base=True)
+            avrg_f_adv_loss_l = load_pickle(config.save_folder + '/avrg_f_adv_loss_l.pkl', base=True)
+        else:
+            avrg_d_adv_loss_l, avrg_f_slf_loss_l, avrg_f_cyc_loss_l, avrg_f_adv_loss_l = [], [], [], []
+            
     while True:
         drop_decay = calc_temperature(config.drop_rate_config, global_step)
         temperature = calc_temperature(config.temperature_config, global_step)
         batch = next(batch_iters)
         
-        for _ in range(config.iter_D):
+        d_adv_loss_c, f_slf_loss_c, f_cyc_loss_c, f_adv_loss_c = 0, 0, 0, 0
+        for idx in range(config.iter_D):
             batch = next(batch_iters)
             d_adv_loss = d_step(
-                config, vocab, model_F, model_D, optimizer_D, batch, temperature
+                config, vocab, model_F, model_D, optimizer_D, batch, temperature, idx
             )
-            his_d_adv_loss.append(d_adv_loss)
+            d_adv_loss_c += d_adv_loss
+            if (idx % config.gradient_acc_steps) == 0:
+                his_d_adv_loss.append(d_adv_loss_c)
+                d_adv_loss_c = 0
             
-        for _ in range(config.iter_F):
+        for idx in range(config.iter_F):
             batch = next(batch_iters)
             f_slf_loss, f_cyc_loss, f_adv_loss = f_step(
-                config, vocab, model_F, model_D, optimizer_F, batch, temperature, drop_decay
+                config, vocab, model_F, model_D, optimizer_F, batch, temperature, drop_decay, idx
             )
-            his_f_slf_loss.append(f_slf_loss)
-            his_f_cyc_loss.append(f_cyc_loss)
-            his_f_adv_loss.append(f_adv_loss)
+            f_slf_loss_c += f_slf_loss
+            f_cyc_loss_c += f_cyc_loss
+            f_adv_loss_c += f_adv_loss
+            if (idx % config.gradient_acc_steps) == 0:
+                his_f_slf_loss.append(f_slf_loss_c)
+                f_slf_loss_c = 0
+                
+                his_f_cyc_loss.append(f_cyc_loss_c)
+                f_cyc_loss_c = 0
+                
+                his_f_adv_loss.append(f_adv_loss_c)
+                f_adv_loss_c = 0
             
         
         global_step += 1
@@ -303,6 +351,11 @@ def train(config, vocab, model_F, model_D, train_iters, dev_iters, test_iters):
             avrg_f_slf_loss = np.mean(his_f_slf_loss)
             avrg_f_cyc_loss = np.mean(his_f_cyc_loss)
             avrg_f_adv_loss = np.mean(his_f_adv_loss)
+            
+            avrg_d_adv_loss_l.append(avrg_d_adv_loss)
+            avrg_f_slf_loss_l.append(avrg_f_slf_loss)
+            avrg_f_cyc_loss_l.append(avrg_f_cyc_loss)
+            avrg_f_adv_loss_l.append(avrg_f_adv_loss)
             log_str = '[iter {}] d_adv_loss: {:.4f}  ' + \
                       'f_slf_loss: {:.4f}  f_cyc_loss: {:.4f}  ' + \
                       'f_adv_loss: {:.4f}  temp: {:.4f}  drop: {:.4f}'
@@ -321,12 +374,26 @@ def train(config, vocab, model_F, model_D, train_iters, dev_iters, test_iters):
             #save model
             torch.save(model_F.state_dict(), config.save_folder + '/ckpts/' + str(global_step) + '_F.pth')
             torch.save(model_D.state_dict(), config.save_folder + '/ckpts/' + str(global_step) + '_D.pth')
+            save_as_pickle(config.save_folder + '/avrg_d_adv_loss_l.pkl', avrg_d_adv_loss_l, base=True)
+            save_as_pickle(config.save_folder + '/avrg_f_slf_loss_l.pkl', avrg_f_slf_loss_l, base=True)
+            save_as_pickle(config.save_folder + '/avrg_f_cyc_loss_l.pkl', avrg_f_cyc_loss_l, base=True)
+            save_as_pickle(config.save_folder + '/avrg_f_adv_loss_l.pkl', avrg_f_adv_loss_l, base=True)
             #auto_eval(config, vocab, model_F, test_iters, global_step, temperature)
             #for path, sub_writer in writer.all_writers.items():
             #    sub_writer.flush()
             
         if global_step == config.num_iters:
             print("Training completed: %d global steps." % global_step)
+            print("Saving results plots...")
+            plot_save(avrg_d_adv_loss_l, xlabel='Epoch', ylabel='d_adv loss',\
+                      savepath=config.save_folder + '/d_adv_loss.png')
+            plot_save(avrg_f_slf_loss_l, xlabel='Epoch', ylabel='f_slf loss',\
+                      savepath=config.save_folder + '/f_slf_loss.png')
+            plot_save(avrg_f_cyc_loss_l, xlabel='Epoch', ylabel='f_cyc loss',\
+                      savepath=config.save_folder + '/f_cyc_loss.png')
+            plot_save(avrg_f_adv_loss_l, xlabel='Epoch', ylabel='f_adv loss',\
+                      savepath=config.save_folder + '/f_adv_loss.png')
+            print("Done saving.")
             break
 
 def auto_eval(config, vocab, model_F, test_iters, global_step, temperature):

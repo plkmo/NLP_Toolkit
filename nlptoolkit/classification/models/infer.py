@@ -45,6 +45,20 @@ class infer_from_trained(object):
             model_type = 'xlnet-base-cased'
             lower_case = False
             
+        elif self.args.model_no == 4:
+            from .ALBERT.tokenization_albert import AlbertTokenizer as model_tokenizer
+            from .ALBERT.ALBERT import AlbertForSequenceClassification as net
+            from .ALBERT.train_funcs import load_state
+            model_type = 'albert-base-v2'
+            lower_case = False
+            
+        elif self.args.model_no == 5:
+            from .XLMRoBERTa.tokenization_xlm_roberta import XLMRobertaTokenizer as model_tokenizer
+            from .XLMRoBERTa.XLMRoBERTa import XLMRobertaForSequenceClassification as net
+            from .XLMRoBERTa.train_funcs import load_state
+            model_type = 'xlm-roberta-base'
+            lower_case = False
+            
         self.tokenizer = model_tokenizer.from_pretrained(model_type, do_lower_case=lower_case)
         self.tokens_length = args.tokens_length # max tokens length
         
@@ -67,6 +81,9 @@ class infer_from_trained(object):
             src_mask = src_mask.cuda()
         if self.args.model_no == 1:
             outputs = self.net(sentence, token_type_ids=type_ids, attention_mask=src_mask)
+        elif self.args.model_no in [4, 5]:
+            outputs = self.net(sentence, token_type_ids=type_ids, attention_mask=src_mask)
+            outputs = outputs[0]
         else:
             outputs, _ = self.net(sentence, token_type_ids=type_ids, attention_mask=src_mask)
         _, predicted = torch.max(outputs.data, 1)

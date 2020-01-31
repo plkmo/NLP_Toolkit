@@ -5,9 +5,9 @@ Created on Wed Sep 11 15:55:15 2019
 @author: tsd
 """
 import torch
-from .tokenization_xlnet import XLNetTokenizer
+from .tokenization_albert import AlbertTokenizer
 from .preprocessing_funcs import save_as_pickle, load_pickle
-from .XLNet import XLNetForSequenceClassification
+from .ALBERT import AlbertForSequenceClassification
 import logging
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
@@ -19,8 +19,8 @@ class XLNet_infer(object):
         super(XLNet_infer, self).__init__()
         logger.info("Loading fine-tuned XLNet...")
         self.args = load_pickle("./data/args.pkl")
-        self.net = XLNetForSequenceClassification.from_pretrained('xlnet-base-cased', num_labels=self.args.num_classes)
-        self.tokenizer = XLNetTokenizer.from_pretrained('xlnet-base-cased', do_lower_case=False)
+        self.net = AlbertForSequenceClassification.from_pretrained('albert-base-v2', num_labels=self.args.num_classes)
+        self.tokenizer = AlbertTokenizer.from_pretrained('albert-base-v2', do_lower_case=False)
         logger.info("Done!")
         
     def classify(self, text=None):

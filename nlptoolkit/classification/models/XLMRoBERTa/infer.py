@@ -5,9 +5,9 @@ Created on Wed Sep 11 15:55:15 2019
 @author: tsd
 """
 import torch
-from .tokenization_xlnet import XLNetTokenizer
+from .tokenization_xlm_roberta import XLMRobertaTokenizer
 from .preprocessing_funcs import save_as_pickle, load_pickle
-from .XLNet import XLNetForSequenceClassification
+from .XLMRoBERTa import XLMRobertaForSequenceClassification
 import logging
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
@@ -19,8 +19,8 @@ class XLNet_infer(object):
         super(XLNet_infer, self).__init__()
         logger.info("Loading fine-tuned XLNet...")
         self.args = load_pickle("./data/args.pkl")
-        self.net = XLNetForSequenceClassification.from_pretrained('xlnet-base-cased', num_labels=self.args.num_classes)
-        self.tokenizer = XLNetTokenizer.from_pretrained('xlnet-base-cased', do_lower_case=False)
+        self.net = XLMRobertaForSequenceClassification.from_pretrained('xlm-roberta-base', num_labels=self.args.num_classes)
+        self.tokenizer = XLMRobertaTokenizer.from_pretrained('xlm-roberta-base', do_lower_case=False)
         logger.info("Done!")
         
     def classify(self, text=None):

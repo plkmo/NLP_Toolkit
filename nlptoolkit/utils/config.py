@@ -5,6 +5,9 @@ Created on Fri Oct 11 16:01:31 2019
 
 @author: weetee
 """
+import sys
+sys.path.insert(1, '../')
+from style_transfer.add_misc.misc import Config as style_config
 
 class Config(object):
     def __init__(self, task):
@@ -163,3 +166,6 @@ class Config(object):
         
         elif task == 'generation':
             self.model_no = 0
+            
+        elif task == 'style_transfer':
+            cls = style_config()

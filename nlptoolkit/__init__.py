@@ -6,4 +6,5 @@ from . import pos
 from . import punctuation_restoration
 from . import summarization
 from . import translation
+from . import style_transfer
 from . import utils

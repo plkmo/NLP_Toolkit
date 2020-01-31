@@ -30,7 +30,7 @@ For ASR: librosa==0.7.0 ; soundfile==0.10.2
 For Unsupervised Style Transfer: fasttext == 0.8.3 ; kenlm (for evaluation only)  
 For more details, see requirements.txt
 
-** Pre-trained PyTorch models (XLNet, BERT, GPT-2, CTRL) are courtesy of huggingface (https://github.com/huggingface/pytorch-transformers)  
+** Pre-trained PyTorch models (XLNet, BERT, GPT-2, CTRL, XLMRoBERTa, ALBERT) are courtesy of huggingface (https://github.com/huggingface/pytorch-transformers)  
 ** GAT model adapted from https://github.com/Diego999/pyGAT  
 ** Style-Transformer training codes adapted from https://github.com/fastnlp/style-transformer  
 
@@ -50,10 +50,12 @@ Alternatively, you can just use it as a non-packaged repo after git clone.
 
 ## 1) Classification
 The goal of classification is to segregate documents into appropriate classes based on their text content. Currently, the classification toolkit uses the following models:
-1. Text-based Graph Convolution Networks (GCN)
-2. Bidirectional Encoder Representations from Transformers (BERT)
-3. XLNet
-4. Graph Attention Network (GAT)
+1. Text-based Graph Convolution Networks (GCN) (model_no: 0)
+2. Bidirectional Encoder Representations from Transformers (BERT) (model_no: 1)
+3. XLNet (model_no: 2)
+4. Graph Attention Network (GAT) (model_no: 3)
+5. ALBERT (model_no: 4)
+6. XLMRoBERTa (model_no: 5)
 
 ### Format of datasets files
 The training data (default: train.csv) should be formatted into two columns 'text' and 'label' respectively, with rows being the documents index. 'text' contains the raw text and 'label' contains the corresponding label (integers 0, 1, 2... depending on the number of classes)
@@ -132,8 +134,8 @@ Download and zip contents of downloaded folder into ./data/ folder.
 
 ## 2) Automatic Speech Recognition
 Automatic Speech Recognition (ASR) aims to convert audio signals into text. This library contains the following models for ASR: 
-1. Speech-Transformer
-2. Listen-Attend-Spell (LAS)
+1. Speech-Transformer (model_no: 0)
+2. Listen-Attend-Spell (LAS) (model_no: 1)
 
 ### Format of dataset files
 The folder containing the dataset should have the following structure: folder/speaker/chapter
@@ -175,8 +177,8 @@ speech.py [-h]
 
 ## 3) Text Summarization
 Text summarization aims to distil a paragraph chunk into a few sentences that capture the essential information. This library contains the following models for text summarization: 
-1. Convolutional Transformer 
-2. Seq2Seq (LAS architecture)
+1. Convolutional Transformer (model_no: 0)
+2. Seq2Seq (LAS architecture) (model_no: 1)
 
 ### Format of dataset files
 One .csv file for each text/summary pair. Within the text/summary .csv file, text is followed by summary, with summary points annotated by @highlights (summary)
@@ -243,7 +245,7 @@ inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt"
 
 ## 4) Machine Translation
 The goal of machine translation is to translate text from one form of language to another. This library contains the following models to accomplish this:
-1. Transformer
+1. Transformer (model_no: 0)
 
 Currently supports translation between: English (en), French (fr), Chinese (zh)
 
@@ -321,8 +323,8 @@ Download and zip contents of downloaded folder into ./data/ folder.
 
 ## 5) Natural Language Generation
 Natural Language generation (NLG) aims to generate text based on past context. For instance, a chatbot can generate text replies based on the context of chat history. We currently have the following models for NLG:
-1. Generative Pre-trained Transformer 2 (GPT 2)
-2. Conditional Transformer Language Model (CTRL)
+1. Generative Pre-trained Transformer 2 (GPT 2) (model_no: 0)
+2. Conditional Transformer Language Model (CTRL) (model_no: 1)
 
 ### Format of dataset files
 1. Generate free text from GPT 2 pre-trained models
@@ -377,8 +379,8 @@ August 16, 1950
 
 ## 6) Punctuation Restoration
 Given unpunctuated (and perhaps un-capitalized) text, punctuation restoration aims to restore the punctuation of the text for easier readability. Applications include punctuating raw transcripts from audio speech data etc. Currently supports the following models:
-1. Transformer (PuncTransformer)
-2. Bi-LSTM with attention (PuncLSTM)
+1. Transformer (PuncTransformer) (model_no: 0)
+2. Bi-LSTM with attention (PuncLSTM) (model_no: 1)
 
 ### Format of dataset files
 Currently only supports TED talk transcripts format, whereby punctuated text is annotated by \<transcripts\> tags. Eg. \<transcript\> "punctuated text" \</transcript\>. The "punctuated text" is preprocessed and then used for training.
@@ -453,7 +455,7 @@ Download and zip contents of downloaded folder into ./data/ folder.
 
 ## 7) Named Entity Recognition
 In Named entity recognition (NER), the task is to recognise entities such as persons, organisations. Current models for this task: 
-1. BERT
+1. BERT (model_no: 0)
 
 ### Format of dataset files
 Dataset format for both train & test follows the Conll2003 dataset format. Specifically, each row in the .txt file follows the following format:
@@ -546,7 +548,7 @@ Download and zip contents of downloaded folder into ./data/ folder.
 
 ## 8) POS Tagging
 In Parts-of-speech tagging, each word in a sentence is assigned a tag that indicates its grammatical role. Current models for this task: 
-1. BERT
+1. BERT (model_no: 0)
 
 ### Format of dataset files
 Dataset format for both train & test follows the Conll2003 dataset format. Specifically, each row in the .txt file follows the following format:

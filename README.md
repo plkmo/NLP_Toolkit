@@ -56,6 +56,7 @@ The goal of classification is to segregate documents into appropriate classes ba
 4. Graph Attention Network (GAT) (model_no: 3)
 5. ALBERT (model_no: 4)
 6. XLMRoBERTa (model_no: 5)
+7. Graph Isomorphism Network (GIN) (model_no: 6)
 
 ### Format of datasets files
 The training data (default: train.csv) should be formatted into two columns 'text' and 'label' respectively, with rows being the documents index. 'text' contains the raw text and 'label' contains the corresponding label (integers 0, 1, 2... depending on the number of classes)
@@ -729,6 +730,9 @@ Download and zip contents of downloaded folder into ./data/ folder.
 8. HuggingFace's Transformers: State-of-the-art Natural Language Processing, Thomas Wolf et al, https://arxiv.org/abs/1910.03771
 9. Graph Attention Networks, Petar et al, https://arxiv.org/pdf/1710.10903.pdf
 10. Style Transformer: Unpaired Text Style Transfer without Disentangled Latent Representation, Ning et al, https://arxiv.org/abs/1905.05621
+11. ALBERT: A Lite BERT for Self-supervised Learning of Language Representations, Zhenzhong Lan et al, https://arxiv.org/abs/1909.11942
+12. Unsupervised Cross-lingual Representation Learning at Scale, Alexis Conneau et al, https://arxiv.org/pdf/1911.02116.pdf
+13. How Powerful Are Graph Neural Networks?, Keyulu Xu et al, https://arxiv.org/pdf/1810.00826.pdf
 
 ---
 

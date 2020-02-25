@@ -50,10 +50,10 @@ def main(config):
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("--data_path", type=str, default='./data/style_transfer/yelp/',\
+    parser.add_argument("--data_path", type=str, default='./data/style_transfer/',\
                         help="Full path to style-transfer dataset")
     parser.add_argument("--num_classes", type=int, default=2, help="Number of style transfer classes")
-    parser.add_argument("--max_features_length", type=int, default=32, help="Max length of features")
+    parser.add_argument("--max_features_length", type=int, default=30, help="Max length of features")
     parser.add_argument("--d_model", type=int, default=264, help="Transformer model dimension")
     parser.add_argument("--num", type=int, default=4, help="Transformer number of layers per block")
     parser.add_argument("--n_heads", type=int, default=4, help="Transformer number of attention heads")
@@ -64,9 +64,9 @@ if __name__ == "__main__":
     parser.add_argument("--num_iters", type=int, default=3000, help="No of training iterations")
     parser.add_argument("--save_iters", type=int, default=100, help="No of iterations per checkpoint saving")
     
-    parser.add_argument("--train", type=int, default=1, help="Train model on dataset")
+    parser.add_argument("--train", type=int, default=0, help="Train model on dataset")
     parser.add_argument("--infer", type=int, default=1, help="Infer input sentence labels from trained model")
-    parser.add_argument("--train_from_checkpoint", type=int, default=1, help="0: Start new training ; 1: Start training from checkpoint")
+    parser.add_argument("--train_from_checkpoint", type=int, default=0, help="0: Start new training ; 1: Start training from checkpoint")
     parser.add_argument("--checkpoint_Fpath", type=str, default='./data/style_transfer/Jan28083632/ckpts/3000_F.pth',\
                         help="Full path to style-transfer F checkpoint (for inference)")
     parser.add_argument("--checkpoint_Dpath", type=str, default='./data/style_transfer/Jan28083632/ckpts/3000_D.pth',\

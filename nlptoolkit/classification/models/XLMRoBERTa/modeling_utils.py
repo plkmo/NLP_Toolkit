@@ -284,6 +284,9 @@ class PreTrainedModel(nn.Module, ModuleUtilsMixin):
         # Only save the model itself if we are using distributed training
         model_to_save = self.module if hasattr(self, "module") else self
 
+        # Attach architecture to the config
+        model_to_save.config.architectures = [model_to_save.__class__.__name__]
+
         # Save configuration file
         model_to_save.config.save_pretrained(save_directory)
 
@@ -583,7 +586,7 @@ class PreTrainedModel(nn.Module, ModuleUtilsMixin):
         self,
         input_ids=None,
         max_length=None,
-        do_sample=None,
+        do_sample=True,
         num_beams=None,
         temperature=None,
         top_k=None,
@@ -614,7 +617,7 @@ class PreTrainedModel(nn.Module, ModuleUtilsMixin):
                 The max length of the sequence to be generated.  Between 1 and infinity. Default to 20.
 
             do_sample: (`optional`) bool
-                If set to `False` greedy decoding is used. Otherwise sampling is used. Default to greedy sampling.
+                If set to `False` greedy decoding is used. Otherwise sampling is used. Defaults to `True`.
 
             num_beams: (`optional`) int
                 Number of beams for beam search. Must be between 1 and infinity. 1 means no beam search. Default to 1.

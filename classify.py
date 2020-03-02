@@ -42,7 +42,7 @@ if __name__ == "__main__":
     parser.add_argument('--nb_heads', type=int, default=8, help='Number of head attentions for GAT')
     parser.add_argument("--tokens_length", type=int, default=200, help="Max tokens length for BERT")
     parser.add_argument("--num_classes", type=int, default=66, help="Number of prediction classes (starts from integer 0)")
-    parser.add_argument("--train_test_split", type=int, default=0, help="0: No, 1: Yes (Only activate if infer.csv contains labelled data)")
+    parser.add_argument("--train_test_split", type=int, default=1, help="0: No, 1: Yes (Only activate if infer.csv contains labelled data)")
     parser.add_argument("--test_ratio", type=float, default=0.1, help="GCN: Ratio of test to training nodes")
     parser.add_argument("--batch_size", type=int, default=32, help="Training batch size")
     parser.add_argument("--gradient_acc_steps", type=int, default=2, help="No. of steps of gradient accumulation")
@@ -58,7 +58,7 @@ if __name__ == "__main__":
                                                                             \n5: XLMRoBERTa''')
     
     parser.add_argument("--train", type=int, default=1, help="Train model on dataset")
-    parser.add_argument("--infer", type=int, default=0, help="Infer input sentence labels from trained model")
+    parser.add_argument("--infer", type=int, default=1, help="Infer input sentence labels from trained model")
     args = parser.parse_args()
     save_as_pickle("args.pkl", args)
     

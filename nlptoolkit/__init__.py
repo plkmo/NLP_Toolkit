@@ -1,5 +1,6 @@
 from . import ASR
 from . import classification
+from . import clustering
 from . import generation
 from . import ner
 from . import pos

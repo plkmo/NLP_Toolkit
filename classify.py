@@ -55,7 +55,8 @@ if __name__ == "__main__":
                                                                             \n2: XLNet, 
                                                                             \n3: Graph Attention Network (GAT))
                                                                             \n4: ALBERT
-                                                                            \n5: XLMRoBERTa''')
+                                                                            \n5: XLMRoBERTa
+                                                                            \n6: GIN''')
     
     parser.add_argument("--train", type=int, default=1, help="Train model on dataset")
     parser.add_argument("--infer", type=int, default=1, help="Infer input sentence labels from trained model")

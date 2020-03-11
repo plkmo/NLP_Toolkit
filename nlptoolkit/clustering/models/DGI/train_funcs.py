@@ -9,6 +9,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import torch
+import torch.nn as nn
 from .preprocessing_funcs import load_pickle, save_as_pickle, generate_text_graph
 import logging
 
@@ -16,8 +17,42 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger(__file__)
 
+def get_X_A_hat(G, corrupt=False):
+    A = nx.to_numpy_matrix(G, weight="weight")
+    A = A + np.eye(G.number_of_nodes())
+    X = np.eye(G.number_of_nodes()) # Features are just identity matrix
+    
+    if corrupt:
+        np.random.shuffle(X)
+    
+    degrees = []
+    for d in G.degree(weight=None):
+        if d == 0:
+            degrees.append(0)
+        else:
+            degrees.append(d[1]**(-0.5))
+    degrees = np.diag(degrees)
+    A_hat = degrees@A@degrees
+    
+    X = torch.from_numpy(X).float()
+    A_hat = torch.tensor(A_hat).float()
+    return X, A_hat
 
-def load_datasets(args, train_test_split=0):
+class JSdiv_Loss(nn.Module):
+    def __init__(self):
+        super(JSdiv_Loss, self).__init__()
+        self.BCE_pos = nn.BCELoss(reduction='mean')
+        self.BCE_neg = nn.BCELoss(reduction='mean')
+    
+    def forward(self, D_pos, D_neg):
+        label_pos = torch.ones(D_pos.shape[0])
+        label_neg = torch.zeros(D_neg.shape[0])
+        pos_loss = self.BCE_pos(D_pos, label_pos)
+        neg_loss = self.BCE_neg(D_neg, label_neg)
+        total_loss = 0.5*(pos_loss + neg_loss)
+        return total_loss
+
+def load_datasets(args):
     """Loads dataset and graph if exists, else create and process them from raw data
     Returns --->
     f: torch tensor input of GCN (Identity matrix)
@@ -33,28 +68,13 @@ def load_datasets(args, train_test_split=0):
     graph_path = "./data/text_graph.pkl"
     if not os.path.isfile(df_data_path) or not os.path.isfile(graph_path):
         logger.info("Building datasets and graph from raw data... Note this will take quite a while...")
-        generate_text_graph(args.train_data, args.infer_data, args.max_vocab_len)
+        generate_text_graph(args.train_data, args.max_vocab_len)
     
     G_dict = load_pickle("text_graph.pkl")
     G = G_dict["graph"]
     del G_dict
-    
-    logger.info("Building adjacency and degree matrices...")
-    A = nx.to_numpy_matrix(G, weight="weight"); A = A + np.eye(G.number_of_nodes())
-    degrees = []
-    for d in G.degree(weight=None):
-        if d == 0:
-            degrees.append(0)
-        else:
-            degrees.append(d[1]**(-0.5))
-    degrees = np.diag(degrees)
-    X = np.eye(G.number_of_nodes()) # Features are just identity matrix
-    A_hat = degrees@A@degrees
-    f = X # (n X n) X (n X n) x (n X n) X (n X n) input of net
-    
-    f = torch.from_numpy(f).float()
-    
-    return f, X, A_hat
+
+    return G
     
 def load_state(net, optimizer, scheduler, model_no=0, load_best=False):
     """ Loads saved model and optimizer states if exists """
@@ -81,16 +101,12 @@ def load_state(net, optimizer, scheduler, model_no=0, load_best=False):
 def load_results(model_no=0):
     """ Loads saved results if exists """
     losses_path = "./data/test_losses_per_epoch_%d.pkl" % model_no
-    accuracy_path = "./data/test_accuracy_per_epoch_%d.pkl" % model_no
-    train_accuracy_path = "./data/train_accuracy_per_epoch_%d.pkl" % model_no
-    if os.path.isfile(losses_path) and os.path.isfile(accuracy_path) and os.path.isfile(train_accuracy_path):
-        losses_per_epoch = load_pickle("test_losses_per_epoch_%d.pkl" % model_no)
-        accuracy_per_epoch = load_pickle("test_accuracy_per_epoch_%d.pkl" % model_no)
-        train_accuracy_per_epoch = load_pickle("train_accuracy_per_epoch_%d.pkl" % model_no)
+    if os.path.isfile(losses_path):
+        losses_per_epoch = load_pickle("train_losses_per_epoch_%d.pkl" % model_no)
         logger.info("Loaded results buffer")
     else:
-        losses_per_epoch, train_accuracy_per_epoch, accuracy_per_epoch = [], [], []
-    return losses_per_epoch, train_accuracy_per_epoch, accuracy_per_epoch
+        losses_per_epoch = []
+    return losses_per_epoch
 
 def evaluate(output, labels_e):
     if len(labels_e) == 0:

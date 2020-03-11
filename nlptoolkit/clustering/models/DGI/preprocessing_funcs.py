@@ -60,12 +60,10 @@ def word_word_edges(p_ij):
             word_word.append((w1,w2,{"weight":p_ij.loc[w1,w2]}))
     return word_word
 
-def generate_text_graph(train_data, infer_data, max_vocab_len, window=10):
+def generate_text_graph(train_data, max_vocab_len, window=10):
     """ generates graph based on text corpus (columns = (text, label)); window = sliding window size to calculate point-wise mutual information between words """
     logger.info("Preparing data...")
     df = pd.read_csv(train_data)
-    #infer_idx_start = len(df)
-    #df = pd.concat((df, pd.read_csv(infer_data)), ignore_index=True)
     df.dropna(inplace=True)
 
     stopwords = list(set(nltk.corpus.stopwords.words("english")))

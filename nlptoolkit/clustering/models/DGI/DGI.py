@@ -49,11 +49,11 @@ class DGI(nn.Module):
         for i in range(X.shape[0]):
             pos_d_i = torch.sigmoid(torch.mm(X[i, :].unsqueeze(0), fac))
             pos_D.append(pos_d_i)
-        pos_D = torch.tensor(pos_D, requires_grad=True)
+        pos_D = torch.stack(pos_D, dim=0).squeeze()
         
         neg_D = []
         for i in range(X_c.shape[0]):
             neg_d_i = torch.sigmoid(torch.mm(X_c[i, :].unsqueeze(0), fac))
             neg_D.append(neg_d_i)
-        neg_D = torch.tensor(neg_D, requires_grad=True)
+        neg_D = torch.stack(neg_D, dim=0).squeeze()
         return pos_D, neg_D

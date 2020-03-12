@@ -40,7 +40,7 @@ def train_and_fit(args):
     logger.info("Starting training process...")
     net.train()
     for e in range(start_epoch, args.num_epochs):
-        optimizer.zero_grad()
+        
         X, A_hat = get_X_A_hat(G, corrupt=False)
         X_c, _ = get_X_A_hat(G, corrupt=True)
         
@@ -52,11 +52,12 @@ def train_and_fit(args):
         losses_per_epoch.append(loss.item())
         loss.backward()
         optimizer.step()
+        optimizer.zero_grad()
         
         if (e % 50) == 0:
             print('[Epoch: %d] total loss: %.3f' %
                       (e + 1, losses_per_epoch[-1]))
-            save_as_pickle("test_losses_per_epoch_%d.pkl" % args.model_no, losses_per_epoch)
+            save_as_pickle("train_losses_per_epoch_%d.pkl" % args.model_no, losses_per_epoch)
             torch.save({
                     'epoch': e + 1,\
                     'state_dict': net.state_dict(),\

@@ -47,6 +47,10 @@ class JSdiv_Loss(nn.Module):
     def forward(self, D_pos, D_neg):
         label_pos = torch.ones(D_pos.shape[0])
         label_neg = torch.zeros(D_neg.shape[0])
+        
+        if D_pos.is_cuda:
+            label_pos, label_neg = label_pos.cuda(), label_neg.cuda()
+            
         pos_loss = self.BCE_pos(D_pos, label_pos)
         neg_loss = self.BCE_neg(D_neg, label_neg)
         total_loss = 0.5*(pos_loss + neg_loss)
@@ -100,7 +104,7 @@ def load_state(net, optimizer, scheduler, model_no=0, load_best=False):
 
 def load_results(model_no=0):
     """ Loads saved results if exists """
-    losses_path = "./data/test_losses_per_epoch_%d.pkl" % model_no
+    losses_path = "./data/train_losses_per_epoch_%d.pkl" % model_no
     if os.path.isfile(losses_path):
         losses_per_epoch = load_pickle("train_losses_per_epoch_%d.pkl" % model_no)
         logger.info("Loaded results buffer")

@@ -28,7 +28,8 @@ def train_and_fit(args):
     net = DGI(X.shape[1], args)
     criterion = JSdiv_Loss()
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[1000,2000,3000,4000,5000,6000], gamma=0.77)
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[1000,2000,3000,4000,5000,6000],\
+                                               gamma=0.77)
     
     start_epoch, best_pred = load_state(net, optimizer, scheduler, model_no=args.model_no, load_best=False)
     losses_per_epoch = load_results(model_no=args.model_no)
@@ -54,7 +55,7 @@ def train_and_fit(args):
         optimizer.step()
         optimizer.zero_grad()
         
-        if (e % 50) == 0:
+        if (e % 10) == 0:
             print('[Epoch: %d] total loss: %.3f' %
                       (e + 1, losses_per_epoch[-1]))
             save_as_pickle("train_losses_per_epoch_%d.pkl" % args.model_no, losses_per_epoch)

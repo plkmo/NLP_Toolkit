@@ -22,18 +22,25 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=32, help="Training batch size")
     parser.add_argument("--gradient_acc_steps", type=int, default=2, help="No. of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
-    parser.add_argument("--num_epochs", type=int, default=3000, help="No of epochs")
+    parser.add_argument("--num_epochs", type=int, default=4000, help="No of epochs")
     parser.add_argument("--lr", type=float, default=0.001, help="learning rate")
     parser.add_argument("--model_no", type=int, default=0, help='''Model ID: (0: Deep Graph Infomax (DGI)), 
                                                                             ''')
     
-    parser.add_argument("--train", type=int, default=1, help="Train model on dataset")
+    parser.add_argument("--train", type=int, default=0, help="Train model on dataset")
     parser.add_argument("--infer", type=int, default=1, help="Infer input sentence labels from trained model")
     args = parser.parse_args()
     save_as_pickle("args.pkl", args)
     
-    if args.train:
-        if args.model_no == 0:
-            from nlptoolkit.clustering.models.DGI.trainer import train_and_fit
-        
+    if args.model_no == 0:
+        from nlptoolkit.clustering.models.DGI.trainer import train_and_fit
+        from nlptoolkit.clustering.models.DGI.infer import infer_from_trained
+    
+    if args.train == 1:
         output = train_and_fit(args)
+        
+    if args.infer == 1:
+        inferer = infer_from_trained()
+        inferer.infer_embeddings()
+        inferer.cluster_embeddings(n_start=2, n_stop=66, method='ac')
+        result = inferer.PCA_analyze(n_components=2)

@@ -10,6 +10,7 @@ import pandas as pd
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 import torch
 from .DGI import DGI
 from .train_funcs import load_datasets, get_X_A_hat, load_state
@@ -37,6 +38,9 @@ class infer_from_trained(object):
             self.args = args
         self.cuda = torch.cuda.is_available()
         
+        self.df = load_pickle("df_data.pkl")
+        self.document_nodes = list(self.df.index)
+        
         logger.info("Loading tokenizer and model...")    
         self.G = load_datasets(self.args)
         X, A_hat = get_X_A_hat(self.G, corrupt=False)
@@ -52,6 +56,9 @@ class infer_from_trained(object):
         logger.info("Done!")
     
     def infer_embeddings(self, G=None):
+        '''
+        gets nodes embeddings from trained model
+        '''
         self.net.eval()
         if G == None:
             graph = self.G
@@ -68,24 +75,33 @@ class infer_from_trained(object):
         self.embeddings = self.embeddings.cpu().detach().numpy() if self.cuda else\
                             self.embeddings.detach().numpy()
         
+        self.embeddings = self.embeddings[self.document_nodes] # only interested in documents
         return self.embeddings
             
-    def n_cluster_embeddings(self, n_clusters=3, method='ac'):
+    def n_cluster_embeddings(self, features=None, n_clusters=3, method='ac'):
+        '''
+        clusters the nodes based on embedding features
+        features = None (use DGI generated embeddings)
+        '''
         if method == 'ac':
             clustering = AgglomerativeClustering(n_clusters=n_clusters, affinity='euclidean',\
                                                  linkage='ward')
-            clustering.fit(self.embeddings)
+            clustering.fit(self.embeddings if features is None else features)
             self.labels = clustering.labels_
-            self.score = silhouette_score(self.embeddings, self.labels)
+            self.score = silhouette_score(self.embeddings if features is None else features,\
+                                          self.labels)
         return {'labels': self.labels, 'score': self.score}
     
-    def cluster_embeddings(self, n_start, n_stop, method='ac', plot=True):
+    def cluster_embeddings(self, features=None, n_start=2, n_stop=5, method='ac', plot=True):
+        '''
+        vary cluster n size and plot clustering scores
+        '''
         self.scores = []
         self.n_range = []
         
         logger.info("Clustering by n...")
         for n in tqdm(range(n_start, n_stop + 1)):
-            result = self.n_cluster_embeddings(n_clusters=n, method=method)
+            result = self.n_cluster_embeddings(features=features, n_clusters=n, method=method)
             self.scores.append(result['score'])
             self.n_range.append(n)
         
@@ -102,7 +118,85 @@ class infer_from_trained(object):
             plt.close()
         return
     
-    def PCA_analyze(self, n_components=2):
+    def PCA_analyze(self, n_components=2, plot=True):
+        '''
+        PCA plot
+        '''
         pca = PCA(n_components=n_components)
-        pca_result = pca.fit_transform(self.embeddings)
-        return pca_result
+        pca_embeddings = pca.fit_transform(self.embeddings)
+        
+        if (n_components == 2) and (plot == True):
+            fig = plt.figure(figsize=(13,13))
+            ax = fig.add_subplot(111)
+            ax.scatter(pca_embeddings[:,0], pca_embeddings[:,1], c="red", marker="v", \
+                       label="embedded")
+            ax.set_xlabel("dim-1", fontsize=15)
+            ax.set_ylabel("dim-2", fontsize=15)
+            ax.set_title("PCA plot", fontsize=20)
+            ax.legend(fontsize=20)
+            plt.show()
+            plt.close()
+        return pca, pca_embeddings
+    
+    def plot_TSNE(self, plot=True):
+        '''
+        TSNE plot
+        '''
+        tsne = TSNE()
+        tsne_embeddings = tsne.fit_transform(self.embeddings)
+        
+        if plot:
+            fig = plt.figure(figsize=(13,13))
+            ax = fig.add_subplot(111)
+            ax.scatter(tsne_embeddings[:,0], tsne_embeddings[:,1], c="red", marker="v", \
+                       label="embedded")
+            ax.set_xlabel("dim-1", fontsize=15)
+            ax.set_ylabel("dim-2", fontsize=15)
+            ax.set_title("TSNE plot", fontsize=20)
+            ax.legend(fontsize=20)
+            plt.show()
+            plt.close()
+        return tsne_embeddings
+    
+    def cluster_tsne_embeddings(self, tsne_embeddings,\
+                                n_start=2, n_stop=30, method='ac', plot=True):
+        '''
+        Clusters based using TSNE embeddings on DGI node embeddings
+        '''
+        self.cluster_embeddings(features=tsne_embeddings, n_start=n_start, \
+                                n_stop=n_stop, method=method, plot=plot)
+        
+        # get best n_cluster
+        best_n, best_score = None, -999
+        for n, score in zip(self.n_range, self.scores):
+            if score > best_score:
+                best_score = score
+                best_n = n
+        
+        logger.info("Best cluster size: %d" % best_n)
+        result = self.n_cluster_embeddings(features=tsne_embeddings, \
+                                           n_clusters=best_n, method=method)
+        
+        if plot:
+            fig = plt.figure(figsize=(13,13))
+            ax = fig.add_subplot(111)
+            ax.scatter(tsne_embeddings[:,0], tsne_embeddings[:,1], \
+                       c=result['labels'], marker="v", \
+                       label="embedded labels")
+            ax.set_xlabel("dim-1", fontsize=15)
+            ax.set_ylabel("dim-2", fontsize=15)
+            ax.set_title("TSNE plot (n_cluster = %d)" % best_n, fontsize=20)
+            ax.legend(fontsize=20)
+            plt.show()
+            plt.close()
+        return result
+    
+    def get_clustered_nodes(self, labels):
+        '''
+        gets node clusters based on their labels
+        '''
+        node_clusters = {}
+        self.df['pred'] = labels
+        for label in self.df['pred'].unique():
+            node_clusters[label] = self.df[self.df['pred'] == label]
+        return node_clusters

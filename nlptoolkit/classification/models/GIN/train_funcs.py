@@ -54,6 +54,7 @@ def load_datasets(args, train_test_split=0):
     f = X # (n X n) X (n X n) x (n X n) X (n X n) input of net
     
     if train_test_split == 1:
+        np.random.seed(seed=7)
         logger.info("Splitting labels for training and inferring...")
         ### stratified test samples
         test_idxs = []

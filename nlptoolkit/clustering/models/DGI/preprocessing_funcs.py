@@ -17,6 +17,8 @@ import math
 from tqdm import tqdm
 import logging
 
+tqdm.pandas('prog_bar')
+
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
                     datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 logger = logging.getLogger(__file__)
@@ -63,20 +65,23 @@ def word_word_edges(p_ij):
 def generate_text_graph(train_data, max_vocab_len, window=10):
     """ generates graph based on text corpus (columns = (text, label)); window = sliding window size to calculate point-wise mutual information between words """
     logger.info("Preparing data...")
-    df = pd.read_csv(train_data)
+    df = pd.read_csv(train_data, header=0, sep='\n')
     df.dropna(inplace=True)
 
     stopwords = list(set(nltk.corpus.stopwords.words("english")))
         
     ### tokenize & remove funny characters
-    df["text"] = df["text"].apply(lambda x: nltk.word_tokenize(x)).apply(lambda x: filter_tokens(x, stopwords))
+    df["text_p"] = df["text"].apply(lambda x: nltk.word_tokenize(x)).apply(lambda x: filter_tokens(x, stopwords))
+    df['length'] = df['text_p'].apply(lambda x: len(x))
+    df = df[df['length'] >= (window + 1)] # filter out sents shorter than 4 tokens
+    logger.info("Number of documents: %d" % len(df))
     save_as_pickle("df_data.pkl", df)
     
     ### Tfidf
     logger.info("Calculating Tf-idf...")
     vectorizer = TfidfVectorizer(input="content", max_features=max_vocab_len, tokenizer=dummy_fun, preprocessor=dummy_fun)
-    vectorizer.fit(df["text"])
-    df_tfidf = vectorizer.transform(df["text"])
+    vectorizer.fit(df["text_p"])
+    df_tfidf = vectorizer.transform(df["text_p"])
     df_tfidf = df_tfidf.toarray()
     vocab = vectorizer.get_feature_names()
     vocab = np.array(vocab)
@@ -103,8 +108,13 @@ def generate_text_graph(train_data, max_vocab_len, window=10):
 
     occurrences = np.zeros( (len(names),len(names)) ,dtype=np.int32)
     # Find the co-occurrences:
-    no_windows = 0; logger.info("Calculating co-occurences...")
-    for l in tqdm(df["text"], total=len(df["text"])):
+    no_windows = 0; skipped = 0
+    logger.info("Calculating co-occurences...")
+    for l in tqdm(df["text_p"], total=len(df["text_p"])):
+        if len(l) <= window:
+            skipped += 1
+            continue
+        
         for i in range(len(l)-window):
             no_windows += 1
             d = set(l[i:(i+window)])
@@ -117,7 +127,8 @@ def generate_text_graph(train_data, max_vocab_len, window=10):
 
                 occurrences[i1][i2] += 1
                 occurrences[i2][i1] += 1
-
+    logger.info("Zero co-occurances calculated for %d documents as they are too short!" % skipped)
+    
     logger.info("Calculating PMI*...")
     ### convert to PMI
     p_ij = pd.DataFrame(occurrences, index = names,columns=names)/no_windows

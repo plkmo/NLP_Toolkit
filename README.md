@@ -741,6 +741,7 @@ In order of priority:
 - [ ] Include package usage info for ~~classification~~, ASR, summarization, ~~translation~~, ~~generation~~, ~~punctuation_restoration~~, ~~NER~~, ~~POS~~
 - [ ] Include benchmark results for  ~~classification~~, ASR, summarization, translation, generation, ~~punctuation_restoration~~, ~~NER~~, ~~POS~~
 - [ ] Include pre-trained models + demo based on benchmark datasets for ~~classification~~, ASR, summarization, translation, ~~generation~~, punctuation_restoration, ~~NER~~, ~~POS~~
-- [ ] Include more models for punctuation restoration, translation, NER, POS
-- [ ] Clean up style transfer
+- [ ] ~~Include more models for punctuation restoration, translation, NER, POS~~
+- [ ] ~~Clean up style transfer~~
+- [ ] Document clustering
 

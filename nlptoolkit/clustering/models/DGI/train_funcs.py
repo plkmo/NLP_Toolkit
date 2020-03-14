@@ -72,7 +72,7 @@ def load_datasets(args):
     graph_path = "./data/text_graph.pkl"
     if not os.path.isfile(df_data_path) or not os.path.isfile(graph_path):
         logger.info("Building datasets and graph from raw data... Note this will take quite a while...")
-        generate_text_graph(args.train_data, args.max_vocab_len)
+        generate_text_graph(args.train_data, args.max_vocab_len, window=args.window)
     
     G_dict = load_pickle("text_graph.pkl")
     G = G_dict["graph"]

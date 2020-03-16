@@ -51,6 +51,7 @@ class GIN(nn.Module):
         return self.fc1(X)
     
 class GIN_batched(nn.Module):
+    # TODO - still have to batch according to nearest neighbour!!!!
     def __init__(self, X_size, args, bias=True): # X_size = num features
         super(GIN_batched, self).__init__()
         self.X_size = X_size
@@ -84,11 +85,11 @@ class GIN_batched(nn.Module):
         hv = torch.mm(diag_A, X)
         hu = torch.mm(off_diag_A, X)
         
-        X = torch.mm((torch.diag((self.dum*self.e1).squeeze()) + I), hv) + hu
+        X = torch.mm((torch.diag((dum*self.e1).squeeze()) + I), hv) + hu
         X = self.mlp1(X)
         
         hv = torch.mm(diag_A, X)
         hu = torch.mm(off_diag_A, X)
-        X = torch.mm((torch.diag((self.dum*self.e2).squeeze()) + I), hv) + hu
+        X = torch.mm((torch.diag((dum*self.e2).squeeze()) + I), hv) + hu
         X = self.mlp2(X)
         return self.fc1(X)

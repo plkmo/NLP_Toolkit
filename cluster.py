@@ -17,14 +17,14 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--train_data", type=str, default="./data/train.csv", \
                         help="training data csv file path")
-    parser.add_argument("--window", type=int, default=4, help='Window size to calculate PMI')
+    parser.add_argument("--window", type=int, default=10, help='Window size to calculate PMI')
     parser.add_argument("--max_vocab_len", type=int, default=7000, help="GCN encoder: Max vocab size to consider based on top frequency tokens")
     parser.add_argument("--hidden_size_1", type=int, default=300, help="Size of first GCN encoder hidden weights")
     parser.add_argument("--batch_size", type=int, default=32, help="Training batch size")
     parser.add_argument("--gradient_acc_steps", type=int, default=2, help="No. of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
-    parser.add_argument("--num_epochs", type=int, default=4000, help="No of epochs")
-    parser.add_argument("--lr", type=float, default=0.001, help="learning rate")
+    parser.add_argument("--num_epochs", type=int, default=2400, help="No of epochs")
+    parser.add_argument("--lr", type=float, default=0.0007, help="learning rate")
     parser.add_argument("--model_no", type=int, default=0, help='''Model ID: (0: Deep Graph Infomax (DGI)), 
                                                                             ''')
     
@@ -47,6 +47,6 @@ if __name__ == "__main__":
         pca, pca_embeddings = inferer.PCA_analyze(n_components=2)
         tsne_embeddings = inferer.plot_TSNE(plot=True)
         result = inferer.cluster_tsne_embeddings(tsne_embeddings,\
-                                                 n_start=5, n_stop=30, method='ac', plot=True)
+                                                 n_start=4, n_stop=30, method='ac', plot=True)
         node_clusters = inferer.get_clustered_nodes(result['labels'])
         

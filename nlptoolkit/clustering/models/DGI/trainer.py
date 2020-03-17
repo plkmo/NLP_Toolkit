@@ -24,7 +24,10 @@ def train_and_fit(args):
     
     G = load_datasets(args)
     X, A_hat = get_X_A_hat(G, corrupt=False)
-    #print(labels_selected, labels_not_selected)
+    logger.info("Adj matrix stats (min, max, mean): %.5f, %.5f, %.5f" % (A_hat.min(),\
+                                                                           A_hat.max(),\
+                                                                           A_hat.mean()))
+    
     net = DGI(X.shape[1], args)
     criterion = JSdiv_Loss()
     optimizer = optim.Adam(net.parameters(), lr=args.lr)

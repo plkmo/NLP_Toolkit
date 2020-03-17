@@ -65,7 +65,7 @@ def word_word_edges(p_ij):
 def generate_text_graph(train_data, max_vocab_len, window=10):
     """ generates graph based on text corpus (columns = (text, label)); window = sliding window size to calculate point-wise mutual information between words """
     logger.info("Preparing data...")
-    df = pd.read_csv(train_data, header=0, sep='\n')
+    df = pd.read_csv(train_data, header=0, )#sep='\n')
     df.dropna(inplace=True)
 
     stopwords = list(set(nltk.corpus.stopwords.words("english")))
@@ -108,7 +108,7 @@ def generate_text_graph(train_data, max_vocab_len, window=10):
 
     occurrences = np.zeros( (len(names),len(names)) ,dtype=np.int32)
     # Find the co-occurrences:
-    no_windows = 0; skipped = 0
+    no_windows = 0; skipped = 0; not_in_vocab = 0
     logger.info("Calculating co-occurences...")
     for l in tqdm(df["text_p"], total=len(df["text_p"])):
         if len(l) <= window:
@@ -120,14 +120,23 @@ def generate_text_graph(train_data, max_vocab_len, window=10):
             d = set(l[i:(i+window)])
 
             for w in d:
-                n_i[w] += 1
+                try:
+                    n_i[w] += 1
+                except: # w not in vocab cos limit
+                    continue
+                
             for w1,w2 in combinations(d,2):
-                i1 = word2index[w1]
-                i2 = word2index[w2]
-
-                occurrences[i1][i2] += 1
-                occurrences[i2][i1] += 1
+                if (w1 in names) and (w2 in names):
+                    i1 = word2index[w1]
+                    i2 = word2index[w2]
+    
+                    occurrences[i1][i2] += 1
+                    occurrences[i2][i1] += 1
+                else:
+                    not_in_vocab += 1
+                    pass
     logger.info("Zero co-occurances calculated for %d documents as they are too short!" % skipped)
+    logger.info("No. of skipped co-occurences calculations due to oov: %d" % not_in_vocab)
     
     logger.info("Calculating PMI*...")
     ### convert to PMI

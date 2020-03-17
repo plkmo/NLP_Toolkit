@@ -16,6 +16,7 @@ The purpose of this toolkit is to allow for **easy training/inference of state-o
 7. [Named Entity Recognition](#7-named-entity-recognition)
 8. [Part of Speech Tagging](#8-POS-Tagging)
 9. [Unsupervised Style Transfer](#9-Unsupervised-Style-Transfer)
+10. [Text Clustering](#10-Text-Clustering)
   
 [Benchmark Results](#benchmark-results)  
 [References](#references)
@@ -675,6 +676,45 @@ Download and zip contents of downloaded folder into ./data/ folder.
 1. [Style Transformer](https://drive.google.com/drive/folders/114C1SxBmVpCFxicuSt5gdGi8w4UWNEk6?usp=sharing) (includes dataset & pretrained model)
 ---
 
+## 10) Text Clustering
+Current models:
+1) Deep Graph Infomax  
+### Format of dataset files
+train.csv, with one column labelled 'text', whose rows contain the text of the documents to be clustered.
+
+### Running the model
+Run cluster.py
+```bash
+cluster.py [-h] 
+	[--train_data]   
+	[--window]  
+	[--max_vocab_len]  
+	[--hidden_size_1]  
+	[--batch_size BATCH_SIZE]  
+	[--gradient_acc_steps GRADIENT_ACC_STEPS]  
+	[--max_norm MAX_NORM]
+	[--num_epochs NUM_EPOCHS]  
+	[--lr LR]  
+	[--model_no MODEL_NO]  
+	[--train TRAIN (default:1)]  
+	[--infer INFER (default:1)]
+
+```
+### Analyze clustering results
+```python
+from nlptoolkit.clustering.models.DGI.infer import infer_from_trained
+
+inferer = infer_from_trained()
+inferer.infer_embeddings() # infer node embeddings from trained model
+pca, pca_embeddings = inferer.PCA_analyze(n_components=2) # plot PCA
+tsne_embeddings = inferer.plot_TSNE(plot=True) # plot TSNE
+
+# Do Agglomerative clustering on TSNE embeddings
+result = inferer.cluster_tsne_embeddings(tsne_embeddings,\
+                                         n_start=4, n_stop=30, method='ac', plot=True)
+node_clusters = inferer.get_clustered_nodes(result['labels']) # get clustered nodes
+```
+
 # Benchmark Results
 
 ## 1) Classification (IMDB dataset : 25000 train, 25000 test data points)
@@ -733,6 +773,7 @@ Download and zip contents of downloaded folder into ./data/ folder.
 11. ALBERT: A Lite BERT for Self-supervised Learning of Language Representations, Zhenzhong Lan et al, https://arxiv.org/abs/1909.11942
 12. Unsupervised Cross-lingual Representation Learning at Scale, Alexis Conneau et al, https://arxiv.org/pdf/1911.02116.pdf
 13. How Powerful Are Graph Neural Networks?, Keyulu Xu et al, https://arxiv.org/pdf/1810.00826.pdf
+14. Deep Graph Infomax, Petar et al, https://arxiv.org/abs/1809.10341
 
 ---
 

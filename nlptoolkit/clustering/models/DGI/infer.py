@@ -163,17 +163,22 @@ class infer_from_trained(object):
         '''
         Clusters based using TSNE embeddings on DGI node embeddings
         '''
-        self.cluster_embeddings(features=tsne_embeddings, n_start=n_start, \
-                                n_stop=n_stop, method=method, plot=plot)
+        if n_start != n_stop:
+            self.cluster_embeddings(features=tsne_embeddings, n_start=n_start, \
+                                    n_stop=n_stop, method=method, plot=plot)
+            
+            # get best n_cluster
+            best_n, best_score = None, -999
+            for n, score in zip(self.n_range, self.scores):
+                if score > best_score:
+                    best_score = score
+                    best_n = n
+            
+            logger.info("Best cluster size: %d" % best_n)
         
-        # get best n_cluster
-        best_n, best_score = None, -999
-        for n, score in zip(self.n_range, self.scores):
-            if score > best_score:
-                best_score = score
-                best_n = n
-        
-        logger.info("Best cluster size: %d" % best_n)
+        else:
+            best_n = n_start
+            
         result = self.n_cluster_embeddings(features=tsne_embeddings, \
                                            n_clusters=best_n, method=method)
         

@@ -41,8 +41,8 @@ if __name__ == "__main__":
                         help="Size of first GCN hidden weights")
     parser.add_argument("--hidden_size_2", type=int, default=130, \
                         help="Size of second GCN hidden weights")
-    parser.add_argument('--batched', type=int, default=0,\
-                        help= 'For GIN - 0: no batch training ; 1: Yes')
+    parser.add_argument('--batched', type=int, default=1,\
+                        help= 'For GCN, GIN - 0: no batch training ; 1: Yes')
     parser.add_argument('--hidden', type=int, default=8, help='Number of hidden units for GAT')
     parser.add_argument('--nb_heads', type=int, default=8, help='Number of head attentions for GAT')
     parser.add_argument("--tokens_length", type=int, default=200, help="Max tokens length for BERT")
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=1024, help="Training batch size")
     parser.add_argument("--gradient_acc_steps", type=int, default=2, help="No. of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
-    parser.add_argument("--num_epochs", type=int, default=5300, help="No of epochs")
+    parser.add_argument("--num_epochs", type=int, default=3300, help="No of epochs")
     parser.add_argument("--lr", type=float, default=0.001, help="learning rate")
     parser.add_argument("--use_cuda", type=int, default=0, help="Use cuda for GAT (0: No , 1: Yes)")
     parser.add_argument("--model_no", type=int, default=6, help='''Model ID: (0: Graph Convolution Network (GCN), 

@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from .train_funcs import load_datasets, load_state, load_results, evaluate, infer,\
-                        CosineWithRestarts
+                        CosineWithRestarts, batched_samples
 from .GIN import GIN, GIN_batched
 from .preprocessing_funcs import load_pickle, save_as_pickle
 import matplotlib.pyplot as plt
@@ -32,6 +32,7 @@ def train_and_fit(args):
                   A_hat=A_hat, cuda=cuda, args=args, bias=True)
     elif args.batched == 1:
         net = GIN_batched(X_size=X.shape[1], args=args)
+        train_loader = batched_samples(X, A_hat, args)
         
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
@@ -61,6 +62,7 @@ def train_and_fit(args):
             scheduler.step()
             
         elif args.batched == 1:
+            '''
             skips = 0
             pool = [idx for idx in range(f.shape[0])]
             losses_per_batch = []
@@ -94,7 +96,39 @@ def train_and_fit(args):
                 loss.backward()
                 optimizer.step()
                 scheduler.step()
+               '''
+            skips = 0
+            losses_per_batch = []
+            for eidx, data in enumerate(train_loader):
+                X_batched, A_batched, n_nodes = data
+                if cuda:
+                    X_batched = X_batched.cuda()
+                    
+                selected_batched = list(set(selected).intersection(set(n_nodes)))
+                selected_idx = [selected.index(sb) for sb in selected_batched]
+                sel = []
+                for idx, batch_idx in enumerate(n_nodes):
+                    if batch_idx in selected_batched:
+                        sel.append(idx)
                 
+                if len(selected_batched) == 0:
+                    skips += 1
+                    continue
+                
+                optimizer.zero_grad()
+                output = net(X_batched, A_batched)
+                loss = criterion(output[sel], targets[selected_idx])
+                losses_per_batch.append(loss.item())
+                
+                if eidx % 50 == 0:
+                    logger.info("Batch loss, batch_size (%d/%d): %.5f, %d" % (eidx,\
+                                                            len(train_loader),\
+                                                            losses_per_batch[-1],\
+                                                            len(n_nodes)))
+                
+                loss.backward()
+                optimizer.step()
+            
             logger.info("Skipped batches due to no labels/too few samples in sampled data: %d" % skips)
             av_loss = sum(losses_per_batch)/len(losses_per_batch)
             logger.info('Averaged batch losses: %.3f' % av_loss)

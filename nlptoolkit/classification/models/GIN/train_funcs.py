@@ -9,6 +9,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import torch
+from torch.utils.data import Dataset
 from .preprocessing_funcs import load_pickle, save_as_pickle, generate_text_graph
 import logging
 
@@ -218,3 +219,35 @@ class CosineWithRestarts(torch.optim.lr_scheduler._LRScheduler):
             self._last_restart = step
 
         return lrs
+    
+class batched_samples(Dataset):
+    def __init__(self, X, A_hat, args):
+        super(batched_samples, self).__init__()
+        self.batch_size = args.batch_size
+        self.X = X
+        self.A_hat = A_hat
+        self.nodes = [i for i in range(self.X.shape[0])]
+        
+    def __len__(self):
+        return self.X.shape[0]
+    
+    def sample_nodes(self, idx):
+        n_nodes = []
+        remaining_pool = self.nodes
+        another_idx = idx
+        while len(n_nodes) < self.batch_size:
+            # first get all n-neighbours of node, including itself
+            node_idxs = (self.A_hat > 0.0)[another_idx].squeeze().nonzero()[1].tolist()
+            if node_idxs is not None:
+                n_nodes.extend(node_idxs + [another_idx])
+                n_nodes = list(set(n_nodes))
+            
+            remaining_pool = list(set(remaining_pool).difference(set(n_nodes)))
+            another_idx = np.random.choice(remaining_pool, size=1).item()
+        return n_nodes
+    
+    def __getitem__(self, idx):
+        n_nodes = self.sample_nodes(idx)
+        A_batched = self.A_hat[n_nodes][:, n_nodes]
+        X_batched = torch.tensor(self.X[n_nodes]).float()
+        return X_batched, A_batched, n_nodes

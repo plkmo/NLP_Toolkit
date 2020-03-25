@@ -73,9 +73,9 @@ class GIN_batched(nn.Module):
         dum = torch.ones(size=(1, n_nodes))
         
         I = torch.eye(n_nodes, n_nodes)
-        A_hat = torch.tensor(A_hat, requires_grad=False).float()
+        #A_hat = torch.tensor(A_hat, requires_grad=False).float()
         if X.is_cuda:
-            A_hat = A_hat.cuda()
+            #A_hat = A_hat.cuda()
             I = I.cuda()
             dum = dum.cuda()
             

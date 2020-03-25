@@ -155,17 +155,33 @@ def infer(args, f, test_idxs, net, A_hat):
     return df_results
 
 class batched_samples(Dataset):
-    def __init__(self, X, A_hat, args):
+    def __init__(self, X, A_hat, doc_nodes, args):
         super(batched_samples, self).__init__()
         self.batch_size = args.batch_size
         self.X = X
         self.A_hat = A_hat
         self.nodes = [i for i in range(self.X.shape[0])]
+        self.doc_nodes = doc_nodes
+        
+        self.p_mass = [] # calculate p_mass for importance sampling
+        for node in range(self.A_hat.shape[0]):
+            p = np.linalg.norm(self.A_hat[:, node])**2
+            self.p_mass.append(p)
+        self.p_mass = self.p_mass/sum(self.p_mass)
+        self.p_mass_doc = self.p_mass[:len(self.doc_nodes)]/sum(self.p_mass[:len(self.doc_nodes)])
+        
+        assert len(self.nodes) == len(self.p_mass)
+        assert round(sum(self.p_mass), 7) == 1.0
+        assert len(self.doc_nodes) == len(self.p_mass_doc)
+        assert round(sum(self.p_mass_doc), 7) == 1.0
         
     def __len__(self):
-        return self.X.shape[0]
+        return len(self.doc_nodes)
     
-    def sample_nodes(self, idx):
+    def nn_sample_nodes(self, idx):
+        '''
+        NS-type
+        '''
         n_nodes = []
         remaining_pool = self.nodes
         another_idx = idx
@@ -180,8 +196,17 @@ class batched_samples(Dataset):
             another_idx = np.random.choice(remaining_pool, size=1).item()
         return n_nodes
     
+    def importance_sample_nodes(self, idx):
+        n_doc = np.random.randint(1, int(self.batch_size//2))
+        doc_node_ = np.random.choice(self.doc_nodes, size=n_doc, replace=False,\
+                                     p=self.p_mass_doc).tolist()
+        n_nodes = np.random.choice(self.nodes, size=(self.batch_size - n_doc),\
+                                   p=self.p_mass, replace=False).tolist()
+        return torch.tensor(list(set(n_nodes + doc_node_)))
+    
     def __getitem__(self, idx):
-        n_nodes = self.sample_nodes(idx)
-        A_batched = self.A_hat[n_nodes][:, n_nodes]
-        X_batched = torch.tensor(self.X[n_nodes]).float()
+        n_nodes = self.importance_sample_nodes(idx)
+        A_batched = torch.FloatTensor(self.A_hat[n_nodes][:, n_nodes])
+        X_batched = torch.FloatTensor(self.X[n_nodes])
         return X_batched, A_batched, n_nodes
+    

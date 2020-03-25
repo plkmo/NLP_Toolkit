@@ -9,6 +9,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.utils.data import DataLoader
 from .train_funcs import load_datasets, load_state, load_results, evaluate, infer,\
                         CosineWithRestarts, batched_samples
 from .GIN import GIN, GIN_batched
@@ -31,13 +32,16 @@ def train_and_fit(args):
         net = GIN(X_size=X.shape[1], n_nodes=X.shape[0],\
                   A_hat=A_hat, cuda=cuda, args=args, bias=True)
     elif args.batched == 1:
+        doc_nodes = [a for a in range(len(labels_selected) + len(labels_not_selected))]
         net = GIN_batched(X_size=X.shape[1], args=args)
-        train_loader = batched_samples(X, A_hat, args)
+        train_set = batched_samples(X, A_hat, doc_nodes, args)
+        train_loader = DataLoader(train_set, batch_size=1, shuffle=True, \
+                                  num_workers=0, pin_memory=False)
         
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
     #scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[1000,2000,3000,4000,5000,6000], gamma=0.77)
-    scheduler = CosineWithRestarts(optimizer, T_max=50)
+    scheduler = CosineWithRestarts(optimizer, T_max=300)
     
     start_epoch, best_pred = load_state(net, optimizer, scheduler, model_no=args.model_no, load_best=False)
     losses_per_epoch, evaluation_trained, evaluation_untrained = load_results(model_no=args.model_no)
@@ -99,10 +103,14 @@ def train_and_fit(args):
                '''
             skips = 0
             losses_per_batch = []
+            update_size = len(train_loader)//10
             for eidx, data in enumerate(train_loader):
                 X_batched, A_batched, n_nodes = data
+                X_batched, A_batched, n_nodes = X_batched.squeeze(), A_batched.squeeze(), \
+                                                n_nodes.squeeze().tolist()
                 if cuda:
                     X_batched = X_batched.cuda()
+                    A_batched = A_batched.cuda()
                     
                 selected_batched = list(set(selected).intersection(set(n_nodes)))
                 selected_idx = [selected.index(sb) for sb in selected_batched]
@@ -120,7 +128,7 @@ def train_and_fit(args):
                 loss = criterion(output[sel], targets[selected_idx])
                 losses_per_batch.append(loss.item())
                 
-                if eidx % 50 == 0:
+                if (eidx % update_size) == 0:
                     logger.info("Batch loss, batch_size (%d/%d): %.5f, %d" % (eidx,\
                                                             len(train_loader),\
                                                             losses_per_batch[-1],\
@@ -128,6 +136,7 @@ def train_and_fit(args):
                 
                 loss.backward()
                 optimizer.step()
+                scheduler.step()
             
             logger.info("Skipped batches due to no labels/too few samples in sampled data: %d" % skips)
             av_loss = sum(losses_per_batch)/len(losses_per_batch)
@@ -142,7 +151,7 @@ def train_and_fit(args):
                 if args.batched == 0:
                     pred_labels = net(f)
                 elif args.batched == 1:
-                    pred_labels = net(f, A_hat)
+                    pred_labels = net(f, torch.FloatTensor(A_hat).cuda() if cuda else torch.FloatTensor(A_hat))
                 trained_accuracy = evaluate(pred_labels[selected], labels_selected); untrained_accuracy = evaluate(pred_labels[test_idxs], labels_not_selected)
             evaluation_trained.append((e, trained_accuracy)); evaluation_untrained.append((e, untrained_accuracy))
             print("[Epoch %d]: Evaluation accuracy of trained nodes: %.7f" % (e, trained_accuracy))

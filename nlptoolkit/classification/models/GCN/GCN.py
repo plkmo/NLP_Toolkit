@@ -60,10 +60,6 @@ class gcn_batched(nn.Module):
         
     def forward(self, X, A_hat):
         # must batch sample such that all neighbours are captured
-        A_hat = torch.tensor(A_hat, requires_grad=False).float()
-        if X.is_cuda:
-            A_hat = A_hat.cuda()
-        
         X = torch.mm(X, self.weight)
         if self.bias is not None:
             X = (X + self.bias)
@@ -72,4 +68,4 @@ class gcn_batched(nn.Module):
         if self.bias2 is not None:
             X = (X + self.bias2)
         X = F.relu(torch.mm(A_hat, X))
-        return self.fc(X)
+        return self.fc1(X)

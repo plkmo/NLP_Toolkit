@@ -28,6 +28,27 @@ class GCN(nn.Module):
         X = F.relu(torch.mm(A_hat, X))
         return X
     
+class GCN_batched(nn.Module):
+    def __init__(self, X_size, args, bias=True):
+        super(GCN_batched, self).__init__()
+        self.weight = nn.parameter.Parameter(torch.zeros(size=(X_size, args.hidden_size_1)))
+        var = 2./(self.weight.size(1) + self.weight.size(0))
+        self.weight.data.normal_(0, var)
+
+        if bias:
+            self.bias = nn.parameter.Parameter(torch.zeros(args.hidden_size_1))
+            self.bias.data.normal_(0, var)
+        else:
+            self.register_parameter("bias", None)
+        
+    def forward(self, X, A_hat):
+        # must batch sample such that all neighbours are captured
+        X = torch.mm(X, self.weight)
+        if self.bias is not None:
+            X = (X + self.bias)
+        X = F.relu(torch.mm(A_hat, X))
+        return X
+    
 class GIN(nn.Module):
     def __init__(self, X_size, n_nodes, A_hat, cuda, args, bias=True): # X_size = num features
         super(GIN, self).__init__()
@@ -70,10 +91,62 @@ class GIN(nn.Module):
         X = self.mlp2(X)
         return self.fc1(X)
     
+class GIN_batched(nn.Module):
+    # TODO - still have to batch according to nearest neighbour!!!!
+    def __init__(self, X_size, args, bias=True): # X_size = num features
+        super(GIN_batched, self).__init__()
+        self.X_size = X_size
+        
+        self.e1 = nn.parameter.Parameter(torch.zeros(size=(1, 1))) # size=(self.n_nodes, 1)
+        var = 2./(self.e1.size(1) + self.e1.size(0))
+        self.e1.data.normal_(0, var)
+        self.mlp1 = nn.Linear(self.X_size, self.X_size, bias=bias)
+        
+        self.e2 = nn.parameter.Parameter(torch.zeros(size=(1, 1))) # size=(self.n_nodes, 1)
+        var2 = 2./(self.e2.size(1) + self.e2.size(0))
+        self.e2.data.normal_(0, var2)
+        self.mlp2 = nn.Linear(self.X_size, self.X_size, bias=bias)
+        
+        self.fc1 = nn.Linear(self.X_size, args.num_classes, bias=bias)
+        
+    def forward(self, X, A_hat): ### 2-layer GIN architecture
+        n_nodes = X.shape[0]
+        dum = torch.ones(size=(1, n_nodes))
+        
+        I = torch.eye(n_nodes, n_nodes)
+        #A_hat = torch.tensor(A_hat, requires_grad=False).float()
+        if X.is_cuda:
+            #A_hat = A_hat.cuda()
+            I = I.cuda()
+            dum = dum.cuda()
+            
+        diag_A = torch.diag(A_hat.diag())
+        off_diag_A = A_hat - diag_A
+        
+        hv = torch.mm(diag_A, X)
+        hu = torch.mm(off_diag_A, X)
+        
+        X = torch.mm((torch.diag((dum*self.e1).squeeze()) + I), hv) + hu
+        X = self.mlp1(X)
+        
+        hv = torch.mm(diag_A, X)
+        hu = torch.mm(off_diag_A, X)
+        X = torch.mm((torch.diag((dum*self.e2).squeeze()) + I), hv) + hu
+        X = self.mlp2(X)
+        return self.fc1(X)
+    
 class DGI(nn.Module):
-    def __init__(self, X_size, args, bias=True):
+    def __init__(self, X_size, args, encoder_type='GCN', bias=True):
         super(DGI, self).__init__()
-        self.encoder = GCN(X_size, args, bias=bias)
+        self.encoder_type = encoder_type
+        
+        if self.encoder_type == 'GCN':
+            if args.batched == 0:
+                self.encoder = GCN(X_size, args, bias=bias)
+            else:
+                self.encoder = GCN_batched(X_size, args, bias=bias)
+        elif self.encoder_type == 'GIN':
+            self.encoder = GIN()
         self.D_weight = nn.parameter.Parameter(torch.zeros(size=(args.hidden_size_1,\
                                                                  args.hidden_size_1))) # features X features
          

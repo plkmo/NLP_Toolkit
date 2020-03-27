@@ -8,8 +8,9 @@ import os
 import numpy as np
 import torch
 import torch.optim as optim
-from .train_funcs import load_datasets, get_X_A_hat, JSdiv_Loss,\
-                        load_state, load_results, infer
+from torch.utils.data import DataLoader
+from .train_funcs import load_datasets, X_A_hat, JSdiv_Loss,\
+                        load_state, load_results, infer, batched_samples
 from .DGI import DGI
 from .preprocessing_funcs import load_pickle, save_as_pickle
 import matplotlib.pyplot as plt
@@ -22,13 +23,20 @@ logger = logging.getLogger(__file__)
 def train_and_fit(args):
     cuda = torch.cuda.is_available()
     
-    G = load_datasets(args)
-    X, A_hat = get_X_A_hat(G, corrupt=False)
+    G, doc_nodes = load_datasets(args)
+    X_A = X_A_hat(G)
+    X, A_hat = X_A.get_X_A_hat(corrupt=False)
     logger.info("Adj matrix stats (min, max, mean): %.5f, %.5f, %.5f" % (A_hat.min(),\
                                                                            A_hat.max(),\
                                                                            A_hat.mean()))
     
-    net = DGI(X.shape[1], args)
+    net = DGI(X.shape[1], args, encoder_type='GCN')
+    
+    if args.batched == 1:
+        train_loader = batched_samples(X, A_hat, doc_nodes, args)
+        #train_loader = DataLoader(train_set, batch_size=1, shuffle=True, \
+        #                          num_workers=0, pin_memory=False)
+    
     criterion = JSdiv_Loss()
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[1000,2000,3000,4000,5000,6000],\
@@ -45,21 +53,62 @@ def train_and_fit(args):
     net.train()
     for e in range(start_epoch, args.num_epochs):
         
-        X, A_hat = get_X_A_hat(G, corrupt=False)
-        X_c, _ = get_X_A_hat(G, corrupt=True)
-        
-        if cuda:
-            X, A_hat, X_c = X.cuda(), A_hat.cuda(), X_c.cuda()
+        if args.batched == 0:
+            X, A_hat = X_A.get_X_A_hat(corrupt=False)
+            X_c, _ = X_A.get_X_A_hat(corrupt=True)
             
-        pos_D, neg_D = net(X, A_hat, X_c)
-        loss = criterion(pos_D, neg_D)
-        losses_per_epoch.append(loss.item())
-        loss.backward()
-        optimizer.step()
-        optimizer.zero_grad()
+            if cuda:
+                X, A_hat, X_c = X.cuda(), A_hat.cuda(), X_c.cuda()
+                
+            pos_D, neg_D = net(X, A_hat, X_c)
+            loss = criterion(pos_D, neg_D)
+            losses_per_epoch.append(loss.item())
+            loss.backward()
+            optimizer.step()
+            optimizer.zero_grad()
+            scheduler.step()
+        elif args.batched == 1:
+            skips = 0
+            losses_per_batch = []
+            update_size = len(train_loader)//10
+            batch_counter = 0
+            while True:
+                X, A_hat, n_nodes = train_loader.__getitem__(0, corrupt=False)
+                X_c, _, _ = train_loader.__getitem__(0, corrupt=True)
+                
+                if X.shape[0] != X_c.shape[0]:
+                    skips += 1
+                    continue
+                
+                if cuda:
+                    X, A_hat, X_c = X.cuda(), A_hat.cuda(), X_c.cuda()
+                
+                pos_D, neg_D = net(X, A_hat, X_c)
+                loss = criterion(pos_D, neg_D)
+                losses_per_batch.append(loss.item())
+                
+                if (batch_counter % update_size) == 0:
+                    logger.info("Batch loss, batch_size (%d/%d): %.5f, %d" % (batch_counter,\
+                                                                len(train_loader),\
+                                                                losses_per_batch[-1],\
+                                                                len(n_nodes)))
+                
+                loss.backward()
+                optimizer.step()
+                optimizer.zero_grad()
+                scheduler.step()
+                
+                if batch_counter == len(train_loader):
+                    break
+                batch_counter += 1
+                
+            logger.info("Skipped batches due to no labels/too few samples in sampled data: %d" % skips)
+            av_loss = sum(losses_per_batch)/len(losses_per_batch)
+            logger.info('Averaged batch losses: %.5f' % av_loss)
+            losses_per_epoch.append(av_loss)
         
         if (e % 10) == 0:
-            print('[Epoch: %d] total loss: %.3f' %
+            print('[Epoch: %d] total loss: %.5f' %
                       (e + 1, losses_per_epoch[-1]))
             save_as_pickle("train_losses_per_epoch_%d.pkl" % args.model_no, losses_per_epoch)
             torch.save({
@@ -70,7 +119,7 @@ def train_and_fit(args):
                     'scheduler' : scheduler.state_dict(),\
                 }, os.path.join("./data/",\
                     "test_checkpoint_%d.pth.tar" % args.model_no))
-        scheduler.step()
+        
     
     logger.info("Finished training!")
     save_as_pickle("train_losses_per_epoch_%d_final.pkl" % args.model_no, losses_per_epoch)

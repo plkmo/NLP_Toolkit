@@ -19,9 +19,11 @@ if __name__ == "__main__":
                         help="training data csv file path")
     parser.add_argument("--window", type=int, default=10, help='Window size to calculate PMI')
     parser.add_argument("--max_vocab_len", type=int, default=7000, help="GCN encoder: Max vocab size to consider based on top frequency tokens")
+    parser.add_argument('--batched', type=int, default=1,\
+                        help= 'For GCN, GIN - 0: no batch training ; 1: Yes')
     parser.add_argument("--hidden_size_1", type=int, default=300, help="Size of first GCN encoder hidden weights")
-    parser.add_argument("--batch_size", type=int, default=32, help="Training batch size")
-    parser.add_argument("--gradient_acc_steps", type=int, default=2, help="No. of steps of gradient accumulation")
+    parser.add_argument("--batch_size", type=int, default=64, help="Training batch size")
+    parser.add_argument("--gradient_acc_steps", type=int, default=1, help="No. of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
     parser.add_argument("--num_epochs", type=int, default=2400, help="No of epochs")
     parser.add_argument("--lr", type=float, default=0.0007, help="learning rate")

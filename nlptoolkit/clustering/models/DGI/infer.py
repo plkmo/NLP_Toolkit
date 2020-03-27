@@ -13,7 +13,7 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 import torch
 from .DGI import DGI
-from .train_funcs import load_datasets, get_X_A_hat, load_state
+from .train_funcs import load_datasets, X_A_hat, load_state
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import logging
@@ -43,7 +43,8 @@ class infer_from_trained(object):
         
         logger.info("Loading tokenizer and model...")    
         self.G = load_datasets(self.args)
-        X, A_hat = get_X_A_hat(self.G, corrupt=False)
+        X_A = X_A_hat(self.G)
+        X, A_hat = X_A.get_X_A_hat(corrupt=False)
         #print(labels_selected, labels_not_selected)
         self.net = DGI(X.shape[1], self.args)
         

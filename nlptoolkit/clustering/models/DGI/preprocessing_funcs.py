@@ -88,6 +88,8 @@ def generate_text_graph(train_data, max_vocab_len, window=10):
     df_tfidf = pd.DataFrame(df_tfidf, columns=vocab)
     
     ### Build graph
+    doc_nodes = [i for i in range(len(df_tfidf.index))]
+    save_as_pickle('doc_nodes.pkl', doc_nodes)
     logger.info("Building graph (No. of document, word nodes: %d, %d)..." %(len(df_tfidf.index), len(vocab)))
     G = nx.Graph()
     logger.info("Adding document nodes to graph...")

@@ -42,9 +42,9 @@ class infer_from_trained(object):
         self.document_nodes = list(self.df.index)
         
         logger.info("Loading tokenizer and model...")    
-        self.G = load_datasets(self.args)
-        X_A = X_A_hat(self.G)
-        X, A_hat = X_A.get_X_A_hat(corrupt=False)
+        self.G, _ = load_datasets(self.args)
+        self.X_A = X_A_hat(self.G)
+        X, A_hat = self.X_A.get_X_A_hat(corrupt=False)
         #print(labels_selected, labels_not_selected)
         self.net = DGI(X.shape[1], self.args)
         
@@ -61,12 +61,8 @@ class infer_from_trained(object):
         gets nodes embeddings from trained model
         '''
         self.net.eval()
-        if G == None:
-            graph = self.G
-        else:
-            graph = G
         
-        X, A_hat = get_X_A_hat(graph, corrupt=False)
+        X, A_hat = self.X_A.get_X_A_hat(corrupt=False)
         if self.cuda:
             X, A_hat = X.cuda(), A_hat.cuda()
         

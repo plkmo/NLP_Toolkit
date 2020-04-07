@@ -40,6 +40,7 @@ For more details, see requirements.txt
 git clone https://github.com/plkmo/NLP_Toolkit.git
 cd NLP_Toolkit
 pip install .
+python -m spacy download en_core_web_lg
 
 # to uninstall if required to re-install after updates,
 # since this repo is still currently in active development

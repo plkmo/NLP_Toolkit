@@ -9,7 +9,7 @@ import pickle
 import torch
 import numpy as np
 
-from google.cloud import translate_v3beta1 as translate
+#from google.cloud import translate_v3beta1 as translate
 
 def load_pickle(filename):
     completeName = os.path.join("./data/",\
@@ -89,7 +89,8 @@ class CosineWithRestarts(torch.optim.lr_scheduler._LRScheduler):
             self._last_restart = step
 
         return lrs
-    
+
+'''
 class google_translate_api(object):
     def __init__(self, project_id="zh-en-translatio-1571230525546"):
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/home/weetee/Desktop/Repositories/NLP_Text/NLP_Toolkit/data/translation/zh-en-translatio-1571230525546-2b50bf5c50cb.json'
@@ -109,4 +110,4 @@ class google_translate_api(object):
         for translation in self.response.translations:
             print('Translated Text: {}'.format(translation))
         return self.response.translations
-        
+'''

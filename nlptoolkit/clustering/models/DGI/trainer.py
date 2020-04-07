@@ -30,7 +30,7 @@ def train_and_fit(args):
                                                                            A_hat.max(),\
                                                                            A_hat.mean()))
     
-    net = DGI(X.shape[1], args, encoder_type='GCN')
+    net = DGI(X.shape[1], args, encoder_type=args.encoder_type)
     
     if args.batched == 1:
         train_loader = batched_samples(X, A_hat, doc_nodes, args)
@@ -39,7 +39,7 @@ def train_and_fit(args):
     
     criterion = JSdiv_Loss()
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[1000,2000,3000,4000,5000,6000],\
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[1000,2000,3000,4000,5000,5500],\
                                                gamma=0.77)
     
     start_epoch, best_pred = load_state(net, optimizer, scheduler, model_no=args.model_no, load_best=False)
@@ -88,10 +88,11 @@ def train_and_fit(args):
                 losses_per_batch.append(loss.item())
                 
                 if (batch_counter % update_size) == 0:
-                    logger.info("Batch loss, batch_size (%d/%d): %.5f, %d" % (batch_counter,\
-                                                                len(train_loader),\
-                                                                losses_per_batch[-1],\
-                                                                len(n_nodes)))
+                    logger.info("[Epoch %d]: Batch loss, batch_size (%d/%d): %.5f, %d" % (e + 1,\
+                                                                                        batch_counter,\
+                                                                                        len(train_loader),\
+                                                                                        losses_per_batch[-1],\
+                                                                                        len(n_nodes)))
                 
                 loss.backward()
                 optimizer.step()

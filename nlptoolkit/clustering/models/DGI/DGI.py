@@ -78,7 +78,7 @@ class GIN(nn.Module):
         
         self.fc1 = nn.Linear(self.X_size, args.num_classes, bias=bias)
         
-    def forward(self, X): ### 2-layer GIN architecture
+    def forward(self, X, A_hat=None): ### 2-layer GIN architecture
         hv = torch.mm(self.diag_A, X)
         hu = torch.mm(self.off_diag_A, X)
         
@@ -136,25 +136,32 @@ class GIN_batched(nn.Module):
         return self.fc1(X)
     
 class DGI(nn.Module):
-    def __init__(self, X_size, args, encoder_type='GCN', bias=True):
+    def __init__(self, X_size, args, encoder_type='GCN', bias=True,\
+                 n_nodes=10, A_hat=None, cuda=False):
         super(DGI, self).__init__()
         self.encoder_type = encoder_type
+        self.args = args
         
         if self.encoder_type == 'GCN':
-            if args.batched == 0:
-                self.encoder = GCN(X_size, args, bias=bias)
+            if self.args.batched == 0:
+                self.encoder = GCN(X_size, self.args, bias=bias)
             else:
-                self.encoder = GCN_batched(X_size, args, bias=bias)
+                self.encoder = GCN_batched(X_size, self.args, bias=bias)
         elif self.encoder_type == 'GIN':
-            self.encoder = GIN()
-        self.D_weight = nn.parameter.Parameter(torch.zeros(size=(args.hidden_size_1,\
-                                                                 args.hidden_size_1))) # features X features
+            if self.args.batched == 0:
+                self.encoder = GIN(X_size, n_nodes, A_hat, cuda, self.args, bias=bias)
+            else:
+                self.encoder = GIN_batched(X_size, self.args, bias=bias)
+                
+        self.D_weight = nn.parameter.Parameter(torch.zeros(size=(self.args.hidden_size_1,\
+                                                                 self.args.hidden_size_1))) # features X features
          
     def summarize_patch(self, X):
         X = torch.sigmoid(X.mean(dim=0))
         return X
     
     def forward(self, X, A_hat, X_c):
+
         X = self.encoder(X, A_hat) # nodes X features
         X_c = self.encoder(X_c, A_hat) # nodes X features
         s = self.summarize_patch(X) # s = features

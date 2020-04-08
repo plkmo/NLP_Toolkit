@@ -45,9 +45,9 @@ class infer_from_trained(object):
         self.G, _ = load_datasets(self.args)
         self.X_A = X_A_hat(self.G)
         X, A_hat = self.X_A.get_X_A_hat(corrupt=False)
-        #print(labels_selected, labels_not_selected)
-        self.net = DGI(X.shape[1], self.args)
-        
+
+        self.net = DGI(X.shape[1], self.args, bias=True,\
+                       n_nodes=10, A_hat=None, cuda=False)
         _, _ = load_state(self.net, None, None, model_no=self.args.model_no, load_best=False)
         
         if self.cuda:

@@ -22,14 +22,14 @@ if __name__ == "__main__":
     parser.add_argument('--batched', type=int, default=1,\
                         help= 'For GCN, GIN - 0: no batch training ; 1: Yes')
     parser.add_argument("--hidden_size_1", type=int, default=300, help="Size of first GCN encoder hidden weights")
-    parser.add_argument("--batch_size", type=int, default=64, help="Training batch size")
+    parser.add_argument("--batch_size", type=int, default=96, help="Training batch size")
     parser.add_argument("--gradient_acc_steps", type=int, default=1, help="No. of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
-    parser.add_argument("--num_epochs", type=int, default=2400, help="No of epochs")
-    parser.add_argument("--lr", type=float, default=0.0007, help="learning rate")
+    parser.add_argument("--num_epochs", type=int, default=1610, help="No of epochs")
+    parser.add_argument("--lr", type=float, default=0.005, help="learning rate")
     parser.add_argument("--model_no", type=int, default=0, help='''Model ID: (0: Deep Graph Infomax (DGI)), 
                                                                             ''')
-    parser.add_argument("--encoder_type", type=str, default="GCN", \
+    parser.add_argument("--encoder_type", type=str, default="GIN", \
                         help="For DGI, the encoder type (GCN, GIN)")
     parser.add_argument("--train", type=int, default=1, help="Train model on dataset")
     parser.add_argument("--infer", type=int, default=1, help="Infer input sentence labels from trained model")

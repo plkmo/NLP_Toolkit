@@ -74,9 +74,7 @@ class GIN(nn.Module):
         self.e2 = nn.parameter.Parameter(torch.zeros(size=(1, 1))) # size=(self.n_nodes, 1)
         var2 = 2./(self.e2.size(1) + self.e2.size(0))
         self.e2.data.normal_(0, var2)
-        self.mlp2 = nn.Linear(self.X_size, self.X_size, bias=bias)
-        
-        self.fc1 = nn.Linear(self.X_size, args.num_classes, bias=bias)
+        self.mlp2 = nn.Linear(self.X_size, args.hidden_size_1, bias=bias)
         
     def forward(self, X, A_hat=None): ### 2-layer GIN architecture
         hv = torch.mm(self.diag_A, X)
@@ -89,7 +87,7 @@ class GIN(nn.Module):
         hu = torch.mm(self.off_diag_A, X)
         X = torch.mm((torch.diag((self.dum*self.e2).squeeze()) + self.I), hv) + hu
         X = self.mlp2(X)
-        return self.fc1(X)
+        return X
     
 class GIN_batched(nn.Module):
     # TODO - still have to batch according to nearest neighbour!!!!
@@ -105,9 +103,7 @@ class GIN_batched(nn.Module):
         self.e2 = nn.parameter.Parameter(torch.zeros(size=(1, 1))) # size=(self.n_nodes, 1)
         var2 = 2./(self.e2.size(1) + self.e2.size(0))
         self.e2.data.normal_(0, var2)
-        self.mlp2 = nn.Linear(self.X_size, self.X_size, bias=bias)
-        
-        self.fc1 = nn.Linear(self.X_size, args.num_classes, bias=bias)
+        self.mlp2 = nn.Linear(self.X_size, args.hidden_size_1, bias=bias)
         
     def forward(self, X, A_hat): ### 2-layer GIN architecture
         n_nodes = X.shape[0]
@@ -133,13 +129,13 @@ class GIN_batched(nn.Module):
         hu = torch.mm(off_diag_A, X)
         X = torch.mm((torch.diag((dum*self.e2).squeeze()) + I), hv) + hu
         X = self.mlp2(X)
-        return self.fc1(X)
+        return X
     
 class DGI(nn.Module):
-    def __init__(self, X_size, args, encoder_type='GCN', bias=True,\
+    def __init__(self, X_size, args, bias=True,\
                  n_nodes=10, A_hat=None, cuda=False):
         super(DGI, self).__init__()
-        self.encoder_type = encoder_type
+        self.encoder_type = args.encoder_type
         self.args = args
         
         if self.encoder_type == 'GCN':

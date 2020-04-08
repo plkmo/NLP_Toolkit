@@ -29,8 +29,9 @@ def train_and_fit(args):
     logger.info("Adj matrix stats (min, max, mean): %.5f, %.5f, %.5f" % (A_hat.min(),\
                                                                            A_hat.max(),\
                                                                            A_hat.mean()))
-    
-    net = DGI(X.shape[1], args, encoder_type=args.encoder_type)
+    logger.info("Number of nodes (doc nodes, total): %d, %d" % (len(doc_nodes), X.shape[0]))
+    net = DGI(X.shape[1], args, bias=True,\
+              n_nodes=X.shape[0], A_hat=A_hat, cuda=cuda)
     
     if args.batched == 1:
         train_loader = batched_samples(X, A_hat, doc_nodes, args)

@@ -208,7 +208,7 @@ class batched_samples(Dataset):
     
     def __getitem__(self, idx, corrupt=False):
         n_nodes = self.importance_sample_nodes(idx)
-        X = self.X[n_nodes]
+        X = copy.deepcopy(self.X)[n_nodes]
         
         if corrupt:
             np.random.shuffle(X)

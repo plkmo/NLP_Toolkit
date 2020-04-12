@@ -92,51 +92,71 @@ class infer_from_trained(object):
         self.cuda = torch.cuda.is_available()
         self.args.batch_size = 1
         
-        logger.info("Loading tokenizer and model...")
-        self.tokenizer_en = tokener(args.src_lang)
-        train_iter, FR, EN, train_length = load_dataloaders(self.args)
-        self.FR = FR
-        self.EN = EN
-        self.train_iter = train_iter
-        self.train_length = train_length
-        self.src_vocab = len(EN.vocab)
-        self.trg_vocab = len(FR.vocab)
-        
-        if self.args.fp16:    
-            from apex import amp
-        else:
-            amp = None
-        self.amp = amp
-        net, _, _, _, _, _ = load_model_and_optimizer(self.args, self.src_vocab, \
-                                                      self.trg_vocab, self.cuda, amp=amp)
-        self.net = net
-        self.net.eval()
-        trg_init = FR.vocab.stoi["<sos>"]
-        self.trg_init = Variable(torch.LongTensor([trg_init])).unsqueeze(0)
+        if self.args.model_no != 1:
+            logger.info("Loading tokenizer and model...")
+            self.tokenizer_en = tokener(args.src_lang)
+            train_iter, FR, EN, train_length = load_dataloaders(self.args)
+            self.FR = FR
+            self.EN = EN
+            self.train_iter = train_iter
+            self.train_length = train_length
+            self.src_vocab = len(EN.vocab)
+            self.trg_vocab = len(FR.vocab)
+            
+            if self.args.fp16:    
+                from apex import amp
+            else:
+                amp = None
+            self.amp = amp
+            net, _, _, _, _, _ = load_model_and_optimizer(self.args, self.src_vocab, \
+                                                          self.trg_vocab, self.cuda, amp=amp)
+            self.net = net
+            self.net.eval()
+            trg_init = FR.vocab.stoi["<sos>"]
+            self.trg_init = Variable(torch.LongTensor([trg_init])).unsqueeze(0)
+        elif self.args.model_no == 1:
+            from .mass.interactive import Translator
+            src, tgt = "zh-en".split('-')
+            logger.info("Loading translator, tokenizer...")
+            self.translator = Translator(data_path='./data/zhen/data-bin/processed_data_%s_%s' % (src, tgt),\
+                                         checkpoint_path="./data/zhen/checkpoints/%s_%s/checkpoint50.pt" % (src, tgt),\
+                                         task='translation',\
+                                         user_dir='',\
+                                         s=src, t=tgt,\
+                                         langs='%s,%s' % (src, tgt),\
+                                         mt_steps='%s-%s' % (src, tgt),\
+                                         source_langs=src,\
+                                         target_langs=tgt,\
+                                         beam=5,\
+                                         use_cuda=args.cuda)
     
     def infer_sentence(self, sent):
-        sent = self.tokenizer_en.tokenize(sent).split()
-        sent = [self.EN.vocab.stoi[tok] for tok in sent]
-        sent = Variable(torch.LongTensor(sent)).unsqueeze(0)
+        if self.args.model_no != 1:
+            sent = self.tokenizer_en.tokenize(sent).split()
+            sent = [self.EN.vocab.stoi[tok] for tok in sent]
+            sent = Variable(torch.LongTensor(sent)).unsqueeze(0)
+            
+            trg = self.trg_init
+            src_mask, _ = create_masks(sent, self.trg_init)
+            if self.cuda:
+                sent = sent.cuda(); src_mask = src_mask.cuda()
+                trg = trg.cuda()
+                
+            with torch.no_grad():
+                stepwise_translated_words, final_step_words = self.net(sent, trg, src_mask, None, \
+                                                                  infer=True, trg_vocab_obj=self.FR)
+                
+            stepwise_translated = " ".join(stepwise_translated_words)
+            final_translated = " ".join(final_step_words)
+            print("Stepwise-translated:")
+            print(stepwise_translated)
+            print("\nFinal step translated words: ")
+            print(final_translated)
+            return stepwise_translated, final_translated
+        elif self.args.model_no == 2:
+            translated = self.translator.translate(sent)
+            return translated
         
-        trg = self.trg_init
-        src_mask, _ = create_masks(sent, self.trg_init)
-        if self.cuda:
-            sent = sent.cuda(); src_mask = src_mask.cuda()
-            trg = trg.cuda()
-            
-        with torch.no_grad():
-            stepwise_translated_words, final_step_words = self.net(sent, trg, src_mask, None, \
-                                                              infer=True, trg_vocab_obj=self.FR)
-            
-        stepwise_translated = " ".join(stepwise_translated_words)
-        final_translated = " ".join(final_step_words)
-        print("Stepwise-translated:")
-        print(stepwise_translated)
-        print("\nFinal step translated words: ")
-        print(final_translated)
-        return stepwise_translated, final_translated
-    
     def infer_from_input(self):
         self.net.eval()
         while True:

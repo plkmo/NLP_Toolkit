@@ -25,8 +25,8 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=96, help="Training batch size")
     parser.add_argument("--gradient_acc_steps", type=int, default=1, help="No. of steps of gradient accumulation")
     parser.add_argument("--max_norm", type=float, default=1.0, help="Clipped gradient norm")
-    parser.add_argument("--num_epochs", type=int, default=1610, help="No of epochs")
-    parser.add_argument("--lr", type=float, default=0.005, help="learning rate")
+    parser.add_argument("--num_epochs", type=int, default=100, help="No of epochs")
+    parser.add_argument("--lr", type=float, default=0.003, help="learning rate")
     parser.add_argument("--model_no", type=int, default=0, help='''Model ID: (0: Deep Graph Infomax (DGI)), 
                                                                             ''')
     parser.add_argument("--encoder_type", type=str, default="GIN", \
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     if args.infer == 1:
         inferer = infer_from_trained()
         inferer.infer_embeddings()
-        #inferer.cluster_embeddings(features=None, n_start=3, n_stop=66, method='ac')
+        
         pca, pca_embeddings = inferer.PCA_analyze(n_components=2)
         tsne_embeddings = inferer.plot_TSNE(plot=True)
         result = inferer.cluster_tsne_embeddings(tsne_embeddings,\

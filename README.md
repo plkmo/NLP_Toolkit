@@ -34,6 +34,7 @@ For more details, see requirements.txt
 ** Pre-trained PyTorch models (XLNet, BERT, GPT-2, CTRL, XLMRoBERTa, ALBERT) are courtesy of huggingface (https://github.com/huggingface/pytorch-transformers)  
 ** GAT model adapted from https://github.com/Diego999/pyGAT  
 ** Style-Transformer training codes adapted from https://github.com/fastnlp/style-transformer  
+** Semsim pre-trained models courtesy of https://github.com/icml-2020-nlp/semsim
 
 ## Package Installation
 ```bash
@@ -183,6 +184,7 @@ speech.py [-h]
 Text summarization aims to distil a paragraph chunk into a few sentences that capture the essential information. This library contains the following models for text summarization: 
 1. Convolutional Transformer (model_no: 0)
 2. Seq2Seq (LAS architecture) (model_no: 1)
+3. Semsim (model_no: 2) (for infer only)
 
 ### Format of dataset files
 One .csv file for each text/summary pair. Within the text/summary .csv file, text is followed by summary, with summary points annotated by @highlights (summary)
@@ -243,8 +245,12 @@ train_and_fit(config) # starts training with configured parameters
 inferer = infer_from_trained(config) # initiate infer object, which loads the model for inference, after training model
 inferer.infer_from_input() # infer from user console input
 inferer.infer_from_file(in_file="./data/input.txt", out_file="./data/output.txt")
+inferer.infer_sentence(sent)
 ```
 
+### Pre-trained models
+Download contents of downloaded folder into ./data/ folder.
+1) [Semsim](https://drive.google.com/drive/folders/1hWH23kNdX39iaN7Uykd9jbxyohd_5W-y?usp=sharing)
 ---
 
 ## 4) Machine Translation
@@ -776,6 +782,7 @@ node_clusters = inferer.get_clustered_nodes(result['labels']) # get clustered no
 12. Unsupervised Cross-lingual Representation Learning at Scale, Alexis Conneau et al, https://arxiv.org/pdf/1911.02116.pdf
 13. How Powerful Are Graph Neural Networks?, Keyulu Xu et al, https://arxiv.org/pdf/1810.00826.pdf
 14. Deep Graph Infomax, Petar et al, https://arxiv.org/abs/1809.10341
+15. Learning by Semantic Similarity Makes Abstractive Summarization Better, Yoon et al, https://arxiv.org/pdf/2002.07767.pdf  
 
 ---
 

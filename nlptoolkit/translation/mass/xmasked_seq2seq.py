@@ -17,7 +17,7 @@ from fairseq.data import (
     TokenBlockDataset,
 )
 
-from fairseq.data.masked_lm_dictionary import MaskedLMDictionary
+from fairseq.data.legacy.masked_lm_dictionary import MaskedLMDictionary
 from fairseq import options, checkpoint_utils
 from fairseq.models import FairseqMultiModel
 from fairseq.sequence_generator import SequenceGenerator

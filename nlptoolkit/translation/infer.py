@@ -118,8 +118,8 @@ class infer_from_trained(object):
             from .mass.interactive import Translator
             src, tgt = "zh-en".split('-')
             logger.info("Loading translator, tokenizer...")
-            self.translator = Translator(data_path='./data/zhen/data-bin/processed_data_%s_%s' % (src, tgt),\
-                                         checkpoint_path="./data/zhen/checkpoints/%s_%s/checkpoint50.pt" % (src, tgt),\
+            self.translator = Translator(data_path='./data/data-bin/processed_data_%s_%s' % (src, tgt),\
+                                         checkpoint_path="./data/checkpoints/%s_%s/checkpoint50.pt" % (src, tgt),\
                                          task='translation',\
                                          user_dir='',\
                                          s=src, t=tgt,\

@@ -54,6 +54,8 @@ def train_and_fit(args):
         
     logger.info("Starting training process...")
     net.train()
+    save_step = 10 if (args.batched == 1) else 50
+    trained_accuracy = 0.0
     for e in range(start_epoch, args.num_epochs):
         
         if args.batched == 0:
@@ -129,10 +131,11 @@ def train_and_fit(args):
                 losses_per_batch.append(loss.item())
                 
                 if (eidx % update_size) == 0:
-                    logger.info("Batch loss, batch_size (%d/%d): %.5f, %d" % (eidx,\
-                                                            len(train_loader),\
-                                                            losses_per_batch[-1],\
-                                                            len(n_nodes)))
+                    logger.info("[Epoch %d]: Batch loss, batch_size (%d/%d): %.5f, %d" % (e,\
+                                                                                    eidx,\
+                                                                                    len(train_loader),\
+                                                                                    losses_per_batch[-1],\
+                                                                                    len(n_nodes)))
                 
                 loss.backward()
                 optimizer.step()
@@ -143,7 +146,7 @@ def train_and_fit(args):
             logger.info('Averaged batch losses: %.3f' % av_loss)
             losses_per_epoch.append(av_loss)
             
-        if (e + 1) % 50 == 0:
+        if (e + 1) % save_step == 0:
             #print(output[selected]); print(targets)
             ### Evaluate other untrained nodes and check accuracy of labelling
             net.eval()
@@ -177,7 +180,7 @@ def train_and_fit(args):
                 }, os.path.join("./data/" ,\
                     "test_model_best_%d.pth.tar" % args.model_no))
         
-        if ((e + 1) % 250) == 0:
+        if ((e + 1) % 5*save_step) == 0:
             save_as_pickle("test_losses_per_epoch_%d.pkl" % args.model_no, losses_per_epoch)
             save_as_pickle("test_accuracy_per_epoch_%d.pkl" % args.model_no, evaluation_untrained)
             save_as_pickle("train_accuracy_per_epoch_%d.pkl" % args.model_no, evaluation_trained)

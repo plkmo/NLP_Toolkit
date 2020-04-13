@@ -92,10 +92,11 @@ def train_and_fit(args):
                 losses_per_batch.append(loss.item())
                 
                 if (eidx % update_size) == 0:
-                    logger.info("Batch loss, batch_size (%d/%d): %.5f, %d" % (eidx,\
-                                                            len(train_loader),\
-                                                            losses_per_batch[-1],\
-                                                            len(n_nodes)))
+                    logger.info("[Epoch %d]: Batch loss, batch_size (%d/%d): %.5f, %d" % (e,\
+                                                                                    eidx,\
+                                                                                    len(train_loader),\
+                                                                                    losses_per_batch[-1],\
+                                                                                    len(n_nodes)))
                 
                 loss.backward()
                 optimizer.step()

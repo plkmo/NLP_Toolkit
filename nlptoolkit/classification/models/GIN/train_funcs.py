@@ -136,7 +136,7 @@ def evaluate(output, labels_e):
 
 def infer(args, f, test_idxs, net, A_hat):
     logger.info("Evaluating on inference data...")
-    A_hat = torch.FloatTensor(A_hat, requires_grad=False)
+    A_hat = torch.FloatTensor(A_hat)
     net.eval()
     with torch.no_grad():
         if args.batched == 0:

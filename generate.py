@@ -15,7 +15,7 @@ logger = logging.getLogger('__file__')
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("--model_no", type=int, default=1, help="0: GPT-2 ; 1: CTRL")
+    parser.add_argument("--model_no", type=int, default=2, help="0: GPT-2 ; 1: CTRL, 2: DialoGPT")
     args = parser.parse_args()
     
     save_as_pickle("args.pkl", args)

@@ -335,6 +335,7 @@ Download and zip contents of downloaded folder into ./data/ folder.
 Natural Language generation (NLG) aims to generate text based on past context. For instance, a chatbot can generate text replies based on the context of chat history. We currently have the following models for NLG:
 1. Generative Pre-trained Transformer 2 (GPT 2) (model_no: 0)
 2. Conditional Transformer Language Model (CTRL) (model_no: 1)
+3. DialoGPT (model_no: 2)
 
 ### Format of dataset files
 1. Generate free text from GPT 2 pre-trained models

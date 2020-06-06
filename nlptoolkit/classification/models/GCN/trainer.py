@@ -197,4 +197,4 @@ def train_and_fit(args):
         ax.legend(fontsize=20)
         plt.savefig(os.path.join("./data/", "combined_plot_accuracy_vs_epoch_%d.png" % args.model_no))
     
-    infer(args, f, test_idxs, net, A_hat)
+    infer(args, f, test_idxs, net, A_hat,)

@@ -38,8 +38,8 @@ if __name__ == "__main__":
                         1: PuncLSTM\n\
                         2: pyTransformer")
     
-    parser.add_argument("--train", type=int, default=1, help="Train model on dataset")
-    parser.add_argument("--infer", type=int, default=0, help="Infer input sentence labels from trained model")
+    parser.add_argument("--train", type=int, default=0, help="Train model on dataset")
+    parser.add_argument("--infer", type=int, default=1, help="Infer input sentence labels from trained model")
     args = parser.parse_args()
     save_as_pickle("args.pkl", args)
     

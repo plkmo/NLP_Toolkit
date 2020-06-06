@@ -134,9 +134,11 @@ def evaluate(output, labels_e):
         _, labels = output.max(1); labels = labels.cpu().numpy() if labels.is_cuda else labels.numpy()
         return sum([(e) for e in labels_e] == labels)/len(labels)
 
-def infer(args, f, test_idxs, net, A_hat):
+def infer(args, f, test_idxs, net, A_hat, cuda):
     logger.info("Evaluating on inference data...")
     A_hat = torch.FloatTensor(A_hat)
+    if cuda:
+        A_hat = A_hat.cuda()
     net.eval()
     with torch.no_grad():
         if args.batched == 0:

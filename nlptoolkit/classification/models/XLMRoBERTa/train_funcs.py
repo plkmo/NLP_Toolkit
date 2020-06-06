@@ -64,14 +64,15 @@ class sentiments(Dataset):
 def load_state(net, optimizer, scheduler, args, load_best=False):
     """ Loads saved model and optimizer states if exists """
     base_path = "./data/"
+    cuda = next(net.parameters()).is_cuda
     checkpoint_path = os.path.join(base_path,"test_checkpoint_%d.pth.tar" % args.model_no)
     best_path = os.path.join(base_path,"test_model_best_%d.pth.tar" % args.model_no)
     start_epoch, best_pred, checkpoint = 0, 0, None
     if (load_best == True) and os.path.isfile(best_path):
-        checkpoint = torch.load(best_path)
+        checkpoint = torch.load(best_path) if cuda else torch.load(best_path, map_location=torch.device('cpu'))
         logger.info("Loaded best model.")
     elif os.path.isfile(checkpoint_path):
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path) if cuda else torch.load(checkpoint_path, map_location=torch.device('cpu'))
         logger.info("Loaded checkpoint model.")
     if checkpoint != None:
         start_epoch = checkpoint['epoch']

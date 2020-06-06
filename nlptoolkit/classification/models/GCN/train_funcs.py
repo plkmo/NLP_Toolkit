@@ -38,7 +38,9 @@ def load_datasets(args, train_test_split=0):
     df_data = load_pickle("df_data.pkl")
     G_dict = load_pickle("text_graph.pkl")
     G = G_dict["graph"]
-    infer_idx_start = G_dict["infer_idx_start"]
+    
+    if train_test_split == 0:
+        infer_idx_start = G_dict["infer_idx_start"]
     del G_dict
     
     logger.info("Building adjacency and degree matrices...")

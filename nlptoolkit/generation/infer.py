@@ -55,6 +55,11 @@ class infer_from_trained(object):
             from .models.CTRL.modeling_ctrl import CTRLLMHeadModel
             self.tokenizer = CTRLTokenizer.from_pretrained('ctrl')
             self.model = CTRLLMHeadModel.from_pretrained('ctrl')
+        elif args.model_no == 2:
+            from .models.DialoGPT.modeling_auto import AutoModelWithLMHead
+            from .models.DialoGPT.tokenization_auto import AutoTokenizer
+            self.tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-medium")
+            self.model = AutoModelWithLMHead.from_pretrained("microsoft/DialoGPT-medium")
         
         if self.cuda:
             self.model.cuda()
@@ -88,13 +93,36 @@ class infer_from_trained(object):
         return out_sent
     
     def infer_from_input(self,):
-        while True:
-            with torch.no_grad():
-                input_sent = input("Type your input sentence: \n")
-                if input_sent.lower() in ['quit', 'exit']:
-                    break
-                self.infer_sentence(input_sent)
+        if self.args.model_no == 2:
+            # Let's chat for 5 lines
+            for step in range(5):
+                # encode the new user input, add the eos_token and return a tensor in Pytorch
+                new_user_input_ids = self.tokenizer.encode(input(">> User:") + self.tokenizer.eos_token,\
+                                                           return_tensors='pt')
+                
+                if self.cuda:
+                    new_user_input_ids = new_user_input_ids.cuda()
+                # append the new user input tokens to the chat history
+                bot_input_ids = torch.cat([chat_history_ids, new_user_input_ids], \
+                                          dim=-1) if step > 0 else new_user_input_ids
+            
+                # generated a response while limiting the total chat history to 1000 tokens, 
+                chat_history_ids = self.model.generate(bot_input_ids, max_length=1000, \
+                                                       pad_token_id=self.tokenizer.eos_token_id)
+            
+                # pretty print last ouput tokens from bot
+                print("DialoGPT: {}".format(self.tokenizer.decode(chat_history_ids[:, \
+                      bot_input_ids.shape[-1]:][0], skip_special_tokens=True)))
+        
+        else:
+            while True:
+                with torch.no_grad():
+                    input_sent = input("Type your input sentence: \n")
+                    if input_sent.lower() in ['quit', 'exit']:
+                        break
+                    self.infer_sentence(input_sent)
         return
+    
     
     def infer_from_file(self, in_file="./data/input.txt", out_file="./data/output.txt"):
         df = pd.read_csv(in_file, header=None, names=["sents"])

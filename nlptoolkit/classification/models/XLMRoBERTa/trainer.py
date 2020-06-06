@@ -50,7 +50,7 @@ def train_and_fit(args):
     
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.98), eps=1e-9)
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2,4,6,8,12,15,20,25], gamma=0.8)
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2,4,6,8,12,15,20,25,30], gamma=0.8)
     
     start_epoch, best_pred = load_state(net, optimizer, scheduler, args, load_best=False)    
     losses_per_epoch, accuracy_per_epoch = load_results(args)

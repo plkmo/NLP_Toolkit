@@ -62,16 +62,16 @@ class Config(object):
             self.ff_dim = 2048
             self.num = 6
             self.n_heads = 8
-            self.max_encoder_len = 200
-            self.max_decoder_len = 200
+            self.max_encoder_len = 80
+            self.max_decoder_len = 80
             self.LAS_embed_dim = 512
             self.LAS_hidden_size = 512
-            self.num_epochs = 500
-            self.lr = 0.0003
+            self.num_epochs = 127
+            self.lr = 0.00003
             self.gradient_acc_steps = 2
             self.max_norm = 1.0
             self.T_max = 5000
-            self.model_no = 0
+            self.model_no = 1
             self.train = 1
             self.infer = 0
         

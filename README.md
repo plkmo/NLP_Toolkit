@@ -17,6 +17,7 @@ The purpose of this toolkit is to allow for **easy training/inference of state-o
 8. [Part of Speech Tagging](#8-POS-Tagging)
 9. [Unsupervised Style Transfer](#9-Unsupervised-Style-Transfer)
 10. [Text Clustering](#10-Text-Clustering)
+11. [Grammatical Error Correction](#11-Grammatical-Error-Correction)  
   
 [Benchmark Results](#benchmark-results)  
 [References](#references)
@@ -34,7 +35,8 @@ For more details, see requirements.txt
 ** Pre-trained PyTorch models (XLNet, BERT, GPT-2, CTRL, XLMRoBERTa, ALBERT) are courtesy of huggingface (https://github.com/huggingface/pytorch-transformers)  
 ** GAT model adapted from https://github.com/Diego999/pyGAT  
 ** Style-Transformer training codes adapted from https://github.com/fastnlp/style-transformer  
-** Semsim pre-trained models courtesy of https://github.com/icml-2020-nlp/semsim
+** Semsim pre-trained models courtesy of https://github.com/icml-2020-nlp/semsim  
+** GECToR pre-trained models courtesy of https://github.com/grammarly/gector  
 
 ## Package Installation
 ```bash
@@ -724,6 +726,26 @@ result = inferer.cluster_tsne_embeddings(tsne_embeddings,\
 node_clusters = inferer.get_clustered_nodes(result['labels']) # get clustered nodes
 ```
 
+## 11) Grammatical Error Correction
+Current models:  
+1) Gector  
+
+### Running the model
+Currently supports inference only.
+```bash
+gec.py [-h]
+```
+```python
+inferer.infer_sentence('He has dog')
+```
+Sample output:
+```bash
+He has a dog
+```
+### Pre-trained models
+Download and zip contents of downloaded folder into ./data/ folder.
+1. [GECToR](https://drive.google.com/drive/folders/15AsxuAbGQT--kJlFK_-ey-rssCaLHxTh?usp=sharing)
+
 # Benchmark Results
 
 ## 1) Classification (IMDB dataset : 25000 train, 25000 test data points)
@@ -784,6 +806,7 @@ node_clusters = inferer.get_clustered_nodes(result['labels']) # get clustered no
 13. How Powerful Are Graph Neural Networks?, Keyulu Xu et al, https://arxiv.org/pdf/1810.00826.pdf
 14. Deep Graph Infomax, Petar et al, https://arxiv.org/abs/1809.10341
 15. Learning by Semantic Similarity Makes Abstractive Summarization Better, Yoon et al, https://arxiv.org/pdf/2002.07767.pdf  
+16. GECToR -- Grammatical Error Correction: Tag, Not Rewrite, Kostiantyn Omelianchuk et al, https://arxiv.org/abs/2005.12592
 
 ---
 

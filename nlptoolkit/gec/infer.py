@@ -1,5 +1,6 @@
 import argparse
 
+import torch
 from .models.gector.utils.helpers import read_lines
 from .models.gector.gec_model import GecBERTModel
 
@@ -20,6 +21,22 @@ class infer_from_trained(object):
                                   is_ensemble=args.is_ensemble,
                                   weigths=args.weights)
         
+    def infer_sentence(self, sentence):
+        sentence = sentence.split()
+        preds, cnt = self.model.handle_batch([sentence])
+        preds = " ".join(preds[0])
+        return preds
+    
+    def infer_from_input(self,):
+        while True:
+            with torch.no_grad():
+                sent = input("Input sentence to correct:\n")
+                if sent in ["quit", "exit"]:
+                    break
+                predicted = self.infer_sentence(sent)
+                print("Corrected: ", predicted)
+        return predicted
+    
     def infer_from_file(self, input_file='./data/gec/gector/input.txt', \
                         output_file='./data/gec/gector/output.txt', batch_size=32):
         test_data = read_lines(input_file)

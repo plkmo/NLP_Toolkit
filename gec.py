@@ -20,10 +20,6 @@ if __name__ == "__main__":
                         help='Path to the model file.', nargs='+')
     parser.add_argument('--vocab_path', type=str, default='./data/gec/gector/output_vocabulary/',
                         help='Path to the model file.')
-    #parser.add_argument('--input_file', type=str, default='./data/gec/gector/input.txt',
-    #                    help='Path to the evalset file')
-    #parser.add_argument('--output_file', type=str, default='./data/gec/gector/output.txt',
-    #                    help='Path to the output file')
     parser.add_argument('--max_len',
                         type=int,
                         help='The max sentence length'
@@ -79,3 +75,5 @@ if __name__ == "__main__":
     inferer = infer_from_trained(args)
     inferer.infer_from_file(input_file='./data/gec/gector/input.txt', \
                             output_file='./data/gec/gector/output.txt', batch_size=32)
+    print(inferer.infer_sentence('He has dog'))
+    inferer.infer_from_input()

@@ -8,12 +8,12 @@ from allennlp.data.vocabulary import DEFAULT_OOV_TOKEN, DEFAULT_PADDING_TOKEN
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 
-from gector.bert_token_embedder import PretrainedBertEmbedder
-from gector.datareader import Seq2LabelsDatasetReader
-from gector.seq2labels_model import Seq2Labels
-from gector.trainer import Trainer
-from gector.wordpiece_indexer import PretrainedBertIndexer
-from utils.helpers import get_weights_name
+from .models.gector.bert_token_embedder import PretrainedBertEmbedder
+from .models.gector.datareader import Seq2LabelsDatasetReader
+from .models.gector.seq2labels_model import Seq2Labels
+from .models.gector.trainer import Trainer
+from .models.gector.wordpiece_indexer import PretrainedBertIndexer
+from .models.gector.utils.helpers import get_weights_name
 
 
 def fix_seed():

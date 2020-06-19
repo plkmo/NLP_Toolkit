@@ -93,6 +93,7 @@ def generate_text_graph(train_data, infer_data, max_vocab_len, window=10):
     vocab = vectorizer.get_feature_names()
     vocab = np.array(vocab)
     df_tfidf = pd.DataFrame(df_tfidf, columns=vocab)
+    del vectorizer
     
     ### Build graph
     logger.info("Building graph (No. of document, word nodes: %d, %d)..." %(len(df_tfidf.index), len(vocab)))
@@ -103,17 +104,16 @@ def generate_text_graph(train_data, infer_data, max_vocab_len, window=10):
     G.add_nodes_from(vocab) ## word nodes
     ### build edges between document-word pairs
     logger.info("Building document-word edges...")
-    document_word = [(doc,w,{"weight":df_tfidf.loc[doc,w]}) for doc in tqdm(df_tfidf.index, total = len(df_tfidf.index))\
-                     for w in df_tfidf.columns]
-    G.add_edges_from(document_word)
-    del df_tfidf, document_word
+    for doc in tqdm(df_tfidf.index, total = len(df_tfidf.index)):
+        for w in df_tfidf.columns:
+            G.add_edge(doc, w, weight=df_tfidf.loc[doc,w])
+    del df_tfidf
     
    ### PMI between words
-    names = vocab
-    n_i  = OrderedDict((name, 0) for name in names)
-    word2index = OrderedDict( (name,index) for index,name in enumerate(names) )
+    n_i  = OrderedDict((name, 0) for name in vocab)
+    word2index = OrderedDict( (name,index) for index,name in enumerate(vocab) )
 
-    occurrences = np.zeros( (len(names),len(names)) ,dtype=np.int32)
+    occurrences = np.zeros( (len(vocab),len(vocab)) ,dtype=np.int32)
     # Find the co-occurrences:
     no_windows = 0; logger.info("Calculating co-occurences...")
     for l in tqdm(df["text"], total=len(df["text"])):
@@ -129,14 +129,14 @@ def generate_text_graph(train_data, infer_data, max_vocab_len, window=10):
 
                 occurrences[i1][i2] += 1
                 occurrences[i2][i1] += 1
-
+    
+    del df, word2index
     logger.info("Calculating PMI*...")
     ### convert to PMI
-    p_ij = pd.DataFrame(occurrences, index = names,columns=names)/no_windows
+    p_ij = pd.DataFrame(occurrences, index = vocab, columns=vocab)/no_windows
     p_i = pd.Series(n_i, index=n_i.keys())/no_windows
-
-    del occurrences
-    del n_i
+    del occurrences, n_i, vocab
+    
     for col in p_ij.columns:
         p_ij[col] = p_ij[col]/p_i[col]
     for row in p_ij.index:

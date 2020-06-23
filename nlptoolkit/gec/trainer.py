@@ -88,7 +88,7 @@ def get_model(model_name, vocab, tune_bert=False,
     return model
 
 
-def main(args):
+def train_and_fit(args):
     fix_seed()
     if not os.path.exists(args.model_dir):
         os.mkdir(args.model_dir)
@@ -300,4 +300,4 @@ if __name__ == '__main__':
                         default=1)
 
     args = parser.parse_args()
-    main(args)
+    train_and_fit(args)

@@ -36,7 +36,7 @@ For more details, see requirements.txt
 ** GAT model adapted from https://github.com/Diego999/pyGAT  
 ** Style-Transformer training codes adapted from https://github.com/fastnlp/style-transformer  
 ** Semsim pre-trained models courtesy of https://github.com/icml-2020-nlp/semsim  
-** GECToR pre-trained models courtesy of https://github.com/grammarly/gector  
+** GECToR training & pre-trained models courtesy of https://github.com/grammarly/gector  
 
 ## Package Installation
 ```bash
@@ -731,7 +731,7 @@ Current models:
 1) Gector  
 
 ### Running the model
-Currently supports inference only.
+For training & inference, see gec.py for more details on arguments.   
 ```bash
 gec.py [-h]
 ```
@@ -743,8 +743,8 @@ Sample output:
 He has a dog
 ```
 ### Pre-trained models
-Download and zip contents of downloaded folder into ./data/ folder.
-1. [GECToR](https://drive.google.com/drive/folders/15AsxuAbGQT--kJlFK_-ey-rssCaLHxTh?usp=sharing)
+Download and zip contents of downloaded folder into ./data/ folder. 
+1. [GECToR (includes pre-trained model)](https://drive.google.com/drive/folders/15AsxuAbGQT--kJlFK_-ey-rssCaLHxTh?usp=sharing)
 
 # Benchmark Results
 

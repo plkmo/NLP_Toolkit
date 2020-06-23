@@ -6,7 +6,7 @@ import Levenshtein
 import numpy as np
 from tqdm import tqdm
 
-from helpers import write_lines, read_parallel_lines, encode_verb_form, \
+from .helpers import write_lines, read_parallel_lines, encode_verb_form, \
     apply_reverse_transformation, SEQ_DELIMETERS, START_TOKEN
 
 

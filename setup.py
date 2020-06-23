@@ -7,7 +7,7 @@ with open("requirements.txt") as f:
 
 setuptools.setup(
     name="nlptoolkit",
-    version="0.0.16",
+    version="0.0.17",
     author="Soh Wee Tee",
     author_email="weeteesoh345@gmail.com",
     description="NLP toolkit",

@@ -69,24 +69,29 @@ class GIN(nn.Module):
         self.e1 = nn.parameter.Parameter(torch.zeros(size=(1, 1))) # size=(self.n_nodes, 1)
         var = 2./(self.e1.size(1) + self.e1.size(0))
         self.e1.data.normal_(0, var)
-        self.mlp1 = nn.Linear(self.X_size, self.X_size, bias=bias)
+        self.mlp1_fc1 = nn.Linear(self.X_size, self.X_size, bias=bias)
+        self.mlp1_fc2 = nn.Linear(self.X_size, args.hidden_size_1, bias=bias)
         
+        '''
         self.e2 = nn.parameter.Parameter(torch.zeros(size=(1, 1))) # size=(self.n_nodes, 1)
         var2 = 2./(self.e2.size(1) + self.e2.size(0))
         self.e2.data.normal_(0, var2)
         self.mlp2 = nn.Linear(self.X_size, args.hidden_size_1, bias=bias)
+        '''
         
     def forward(self, X, A_hat=None): ### 2-layer GIN architecture
         hv = torch.mm(self.diag_A, X)
         hu = torch.mm(self.off_diag_A, X)
         
         X = torch.mm((torch.diag((self.dum*self.e1).squeeze()) + self.I), hv) + hu
-        X = self.mlp1(X)
+        X = self.mlp1_fc2(F.relu(self.mlp1_fc1(X)))
         
+        '''
         hv = torch.mm(self.diag_A, X)
         hu = torch.mm(self.off_diag_A, X)
         X = torch.mm((torch.diag((self.dum*self.e2).squeeze()) + self.I), hv) + hu
-        X = self.mlp2(X)
+        X = F.relu(self.mlp1_fc2(F.relu(self.mlp1_fc1(X))))
+        '''
         return X
     
 class GIN_batched(nn.Module):
@@ -98,12 +103,15 @@ class GIN_batched(nn.Module):
         self.e1 = nn.parameter.Parameter(torch.zeros(size=(1, 1))) # size=(self.n_nodes, 1)
         var = 2./(self.e1.size(1) + self.e1.size(0))
         self.e1.data.normal_(0, var)
-        self.mlp1 = nn.Linear(self.X_size, self.X_size, bias=bias)
+        self.mlp1_fc1 = nn.Linear(self.X_size, self.X_size, bias=bias)
+        self.mlp1_fc2 = nn.Linear(self.X_size, args.hidden_size_1, bias=bias)
         
+        '''
         self.e2 = nn.parameter.Parameter(torch.zeros(size=(1, 1))) # size=(self.n_nodes, 1)
         var2 = 2./(self.e2.size(1) + self.e2.size(0))
         self.e2.data.normal_(0, var2)
         self.mlp2 = nn.Linear(self.X_size, args.hidden_size_1, bias=bias)
+        '''
         
     def forward(self, X, A_hat): ### 2-layer GIN architecture
         n_nodes = X.shape[0]
@@ -123,12 +131,14 @@ class GIN_batched(nn.Module):
         hu = torch.mm(off_diag_A, X)
         
         X = torch.mm((torch.diag((dum*self.e1).squeeze()) + I), hv) + hu
-        X = self.mlp1(X)
+        X = self.mlp1_fc2(F.relu(self.mlp1_fc1(X)))
         
+        '''
         hv = torch.mm(diag_A, X)
         hu = torch.mm(off_diag_A, X)
         X = torch.mm((torch.diag((dum*self.e2).squeeze()) + I), hv) + hu
         X = self.mlp2(X)
+        '''
         return X
     
 class DGI(nn.Module):
